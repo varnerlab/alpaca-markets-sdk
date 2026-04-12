@@ -43,7 +43,7 @@ AlpacaClient(trading_url::AbstractString, data_url::AbstractString,
                  key_id, secret_key)
 
 """
-    load_client(path="conf/apiidata.toml";
+    load_client(path="conf/apidata.toml";
                 data_url=DEFAULT_DATA_URL,
                 options_data_url=nothing)
 
@@ -52,7 +52,7 @@ Load credentials from a TOML file with a `[Credentials]` table containing
 options host derived from `data_url` (override only if Alpaca moves the
 endpoint).
 """
-function load_client(path::AbstractString = joinpath("conf", "apiidata.toml");
+function load_client(path::AbstractString = joinpath("conf", "apidata.toml");
                      data_url::AbstractString = DEFAULT_DATA_URL,
                      options_data_url::Union{AbstractString,Nothing} = nothing)
     isfile(path) || throw(ArgumentError("credentials file not found: $path"))

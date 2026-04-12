@@ -28,6 +28,7 @@ makedocs(;
             "Market Data"         => "api/marketdata.md",
             "Historical Downloads" => "api/historical.md",
             "Options"             => "api/options.md",
+            "Streaming"           => "api/streaming.md",
             "Types"               => "api/types.md",
         ],
     ],

@@ -9,6 +9,7 @@ latest market data.
 - Credentials loaded from a local TOML file (no env vars required)
 - Trading: account, clock/calendar, assets, orders, positions
 - Market data: bars, quotes, trades, snapshots, and latest-* endpoints
+- Real-time streaming: trades, quotes, and bars via WebSocket with auto-reconnect
 - Automatic pagination for historical market data queries
 - Typed return values (`Account`, `Order`, `Position`, `Bar`, `Quote`, ...) plus
   access to the raw `JSON3` payload when you need fields that aren't surfaced
@@ -20,7 +21,7 @@ latest market data.
 using Alpaca
 using Dates
 
-client = load_client()                 # reads conf/apiidata.toml
+client = load_client()                 # reads conf/apidata.toml
 
 acct = get_account(client)
 @show acct.cash acct.buying_power

@@ -16,6 +16,7 @@ include("positions.jl")
 include("marketdata.jl")
 include("historical.jl")
 include("options.jl")
+include("streaming.jl")
 
 # Client
 export AlpacaClient, load_client
@@ -44,6 +45,12 @@ export list_option_contracts, get_option_contract,
        get_option_bars, get_option_trades, get_option_quotes,
        get_latest_option_bar, get_latest_option_quote, get_latest_option_trade,
        get_option_snapshots, get_option_chain_snapshot
+
+# Streaming
+export AlpacaStream, connect_market_stream,
+       subscribe!, unsubscribe!,
+       on_trade, on_quote, on_bar,
+       start!, stop!, isrunning
 
 # Types
 export Account, Order, Position, Asset, Bar, Quote, Trade, MarketClock,
