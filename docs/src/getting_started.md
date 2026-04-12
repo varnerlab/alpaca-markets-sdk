@@ -17,7 +17,7 @@ julia> ] add https://github.com/jeffreyvarner/Alpaca.jl
 
 ## Credentials
 
-Create `conf/apiidata.toml` (this path is git-ignored by default) from the
+Create `conf/apidata.toml` (this path is git-ignored by default) from the
 template:
 
 ```toml
@@ -31,14 +31,14 @@ secret   = "YOUR_ALPACA_SECRET_KEY"
 
 Get a free paper-trading key pair from the
 [Alpaca dashboard](https://app.alpaca.markets/paper/dashboard/overview).
-Never commit this file — a template lives at `conf/apiidata.example.toml`.
+Never commit this file — a template lives at `conf/apidata.example.toml`.
 
 ## First call
 
 ```julia
 using Alpaca
 
-client = load_client()                 # default path: conf/apiidata.toml
+client = load_client()                 # default path: conf/apidata.toml
 # or: load_client("conf/my_other_creds.toml")
 
 acct = get_account(client)
