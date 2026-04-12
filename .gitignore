@@ -1,0 +1,21 @@
+# Credentials — never commit
+conf/apiidata.toml
+conf/*.secret.toml
+
+# Generated data output
+/data/
+
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+/Manifest.toml
+/docs/build/
+/docs/site/
+/docs/Manifest.toml
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,6 @@
+[deps]
+Alpaca = "c1a5797d-a1e1-4ff9-a0c8-9ae1b3a2bac1"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+
+[compat]
+Documenter = "1"
