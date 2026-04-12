@@ -7,12 +7,13 @@ makedocs(;
     modules  = [Alpaca],
     sitename = "Alpaca.jl",
     authors  = "Jeffrey Varner",
-    remotes  = nothing,  # flip to a Remotes.GitHub entry once the repo is on GitHub
+    repo     = "github.com/varnerlab/alpaca-markets-sdk.git",
     format   = Documenter.HTML(;
         prettyurls = get(ENV, "CI", "false") == "true",
-        canonical  = "https://jeffreyvarner.github.io/Alpaca.jl",
+        canonical  = "https://varnerlab.github.io/alpaca-markets-sdk",
         edit_link  = "main",
         assets     = String[],
+        repolink   = "https://github.com/varnerlab/alpaca-markets-sdk",
     ),
     pages = [
         "Home"            => "index.md",
@@ -34,10 +35,8 @@ makedocs(;
     warnonly  = [:missing_docs],
 )
 
-# Uncomment to enable GitHub Pages deployment once the repo lives on GitHub.
-#
-# deploydocs(;
-#     repo      = "github.com/jeffreyvarner/Alpaca.jl.git",
-#     devbranch = "main",
-#     push_preview = true,
-# )
+deploydocs(;
+    repo         = "github.com/varnerlab/alpaca-markets-sdk.git",
+    devbranch    = "main",
+    push_preview = true,
+)
