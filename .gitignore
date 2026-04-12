@@ -5,14 +5,29 @@ conf/*.secret.toml
 # Generated data output
 /data/
 
-# Julia
+# Julia coverage / allocation tracking
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-/Manifest.toml
-/docs/build/
-/docs/site/
+
+# BinaryProvider / BinDeps artifacts
+deps/deps.jl
+deps/build.log
+deps/downloads/
+deps/usr/
+deps/src/
+
+# Documenter build output
+docs/build/
+docs/site/
+
+# Manifest files (Pkg-generated)
+Manifest*.toml
 /docs/Manifest.toml
+
+# Local preferences
+LocalPreferences.toml
+JuliaLocalPreferences.toml
 
 # Editors / OS
 .DS_Store
