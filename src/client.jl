@@ -44,21 +44,45 @@ AlpacaClient(trading_url::AbstractString, data_url::AbstractString,
 
 """
     load_client(path="conf/apidata.toml";
+                section="Credentials",
                 data_url=DEFAULT_DATA_URL,
                 options_data_url=nothing)
 
-Load credentials from a TOML file with a `[Credentials]` table containing
-`endpoint`, `key`, and `secret`. `options_data_url` defaults to the v1beta1
-options host derived from `data_url` (override only if Alpaca moves the
-endpoint).
+Load credentials from a TOML file. The file must contain a table named
+`section` (default `"Credentials"`) with `endpoint`, `key`, and `secret`
+fields. Use `section` to target a specific Alpaca account when the file
+contains multiple named credential blocks, e.g. one for paper research
+and one for paper production:
+
+```toml
+[paper_research]
+endpoint = "https://paper-api.alpaca.markets"
+key = "..."
+secret = "..."
+
+[paper_production]
+endpoint = "https://paper-api.alpaca.markets"
+key = "..."
+secret = "..."
+```
+
+```julia
+client = load_client("credentials.toml"; section = "paper_research")
+```
+
+`options_data_url` defaults to the v1beta1 options host derived from
+`data_url` (override only if Alpaca moves the endpoint).
 """
 function load_client(path::AbstractString = joinpath("conf", "apidata.toml");
+                     section::AbstractString = "Credentials",
                      data_url::AbstractString = DEFAULT_DATA_URL,
                      options_data_url::Union{AbstractString,Nothing} = nothing)
     isfile(path) || throw(ArgumentError("credentials file not found: $path"))
     cfg = TOML.parsefile(path)
-    creds = get(cfg, "Credentials", nothing)
-    creds === nothing && throw(ArgumentError("missing [Credentials] table in $path"))
+    creds = get(cfg, section, nothing)
+    creds === nothing && throw(ArgumentError(
+        "missing [$section] table in $path " *
+        "(available tables: $(collect(keys(cfg))))"))
     endpoint = rstrip(String(creds["endpoint"]), '/')
     data     = rstrip(String(data_url), '/')
     options  = options_data_url === nothing ? _derive_options_url(data) :
@@ -110,6 +134,9 @@ function _handle_response(resp::HTTP.Response)
     throw(AlpacaError(resp.status, code, msg, body))
 end
 
+const _MAX_RETRIES    = 5
+const _INITIAL_BACKOFF = 2.0   # seconds
+
 function _request(client::AlpacaClient, method::AbstractString,
                   base::AbstractString, path::AbstractString;
                   query::Union{Nothing,AbstractDict} = nothing,
@@ -121,9 +148,17 @@ function _request(client::AlpacaClient, method::AbstractString,
         push!(headers, "Content-Type" => "application/json")
         payload = Vector{UInt8}(JSON3.write(body))
     end
-    resp = HTTP.request(method, url, headers, payload;
-                        status_exception = false, retry = false)
-    return _handle_response(resp)
+    for attempt in 1:_MAX_RETRIES
+        resp = HTTP.request(method, url, headers, payload;
+                            status_exception = false, retry = false)
+        if resp.status == 429 && attempt < _MAX_RETRIES
+            wait_secs = _INITIAL_BACKOFF * 2^(attempt - 1)
+            @warn "Rate limited (429), retrying in $(wait_secs)s (attempt $attempt/$(_MAX_RETRIES))"
+            sleep(wait_secs)
+            continue
+        end
+        return _handle_response(resp)
+    end
 end
 
 _trading_get(c, path; query = nothing) =

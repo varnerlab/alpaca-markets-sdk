@@ -94,3 +94,42 @@ end
 
     @test_throws ArgumentError load_client("/does/not/exist/apiidata.toml")
 end
+
+@testset "client: load_client selects by section" begin
+    path, io = mktemp()
+    try
+        write(io, """
+        [paper_research]
+        endpoint = "https://paper-api.alpaca.markets/v2"
+        key = "RES-KEY"
+        secret = "RES-SECRET"
+
+        [paper_production]
+        endpoint = "https://paper-api.alpaca.markets/v2"
+        key = "PROD-KEY"
+        secret = "PROD-SECRET"
+        """)
+        close(io)
+
+        cr = load_client(path; section = "paper_research")
+        @test cr.key_id == "RES-KEY"
+        @test cr.secret_key == "RES-SECRET"
+
+        cp = load_client(path; section = "paper_production")
+        @test cp.key_id == "PROD-KEY"
+        @test cp.secret_key == "PROD-SECRET"
+
+        # Missing section raises with a helpful message listing available tables.
+        err = try
+            load_client(path; section = "live")
+            nothing
+        catch e
+            e
+        end
+        @test err isa ArgumentError
+        @test occursin("missing [live]", err.msg)
+        @test occursin("paper_research", err.msg)
+    finally
+        rm(path; force = true)
+    end
+end
