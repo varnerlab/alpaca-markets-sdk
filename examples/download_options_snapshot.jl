@@ -62,6 +62,18 @@ spot = (spot_quote.bid_price + spot_quote.ask_price) / 2
 println("  ", UNDERLYING, " bid=", spot_quote.bid_price,
         "  ask=", spot_quote.ask_price, "  mid≈", round(spot; digits = 2))
 
+# Fetch the underlying's most recent daily bar (close price for moneyness)
+under_bars_map = get_bars(client, UNDERLYING, "1Day";
+                          start = today_date - Day(7), finish = today_date)
+under_list = get(under_bars_map, UNDERLYING, Alpaca.Bar[])
+if isempty(under_list)
+    println("  !! no recent daily bars for ", UNDERLYING, " — aborting")
+    exit(1)
+end
+under_bar = last(under_list)
+underlying_close = under_bar.c
+println("  ", UNDERLYING, " close (", Date(under_bar.t), "): ", underlying_close)
+
 # ── 1. Discover contracts in the expiration window ──────────────────
 println("\n── discovering contracts ────────────────")
 contracts = list_option_contracts(client;
@@ -113,7 +125,7 @@ rows_written = Ref(0)
 open(out_path, "w") do io
     println(io, "capture_ts,symbol,underlying,expiration,type,strike,dte,",
                 "bid,bid_size,ask,ask_size,mid,last_price,last_size,",
-                "implied_vol,delta,gamma,theta,vega,rho")
+                "implied_vol,delta,gamma,theta,vega,rho,underlying_close")
 
     for (sym, c) in contract_by_symbol
         snap = get(all_snaps, sym, nothing)
@@ -150,7 +162,8 @@ open(out_path, "w") do io
             _fmt(gr === nothing ? nothing : gr.gamma), ",",
             _fmt(gr === nothing ? nothing : gr.theta), ",",
             _fmt(gr === nothing ? nothing : gr.vega),  ",",
-            _fmt(gr === nothing ? nothing : gr.rho))
+            _fmt(gr === nothing ? nothing : gr.rho),   ",",
+            underlying_close)
         rows_written[] += 1
     end
 end

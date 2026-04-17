@@ -62,6 +62,18 @@ underlying_quote = get_latest_quote(client, UNDERLYING)
 println("  ", UNDERLYING, " latest quote: bid=", underlying_quote.bid_price,
         "  ask=", underlying_quote.ask_price)
 
+# Fetch the underlying's daily bar on the observation date (close price)
+under_bars_map = get_bars(client, UNDERLYING, "1Day";
+                          start = OBSERVATION, finish = OBSERVATION)
+under_list = get(under_bars_map, UNDERLYING, Alpaca.Bar[])
+if isempty(under_list)
+    println("  !! no daily bar for ", UNDERLYING, " on ", OBSERVATION, " — aborting")
+    exit(1)
+end
+under_bar = under_list[1]
+underlying_close = under_bar.c
+println("  ", UNDERLYING, " close on ", OBSERVATION, ": ", underlying_close)
+
 # ── 1. Discover contracts in the expiration window ───────────────────
 println("\n── discovering contracts ────────────────")
 contracts = list_option_contracts(client;
@@ -108,7 +120,7 @@ missing_contracts = String[]
 
 open(out_path, "w") do io
     println(io, "symbol,underlying,expiration,type,strike,dte,",
-                "date,open,high,low,close,volume,trade_count,vwap")
+                "date,open,high,low,close,volume,trade_count,vwap,underlying_close")
     for c in contracts
         bar_list = get(all_bars, c.symbol, Alpaca.Bar[])
         if isempty(bar_list)
@@ -128,7 +140,8 @@ open(out_path, "w") do io
             b.o, ",", b.h, ",", b.l, ",", b.c, ",",
             b.v, ",",
             b.n === nothing ? "" : b.n, ",",
-            b.vw === nothing ? "" : b.vw)
+            b.vw === nothing ? "" : b.vw, ",",
+            underlying_close)
         rows_written[] += 1
     end
 end
