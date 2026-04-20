@@ -45,13 +45,17 @@ mutable struct AlpacaStream
     task::Union{Task,Nothing}
     running::Bool
     authenticated::Bool
+    # Live websocket handle; set while connected, nothing otherwise.
+    # Used by stop! to unblock the receive loop and by subscribe!/unsubscribe!
+    # to push deltas on an already-running stream.
+    ws::Any
 
     function AlpacaStream(client::AlpacaClient, feed::String, stream_url::String)
         return new(
             client, feed, stream_url,
             Set{String}(), Set{String}(), Set{String}(),
             [], [], [],
-            nothing, false, false,
+            nothing, false, false, nothing,
         )
     end
 end
@@ -104,31 +108,57 @@ on_bar(s::AlpacaStream, cb) = (push!(s.bar_callbacks, cb); s)
     subscribe!(stream; trades=[], quotes=[], bars=[])
 
 Add symbols to the stream subscription. Can be called before or after
-[`start!`](@ref). If the stream is already running, sends the subscription
-message immediately on the next iteration.
+[`start!`](@ref). If the stream is already running and authenticated, the
+incremental subscribe frame is pushed to the server immediately; otherwise
+the new symbols are sent on the next connect.
 """
 function subscribe!(s::AlpacaStream;
                     trades::AbstractVector{<:AbstractString} = String[],
                     quotes::AbstractVector{<:AbstractString} = String[],
                     bars::AbstractVector{<:AbstractString}   = String[])
+    new_trades = setdiff(trades, s.trade_symbols)
+    new_quotes = setdiff(quotes, s.quote_symbols)
+    new_bars   = setdiff(bars,   s.bar_symbols)
     union!(s.trade_symbols, trades)
     union!(s.quote_symbols, quotes)
     union!(s.bar_symbols, bars)
+    # If we're live and authenticated, push the delta now so the server-side
+    # subscription stays in sync with the in-memory sets.
+    if s.authenticated && s.ws !== nothing &&
+       !(isempty(new_trades) && isempty(new_quotes) && isempty(new_bars))
+        try
+            _send_subscribe_delta(s.ws, new_trades, new_quotes, new_bars)
+        catch e
+            @warn "Failed to push subscribe delta" exception = (e, catch_backtrace())
+        end
+    end
     return s
 end
 
 """
     unsubscribe!(stream; trades=[], quotes=[], bars=[])
 
-Remove symbols from the stream subscription.
+Remove symbols from the stream subscription. If the stream is running and
+authenticated, the unsubscribe frame is pushed to the server immediately.
 """
 function unsubscribe!(s::AlpacaStream;
                       trades::AbstractVector{<:AbstractString} = String[],
                       quotes::AbstractVector{<:AbstractString} = String[],
                       bars::AbstractVector{<:AbstractString}   = String[])
+    drop_trades = intersect(trades, s.trade_symbols)
+    drop_quotes = intersect(quotes, s.quote_symbols)
+    drop_bars   = intersect(bars,   s.bar_symbols)
     setdiff!(s.trade_symbols, trades)
     setdiff!(s.quote_symbols, quotes)
     setdiff!(s.bar_symbols, bars)
+    if s.authenticated && s.ws !== nothing &&
+       !(isempty(drop_trades) && isempty(drop_quotes) && isempty(drop_bars))
+        try
+            _send_unsubscribe(s.ws, drop_trades, drop_quotes, drop_bars)
+        catch e
+            @warn "Failed to push unsubscribe delta" exception = (e, catch_backtrace())
+        end
+    end
     return s
 end
 
@@ -212,6 +242,18 @@ function _send_unsubscribe(ws, trades, quotes, bars)
     send(ws, msg)
 end
 
+# Send only the incremental subscribe frame (for live deltas after start!).
+function _send_subscribe_delta(ws, trades, quotes, bars)
+    msg = JSON3.write(Dict(
+        "action" => "subscribe",
+        "trades" => collect(trades),
+        "quotes" => collect(quotes),
+        "bars"   => collect(bars),
+    ))
+    @debug "Sending subscribe delta" trades quotes bars
+    send(ws, msg)
+end
+
 function _dispatch_message(s::AlpacaStream, o)
     T = String(o.T)
     if T == "t"
@@ -271,30 +313,35 @@ function _run_stream(s::AlpacaStream)
         try
             @info "Connecting to $(s.stream_url)"
             ws_open(s.stream_url) do ws
-                _send_auth(ws, s.client)
-                # Wait for auth confirmation before subscribing
-                while s.running && !s.authenticated
-                    raw = receive(ws)
-                    @debug "Raw message" raw
-                    msgs = JSON3.read(raw)
-                    for o in msgs
-                        _dispatch_message(s, o)
+                s.ws = ws
+                try
+                    _send_auth(ws, s.client)
+                    # Wait for auth confirmation before subscribing
+                    while s.running && !s.authenticated
+                        raw = receive(ws)
+                        @debug "Raw message" raw
+                        msgs = JSON3.read(raw)
+                        for o in msgs
+                            _dispatch_message(s, o)
+                        end
                     end
-                end
-                if !s.authenticated
-                    return  # stopped before auth completed
-                end
-                # Auth succeeded — reset backoff
-                backoff = _RECONNECT_BASE_SEC
-                _send_subscribe(ws, s)
-                # Main receive loop
-                while s.running
-                    raw = receive(ws)
-                    @debug "Raw message" raw
-                    msgs = JSON3.read(raw)
-                    for o in msgs
-                        _dispatch_message(s, o)
+                    if !s.authenticated
+                        return  # stopped before auth completed
                     end
+                    # Auth succeeded — reset backoff
+                    backoff = _RECONNECT_BASE_SEC
+                    _send_subscribe(ws, s)
+                    # Main receive loop
+                    while s.running
+                        raw = receive(ws)
+                        @debug "Raw message" raw
+                        msgs = JSON3.read(raw)
+                        for o in msgs
+                            _dispatch_message(s, o)
+                        end
+                    end
+                finally
+                    s.ws = nothing
                 end
             end
         catch e
@@ -347,8 +394,18 @@ message is processed. Blocks briefly until the task finishes.
 """
 function stop!(s::AlpacaStream)
     s.running = false
+    # Close the live ws (if any) so the blocking receive(ws) in the
+    # background task unblocks promptly instead of waiting for the next
+    # frame — which may never come on a quiet market.
+    ws = s.ws
+    if ws !== nothing
+        try
+            HTTP.WebSockets.close(ws)
+        catch
+            # Already closing / partial state — safe to ignore
+        end
+    end
     if s.task !== nothing && !istaskdone(s.task)
-        # The task will exit on the next receive timeout or message
         @info "Stopping stream..."
         try
             wait(s.task)

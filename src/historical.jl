@@ -71,16 +71,21 @@ _as_date(x::DateTime) = Date(x)
 _as_date(x::AbstractString) = Date(String(x))
 
 function _month_chunks(start, finish, months::Integer)
-    s = _as_date(start)
-    e = _as_date(finish)
     months > 0 || throw(ArgumentError("chunk_months must be positive"))
-    chunks = Tuple{Date,Date}[]
-    cursor = s
-    while cursor <= e
-        next_end = min(e, cursor + Month(months) - Day(1))
+    s_date = _as_date(start)
+    e_date = _as_date(finish)
+    chunks = Tuple{Any,Any}[]
+    cursor = s_date
+    while cursor <= e_date
+        next_end = min(e_date, cursor + Month(months) - Day(1))
         push!(chunks, (cursor, next_end))
         cursor = next_end + Day(1)
     end
+    isempty(chunks) && return chunks
+    # Splice caller's original start/finish onto the first/last chunk so
+    # DateTime precision is preserved for intraday downloads.
+    chunks[1]   = (start, chunks[1][2])
+    chunks[end] = (chunks[end][1], finish)
     return chunks
 end
 

@@ -20,22 +20,28 @@ Pkg.add(url="https://github.com/varnerlab/alpaca-markets-sdk.git")
 
 ### 1. Configure credentials
 
-Create a TOML configuration file (e.g., `config/credentials.toml`):
+Create a TOML configuration file (default path: `conf/apidata.toml`):
 
 ```toml
-[alpaca]
-api_key    = "YOUR_API_KEY"
-api_secret = "YOUR_API_SECRET"
-base_url   = "https://paper-api.alpaca.markets"
-data_url   = "https://data.alpaca.markets"
+[Credentials]
+# Paper: https://paper-api.alpaca.markets/v2
+# Live:  https://api.alpaca.markets/v2
+endpoint = "https://paper-api.alpaca.markets/v2"
+key      = "YOUR_ALPACA_KEY_ID"
+secret   = "YOUR_ALPACA_SECRET_KEY"
 ```
+
+A starter template lives at `conf/apiidata.example.toml`. Multiple credentials
+can live in one file under different section names — pass `section=` to pick
+one (e.g. `load_client("creds.toml"; section = "paper_research")`).
 
 ### 2. Connect and query
 
 ```julia
 using Alpaca
 
-client = load_client("config/credentials.toml")
+client = load_client("conf/apidata.toml")
+# Or with no argument: load_client() reads conf/apidata.toml by default.
 
 # Account info
 acct = get_account(client)
@@ -43,11 +49,12 @@ acct = get_account(client)
 # Market clock
 clk = get_clock(client)
 
-# Historical bars
-bars = get_bars(client, "AAPL"; timeframe="1Day", start="2025-01-01", limit=100)
+# Historical bars (timeframe is positional)
+bars = get_bars(client, "AAPL", "1Day"; start = "2025-01-01", limit = 100)
 
-# Submit a paper order
-order = submit_order(client, "AAPL"; qty=1, side="buy", type="market", time_in_force="day")
+# Submit a paper order (symbol, qty, side are positional)
+order = submit_order(client, "AAPL", 1, "buy";
+                     type = "market", time_in_force = "day")
 ```
 
 ## Features

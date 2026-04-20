@@ -6,7 +6,7 @@
 using Alpaca
 using Dates
 
-client = load_client()  # reads conf/apiidata.toml
+client = load_client()  # reads conf/apidata.toml
 
 println("── account ─────────────────────────────")
 acct = get_account(client)

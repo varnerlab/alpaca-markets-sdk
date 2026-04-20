@@ -18,5 +18,6 @@ include("mock_server.jl")
     include("test_marketdata.jl")
     include("test_historical.jl")
     include("test_options.jl")
+    include("test_streaming.jl")
     include("test_integration.jl")
 end
