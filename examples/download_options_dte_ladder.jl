@@ -22,7 +22,7 @@
 #   ALPACA_STRIKE_MIN=100                        # optional
 #   ALPACA_STRIKE_MAX=400                        # optional
 #   ALPACA_OPTION_TYPE=call                      # "call" | "put" | unset
-#   ALPACA_OUT_DIR=data/options
+#   ALPACA_OUT_DIR=data/options-mm-dd-yy  (default: today, e.g. data/options-04-20-26)
 
 using Alpaca
 using Dates
@@ -35,7 +35,8 @@ const DTE_TOLERANCE  = parse(Int, get(ENV, "ALPACA_DTE_TOLERANCE", "3"))
 const STRIKE_MIN     = haskey(ENV, "ALPACA_STRIKE_MIN") ? parse(Float64, ENV["ALPACA_STRIKE_MIN"]) : nothing
 const STRIKE_MAX     = haskey(ENV, "ALPACA_STRIKE_MAX") ? parse(Float64, ENV["ALPACA_STRIKE_MAX"]) : nothing
 const OPTION_TYPE    = get(ENV, "ALPACA_OPTION_TYPE", "")
-const OUT_DIR        = get(ENV, "ALPACA_OUT_DIR", "data/options")
+const OUT_DIR        = get(ENV, "ALPACA_OUT_DIR",
+                            "data/options-" * Dates.format(today(), dateformat"mm-dd-yy"))
 
 const BATCH_SIZE = 50
 
