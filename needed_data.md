@@ -1,81 +1,84 @@
-# Data Needed to Improve Sector NN IV Model
+# Data Needed for Per-Ticker NN IV Models
 
 Current model: sector-specific neural network psi with per-ticker theta_base.
-Trained on 23 tickers, 18,250 observations from a single capture (2026-04-14).
-Overall RMSE: 6.38% IV. Worst sectors: Healthcare (9.16%), Tech (9.51%).
+Corpus spans five capture days (2026-04-14, 04-15, 04-16, 04-17, 04-20), but
+**04-20 only covered 23 of the 31 tickers**, so the effective full-coverage
+corpus remains the 4-day, 71,586-observation set from 04-14 through 04-17.
+Sector NN: 6.91% in-sample RMSE, 7.54% temporal-holdout RMSE. Persistent
+worst names on holdout: PFE 18.41%, BMY 15.29%, INTC 13.92%, JNJ 12.98%,
+MRNA 12.65%.
 
-## Priority 1: Daily ladder pulls for data-thin tickers (3-5 days)
+## Priority 1: EVERY PULL MUST COVER ALL 31 TICKERS
 
-Pull daily close ladders for the tickers below. Same format and naming
-convention as the existing files (drop into code/data/ladders/). The loader
-reads everything in the directory automatically.
+The 2026-04-20 pull captured only 23 tickers. The 8 missing names are:
 
-3 additional days gets every ticker above 700 obs (enough for per-ticker NNs).
-5 days gets everyone above 1,100 and enables temporal out-of-sample validation.
+- **Tech (4):** AVGO, GOOG, META, QCOM
+- **Healthcare (4):** AMGN, BMY, PFE, UNH
 
-### Tickers to pull (current obs count):
+This is a regression. The 04-16 and 04-17 pulls both covered all 31, so the
+ladder fetcher is capable of full coverage and something changed on 04-20.
+**PFE and BMY are the two most data-starved tickers in the whole corpus**
+(326 and 455 observations across the prior 4 days) and they are also the
+two worst performers on the temporal holdout. Dropping them on a new
+capture day is the exact opposite of what the per-ticker NN roadmap needs.
 
-**Under 300 obs (most urgent):**
-- ABBV (232)
-- JNJ (241)
-- CVX (271)
-- BAC (276)
-- OXY (281)
-- XOM (290)
+Action items:
 
-**300-500 obs:**
-- INTC (309)
-- MRNA (310)
-- WFC (335)
-- UPS (360)
-- AMD (370)
-- WMT (406)
-- JPM (416)
-- TGT (428)
+1. Investigate why 04-20 dropped those 8 tickers (fetcher error? symbol
+   list? rate limit? data-provider outage on those symbols?)
+2. Re-pull 04-20 for the missing 8 if the close-of-day snapshot is still
+   recoverable, otherwise treat 04-20 as a partial day and flag it in the
+   loader
+3. Add a preflight check to the ladder-pull script that fails loudly if any
+   of the 31 tickers is absent from the output directory
 
-**500-750 obs (would benefit but less urgent):**
-- NVDA (536)
-- AAPL (540)
-- MU (587)
-- MSFT (722)
+The canonical 31-ticker list (do not deviate):
 
-**Already sufficient (1000+ obs, pull if convenient):**
-- LLY (958)
-- GS (1047)
-- IWM (1812)
-- QQQ (3315)
-- SPY (4208)
+- Tech (10): AAPL, AMD, AVGO, GOOG, INTC, META, MSFT, MU, NVDA, QCOM
+- Healthcare (8): ABBV, AMGN, BMY, JNJ, LLY, MRNA, PFE, UNH
+- Financials (4): BAC, GS, JPM, WFC
+- Energy (3): CVX, OXY, XOM
+- Retail (3): TGT, UPS, WMT
+- ETF (3): IWM, QQQ, SPY
 
-## Priority 2: More Healthcare tickers (4+)
+## Priority 2: Keep collecting full-coverage days until the Healthcare tail clears ~2000 obs each
 
-Healthcare has the worst RMSE (9.16%) and widest intra-sector dispersion:
-ABBV at 16% vs LLY at 5.5%. The sector mixes large-cap pharma (JNJ, ABBV)
-with high-growth biotech (LLY, MRNA), which have fundamentally different
-smile shapes. Adding PFE, UNH, BMY, AMGN (or similar) would either support
-splitting into Pharma vs Biotech sub-sectors or give the NN enough variation
-to learn the distinction.
+Per-ticker 2->8->8->1 NN has ~105 parameters. Rule of thumb: ~20 obs per
+parameter before overfitting becomes tolerable, so target ~2000 obs per
+ticker. Current starved-tail obs counts (through 04-17):
 
-## Priority 3: More Tech tickers (4+)
+- PFE 326, BMY 455, JNJ 745, MRNA 954, INTC 978
 
-Tech at 9.51% mixes mega-cap stable names (AAPL, MSFT) with semiconductor
-cyclicals (INTC, MU, AMD, NVDA). INTC alone (11.2% RMSE) is an outlier.
-Adding GOOG, META, AVGO, QCOM would help separate these sub-groups and
-improve the sector NN's ability to generalize.
+At the observed capture rate these tickers need roughly another 8-12
+full-coverage capture days before per-ticker NNs are viable on the names
+that actually need them. ETFs (SPY 14k, QQQ 12k, IWM 6.5k) already have
+enough, but fitting per-ticker on the ETFs alone does not move the paper
+narrative; the Healthcare/Tech tail is where per-ticker has to win.
 
-## Priority 4: Denser short-DTE coverage
+## Priority 3: Denser short-DTE coverage
 
-DTE 2-4 still has 10-11% RMSE even with sector NNs. The smile geometry
-changes rapidly near expiration (gamma compression). Capturing 0DTE, 1DTE,
-2DTE, 3DTE separately rather than lumping into target_dte=4 would give the
-NNs more resolution in the hardest regime.
+DTE 1-4 remains the hardest regime (7-12% RMSE). Capturing 0DTE, 1DTE,
+2DTE, 3DTE separately rather than lumping into `target_dte=4` would give
+the NNs more resolution where error concentrates.
 
-## Priority 5: Volume/open interest (nice to have)
+## Priority 4: Tech sub-sector split (mega-cap vs semi)
 
-Would allow weighting the loss by liquidity. A tight-spread ATM option is
-far more reliable than a wide-spread deep OTM quote. Currently all
-observations are weighted equally.
+Tech is still the second-worst sector on holdout (9.00%). Ten Tech tickers
+is enough to split:
 
-## Priority 6: Intraday snapshots (nice to have)
+- Mega-cap stable: AAPL, MSFT, GOOG, META
+- Semiconductor cyclicals: NVDA, AMD, INTC, MU, AVGO, QCOM
 
-Two captures per day (open + close) would double the dataset and reveal
-intraday smile dynamics without waiting for additional trading days.
+Two separate Tech NNs could reduce RMSE before per-ticker becomes viable.
+
+## Priority 5: Healthcare sub-sector split (pharma vs biotech)
+
+Healthcare is the worst sector on holdout (10.23%). Eight tickers enable:
+
+- Large-cap pharma: JNJ, ABBV, PFE, BMY, AMGN, UNH
+- High-growth biotech / specialty: LLY, MRNA
+
+## Priority 6: Volume / open interest, intraday snapshots
+
+Liquidity-weighted loss and intraday (open + close) captures remain
+nice-to-haves once the per-ticker NN baseline lands.
