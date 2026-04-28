@@ -1,0 +1,1854 @@
+===== AAPL =====
+── config ───────────────────────────────
+  underlying:        AAPL
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  AAPL session 2026-04-27:  O=266.24 H=268.35 L=265.1 C=267.55
+    volume=1.128794e6  vwap=267.05249
+  live quote:  bid=252.51  ask=279.59  mid≈266.05
+
+── discovering contracts ────────────────
+  1498 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  320 contracts
+    DTE   7:  178 contracts
+    DTE  14:  208 contracts
+    DTE  30:  116 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/17] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 2/17] 50 symbols ... 50 returned  (1 with greeks)
+  [batch 3/17] 50 symbols ... 50 returned  (25 with greeks)
+  [batch 4/17] 50 symbols ... 50 returned  (19 with greeks)
+  [batch 5/17] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 6/17] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 7/17] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 8/17] 50 symbols ... 50 returned  (45 with greeks)
+  [batch 9/17] 50 symbols ... 50 returned  (39 with greeks)
+  [batch 10/17] 50 symbols ... 50 returned  (43 with greeks)
+  [batch 11/17] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 12/17] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 13/17] 50 symbols ... 50 returned  (38 with greeks)
+  [batch 14/17] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 15/17] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 16/17] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 17/17] 22 symbols ... 22 returned  (22 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     822
+  rows written:           822
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/AAPL_dte_ladder_20260427_232510.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  0    2026-04-27  call  265.0     2.48     2.72     —        —        —        
+  0    2026-04-27  put   265.0     0.0      0.01     —        —        —        
+  7    2026-05-04  call  265.0     7.06     7.33     0.3757   0.5976   -0.4005  
+  7    2026-05-04  put   265.0     4.38     4.6      0.4007   -0.4071  -0.4008  
+  11   2026-05-08  call  265.0     8.09     8.27     0.351    0.5893   -0.3034  
+  11   2026-05-08  put   265.0     5.23     5.31     0.3653   -0.4132  -0.2892  
+  32   2026-05-29  call  265.0     10.36    10.53    0.2691   0.5853   -0.1446  
+  32   2026-05-29  put   265.0     7.15     7.34     0.286    -0.4177  -0.1265  
+[done AAPL] exit=0
+===== AMD =====
+── config ───────────────────────────────
+  underlying:        AMD
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  AMD session 2026-04-27:  O=346.32 H=349.1 L=328.9 C=334.42
+    volume=859544.0  vwap=335.50495
+  live quote:  bid=315.5  ask=0.0  mid≈157.75
+
+── discovering contracts ────────────────
+  1880 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  324 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  322 contracts
+    DTE  30:  200 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/17] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 2/17] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 3/17] 50 symbols ... 50 returned  (12 with greeks)
+  [batch 4/17] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 5/17] 50 symbols ... 50 returned  (26 with greeks)
+  [batch 6/17] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 7/17] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 8/17] 50 symbols ... 50 returned  (26 with greeks)
+  [batch 9/17] 50 symbols ... 50 returned  (49 with greeks)
+  [batch 10/17] 50 symbols ... 50 returned  (1 with greeks)
+  [batch 11/17] 50 symbols ... 50 returned  (15 with greeks)
+  [batch 12/17] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 13/17] 50 symbols ... 50 returned  (9 with greeks)
+  [batch 14/17] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 15/17] 50 symbols ... 50 returned  (35 with greeks)
+  [batch 16/17] 50 symbols ... 50 returned  (22 with greeks)
+  [batch 17/17] 46 symbols ... 46 returned  (28 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     846
+  rows written:           846
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/AMD_dte_ladder_20260427_232514.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  160.0     169.8    173.03   —        —        —        
+  4    2026-05-01  put   160.0     0.0      0.03     —        —        —        
+  11   2026-05-08  call  160.0     174.33   175.02   —        —        —        
+  11   2026-05-08  put   160.0     0.01     0.07     —        —        —        
+  32   2026-05-29  call  160.0     170.02   176.86   —        —        —        
+  32   2026-05-29  put   160.0     0.03     0.23     —        —        —        
+[done AMD] exit=0
+===== AVGO =====
+── config ───────────────────────────────
+  underlying:        AVGO
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  AVGO session 2026-04-27:  O=420.475 H=422.61 L=414.705 C=418.23
+    volume=524731.0  vwap=417.263945
+  live quote:  bid=398.65  ask=0.0  mid≈199.32
+
+── discovering contracts ────────────────
+  1844 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  462 contracts
+    DTE   7:  310 contracts
+    DTE  14:  266 contracts
+    DTE  30:  142 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/24] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 2/24] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 3/24] 50 symbols ... 50 returned  (7 with greeks)
+  [batch 4/24] 50 symbols ... 50 returned  (31 with greeks)
+  [batch 5/24] 50 symbols ... 50 returned  (38 with greeks)
+  [batch 6/24] 50 symbols ... 50 returned  (10 with greeks)
+  [batch 7/24] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 8/24] 50 symbols ... 50 returned  (8 with greeks)
+  [batch 9/24] 50 symbols ... 50 returned  (48 with greeks)
+  [batch 10/24] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 11/24] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 12/24] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 13/24] 50 symbols ... 50 returned  (38 with greeks)
+  [batch 14/24] 50 symbols ... 50 returned  (28 with greeks)
+  [batch 15/24] 50 symbols ... 50 returned  (46 with greeks)
+  [batch 16/24] 50 symbols ... 50 returned  (17 with greeks)
+  [batch 17/24] 50 symbols ... 50 returned  (44 with greeks)
+  [batch 18/24] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 19/24] 50 symbols ... 50 returned  (41 with greeks)
+  [batch 20/24] 50 symbols ... 50 returned  (45 with greeks)
+  [batch 21/24] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 22/24] 50 symbols ... 50 returned  (41 with greeks)
+  [batch 23/24] 50 symbols ... 50 returned  (37 with greeks)
+  [batch 24/24] 30 symbols ... 30 returned  (30 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     1180
+  rows written:           1180
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/AVGO_dte_ladder_20260427_232518.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  200.0     217.6    220.95   —        —        —        
+  4    2026-05-01  put   200.0     0.0      0.01     —        —        —        
+  7    2026-05-04  call  295.0     122.8    125.76   —        —        —        
+  7    2026-05-04  put   295.0     0.0      1.32     —        —        —        
+  11   2026-05-08  call  200.0     219.84   222.87   —        —        —        
+  11   2026-05-08  put   200.0     0.0      0.12     —        —        —        
+  32   2026-05-29  call  200.0     214.91   217.09   —        —        —        
+  32   2026-05-29  put   200.0     0.01     0.32     —        —        —        
+[done AVGO] exit=0
+===== GOOG =====
+── config ───────────────────────────────
+  underlying:        GOOG
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  GOOG session 2026-04-27:  O=343.84 H=350.865 L=340.96 C=348.5
+    volume=311698.0  vwap=348.267219
+  live quote:  bid=333.06  ask=367.89  mid≈350.48
+
+── discovering contracts ────────────────
+  1086 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  178 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  152 contracts
+    DTE  30:  104 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/9] 50 symbols ... 50 returned  (6 with greeks)
+  [batch 2/9] 50 symbols ... 50 returned  (36 with greeks)
+  [batch 3/9] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 4/9] 50 symbols ... 50 returned  (22 with greeks)
+  [batch 5/9] 50 symbols ... 50 returned  (36 with greeks)
+  [batch 6/9] 50 symbols ... 50 returned  (35 with greeks)
+  [batch 7/9] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 8/9] 50 symbols ... 50 returned  (38 with greeks)
+  [batch 9/9] 34 symbols ... 34 returned  (34 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     434
+  rows written:           434
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/GOOG_dte_ladder_20260427_232523.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  350.0     8.98     9.16     0.6202   0.5133   -1.1491  
+  4    2026-05-01  put   350.0     10.11    10.62    0.7102   -0.4849  -1.2783  
+  11   2026-05-08  call  350.0     10.44    10.51    0.4271   0.5188   -0.4869  
+  11   2026-05-08  put   350.0     11.4     11.86    0.4857   -0.4796  -0.5164  
+  32   2026-05-29  call  350.0     14.24    14.98    0.342    0.5314   -0.2372  
+  32   2026-05-29  put   350.0     14.35    16.059   0.3805   -0.4675  -0.2271  
+[done GOOG] exit=0
+===== INTC =====
+── config ───────────────────────────────
+  underlying:        INTC
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  INTC session 2026-04-27:  O=83.615 H=87.09 L=82.62 C=84.99
+    volume=4.852297e6  vwap=84.381005
+  live quote:  bid=79.27  ask=87.75  mid≈83.51
+
+── discovering contracts ────────────────
+  1074 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  164 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  168 contracts
+    DTE  30:  110 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/9] 50 symbols ... 50 returned  (9 with greeks)
+  [batch 2/9] 50 symbols ... 50 returned  (21 with greeks)
+  [batch 3/9] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 4/9] 50 symbols ... 50 returned  (3 with greeks)
+  [batch 5/9] 50 symbols ... 50 returned  (46 with greeks)
+  [batch 6/9] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 7/9] 50 symbols ... 50 returned  (31 with greeks)
+  [batch 8/9] 50 symbols ... 50 returned  (40 with greeks)
+  [batch 9/9] 42 symbols ... 42 returned  (42 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     442
+  rows written:           442
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/INTC_dte_ladder_20260427_232526.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  84.0      3.81     3.92     0.9841   0.5558   -0.4354  
+  4    2026-05-01  put   84.0      2.84     2.88     0.9177   -0.443   -0.3978  
+  11   2026-05-08  call  84.0      5.23     5.37     0.8352   0.5558   -0.2248  
+  11   2026-05-08  put   84.0      4.23     4.43     0.8113   -0.4442  -0.2101  
+  32   2026-05-29  call  84.0      7.64     7.8      0.7256   0.5648   -0.116   
+  32   2026-05-29  put   84.0      6.44     6.65     0.7085   -0.4357  -0.105   
+[done INTC] exit=0
+===== META =====
+── config ───────────────────────────────
+  underlying:        META
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  META session 2026-04-27:  O=671.09 H=682.43 L=671.09 C=678.505
+    volume=431045.0  vwap=677.0467
+  live quote:  bid=636.76  ask=704.17  mid≈670.46
+
+── discovering contracts ────────────────
+  3742 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  588 contracts
+    DTE   7:  464 contracts
+    DTE  14:  468 contracts
+    DTE  30:  332 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/38] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 2/38] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 3/38] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 4/38] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 5/38] 50 symbols ... 50 returned  (12 with greeks)
+  [batch 6/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 7/38] 50 symbols ... 50 returned  (25 with greeks)
+  [batch 8/38] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 9/38] 50 symbols ... 50 returned  (10 with greeks)
+  [batch 10/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 11/38] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 12/38] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 13/38] 50 symbols ... 50 returned  (44 with greeks)
+  [batch 14/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 15/38] 50 symbols ... 50 returned  (41 with greeks)
+  [batch 16/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 17/38] 50 symbols ... 50 returned  (37 with greeks)
+  [batch 18/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 19/38] 50 symbols ... 50 returned  (44 with greeks)
+  [batch 20/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 21/38] 50 symbols ... 50 returned  (49 with greeks)
+  [batch 22/38] 50 symbols ... 50 returned  (6 with greeks)
+  [batch 23/38] 50 symbols ... 50 returned  (47 with greeks)
+  [batch 24/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 25/38] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 26/38] 50 symbols ... 50 returned  (6 with greeks)
+  [batch 27/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 28/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 29/38] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 30/38] 50 symbols ... 50 returned  (40 with greeks)
+  [batch 31/38] 50 symbols ... 50 returned  (21 with greeks)
+  [batch 32/38] 50 symbols ... 50 returned  (40 with greeks)
+  [batch 33/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 34/38] 50 symbols ... 50 returned  (36 with greeks)
+  [batch 35/38] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 36/38] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 37/38] 50 symbols ... 50 returned  (40 with greeks)
+  [batch 38/38] 2 symbols ... 2 returned  (0 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     1852
+  rows written:           1852
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/META_dte_ladder_20260427_232530.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  0    2026-04-27  call  670.0     8.23     8.88     —        —        —        
+  0    2026-04-27  put   670.0     0.01     0.02     —        —        —        
+  7    2026-05-04  call  670.0     30.19    31.36    0.6991   0.5739   -1.8755  
+  7    2026-05-04  put   670.0     21.7     22.46    0.7076   -0.4265  -1.8314  
+  11   2026-05-08  call  670.0     33.24    33.31    0.6087   0.5726   -1.3141  
+  11   2026-05-08  put   670.0     23.69    23.73    0.6024   -0.4271  -1.234   
+  32   2026-05-29  call  670.0     39.96    41.15    0.4399   0.5741   -0.5762  
+  32   2026-05-29  put   670.0     28.74    29.52    0.4304   -0.4254  -0.4979  
+[done META] exit=0
+===== MSFT =====
+── config ───────────────────────────────
+  underlying:        MSFT
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  MSFT session 2026-04-27:  O=422.145 H=427.08 L=417.12 C=424.96
+    volume=694644.0  vwap=423.451713
+  live quote:  bid=401.22  ask=0.0  mid≈200.61
+
+── discovering contracts ────────────────
+  1722 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  322 contracts
+    DTE   7:  254 contracts
+    DTE  14:  240 contracts
+    DTE  30:  110 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/19] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 2/19] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 3/19] 50 symbols ... 50 returned  (6 with greeks)
+  [batch 4/19] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 5/19] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 6/19] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 7/19] 50 symbols ... 50 returned  (28 with greeks)
+  [batch 8/19] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 9/19] 50 symbols ... 50 returned  (49 with greeks)
+  [batch 10/19] 50 symbols ... 50 returned  (48 with greeks)
+  [batch 11/19] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 12/19] 50 symbols ... 50 returned  (40 with greeks)
+  [batch 13/19] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 14/19] 50 symbols ... 50 returned  (45 with greeks)
+  [batch 15/19] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 16/19] 50 symbols ... 50 returned  (48 with greeks)
+  [batch 17/19] 50 symbols ... 50 returned  (43 with greeks)
+  [batch 18/19] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 19/19] 26 symbols ... 26 returned  (26 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     926
+  rows written:           926
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/MSFT_dte_ladder_20260427_232535.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  0    2026-04-27  call  250.0     172.98   174.33   —        —        —        
+  0    2026-04-27  put   250.0     0.0      0.03     —        —        —        
+  9    2026-05-06  call  352.5     72.23    76.06    0.7353   0.9548   -0.2928  
+  9    2026-05-06  put   352.5     0.39     0.53     0.6415   -0.0271  -0.1478  
+  11   2026-05-08  call  270.0     156.05   157.6    —        —        —        
+  11   2026-05-08  put   270.0     0.0      2.17     —        —        —        
+  32   2026-05-29  call  270.0     156.16   159.86   0.9219   0.9651   -0.165   
+  32   2026-05-29  put   270.0     0.01     0.47     0.6702   -0.0081  -0.0287  
+[done MSFT] exit=0
+===== MU =====
+── config ───────────────────────────────
+  underlying:        MU
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  MU session 2026-04-27:  O=510.59 H=531.32 L=510.18 C=524.73
+    volume=651487.0  vwap=521.491444
+  live quote:  bid=495.13  ask=0.0  mid≈247.56
+
+── discovering contracts ────────────────
+  2558 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  438 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  452 contracts
+    DTE  30:  312 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/25] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 2/25] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 3/25] 50 symbols ... 50 returned  (45 with greeks)
+  [batch 4/25] 50 symbols ... 50 returned  (27 with greeks)
+  [batch 5/25] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 6/25] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 7/25] 50 symbols ... 50 returned  (27 with greeks)
+  [batch 8/25] 50 symbols ... 50 returned  (45 with greeks)
+  [batch 9/25] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 10/25] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 11/25] 50 symbols ... 50 returned  (24 with greeks)
+  [batch 12/25] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 13/25] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 14/25] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 15/25] 50 symbols ... 50 returned  (3 with greeks)
+  [batch 16/25] 50 symbols ... 50 returned  (49 with greeks)
+  [batch 17/25] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 18/25] 50 symbols ... 50 returned  (7 with greeks)
+  [batch 19/25] 50 symbols ... 50 returned  (2 with greeks)
+  [batch 20/25] 50 symbols ... 50 returned  (48 with greeks)
+  [batch 21/25] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 22/25] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 23/25] 50 symbols ... 50 returned  (45 with greeks)
+  [batch 24/25] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 25/25] 2 symbols ... 2 returned  (0 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     1202
+  rows written:           1202
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/MU_dte_ladder_20260427_232539.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  250.0     270.57   274.36   —        —        —        
+  4    2026-05-01  put   250.0     0.0      0.01     —        —        —        
+  11   2026-05-08  call  250.0     270.74   272.24   —        —        —        
+  11   2026-05-08  put   250.0     0.07     0.17     —        —        —        
+  32   2026-05-29  call  250.0     275.2    276.97   —        —        —        
+  32   2026-05-29  put   250.0     0.59     0.82     —        —        —        
+[done MU] exit=0
+===== NVDA =====
+── config ───────────────────────────────
+  underlying:        NVDA
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  NVDA session 2026-04-27:  O=209.61 H=216.82 L=207.395 C=216.54
+    volume=5.989408e6  vwap=213.019484
+  live quote:  bid=216.42  ask=223.0  mid≈219.71
+
+── discovering contracts ────────────────
+  1824 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  330 contracts
+    DTE   7:  160 contracts
+    DTE  14:  200 contracts
+    DTE  30:  122 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/17] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 2/17] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 3/17] 50 symbols ... 50 returned  (15 with greeks)
+  [batch 4/17] 50 symbols ... 50 returned  (21 with greeks)
+  [batch 5/17] 50 symbols ... 50 returned  (16 with greeks)
+  [batch 6/17] 50 symbols ... 50 returned  (15 with greeks)
+  [batch 7/17] 50 symbols ... 50 returned  (11 with greeks)
+  [batch 8/17] 50 symbols ... 50 returned  (32 with greeks)
+  [batch 9/17] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 10/17] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 11/17] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 12/17] 50 symbols ... 50 returned  (21 with greeks)
+  [batch 13/17] 50 symbols ... 50 returned  (21 with greeks)
+  [batch 14/17] 50 symbols ... 50 returned  (35 with greeks)
+  [batch 15/17] 50 symbols ... 50 returned  (32 with greeks)
+  [batch 16/17] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 17/17] 12 symbols ... 12 returned  (10 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     812
+  rows written:           812
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/NVDA_dte_ladder_20260427_232543.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  0    2026-04-27  call  220.0     0.0      0.01     —        —        —        
+  0    2026-04-27  put   220.0     2.85     3.58     —        —        —        
+  7    2026-05-04  call  220.0     3.68     3.87     0.3586   0.4664   -0.3181  
+  7    2026-05-04  put   220.0     7.07     7.17     0.5375   -0.5142  -0.4516  
+  11   2026-05-08  call  220.0     5.08     5.16     0.3724   0.4819   -0.2661  
+  11   2026-05-08  put   220.0     8.23     8.34     0.5088   -0.505   -0.3384  
+  32   2026-05-29  call  220.0     9.91     10.37    0.4045   0.5142   -0.1733  
+  32   2026-05-29  put   220.0     12.93    13.17    0.4925   -0.4789  -0.1867  
+[done NVDA] exit=0
+===== QCOM =====
+── config ───────────────────────────────
+  underlying:        QCOM
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  QCOM session 2026-04-27:  O=156.255 H=160.84 L=147.09 C=150.31
+    volume=836067.0  vwap=152.261556
+  live quote:  bid=142.22  ask=158.06  mid≈150.14
+
+── discovering contracts ────────────────
+  920 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  140 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  136 contracts
+    DTE  30:  126 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/9] 50 symbols ... 50 returned  (17 with greeks)
+  [batch 2/9] 50 symbols ... 50 returned  (11 with greeks)
+  [batch 3/9] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 4/9] 50 symbols ... 50 returned  (32 with greeks)
+  [batch 5/9] 50 symbols ... 50 returned  (27 with greeks)
+  [batch 6/9] 50 symbols ... 50 returned  (24 with greeks)
+  [batch 7/9] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 8/9] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 9/9] 2 symbols ... 2 returned  (2 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     402
+  rows written:           402
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/QCOM_dte_ladder_20260427_232547.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  150.0     6.45     6.97     0.9816   0.5477   -0.7758  
+  4    2026-05-01  put   150.0     6.34     6.65     1.1165   -0.4528  -0.8665  
+  11   2026-05-08  call  150.0     7.31     7.68     0.6625   0.5497   -0.32    
+  11   2026-05-08  put   150.0     6.92     7.37     0.7409   -0.4505  -0.342   
+  32   2026-05-29  call  150.0     9.07     10.31    0.5037   0.5559   -0.1464  
+  32   2026-05-29  put   150.0     8.56     9.77     0.5576   -0.4435  -0.1463  
+[done QCOM] exit=0
+===== ABBV =====
+── config ───────────────────────────────
+  underlying:        ABBV
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  ABBV session 2026-04-27:  O=197.5 H=201.42 L=196.57 C=197.37
+    volume=319131.0  vwap=198.707188
+  live quote:  bid=187.19  ask=207.9  mid≈197.54
+
+── discovering contracts ────────────────
+  674 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  106 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  106 contracts
+    DTE  30:   78 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/6] 50 symbols ... 50 returned  (26 with greeks)
+  [batch 2/6] 50 symbols ... 50 returned  (25 with greeks)
+  [batch 3/6] 50 symbols ... 50 returned  (27 with greeks)
+  [batch 4/6] 50 symbols ... 50 returned  (25 with greeks)
+  [batch 5/6] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 6/6] 40 symbols ... 40 returned  (26 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     290
+  rows written:           290
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/ABBV_dte_ladder_20260427_232551.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  197.5     4.57     5.12     0.5903   0.511    -0.6176  
+  4    2026-05-01  put   197.5     4.83     5.26     0.6095   -0.4886  -0.6177  
+  11   2026-05-08  call  197.5     5.53     6.05     0.4202   0.5172   -0.2705  
+  11   2026-05-08  put   197.5     5.52     5.88     0.4207   -0.4828  -0.2511  
+  32   2026-05-29  call  200.0     6.58     8.07     0.3535   0.4828   -0.1374  
+  32   2026-05-29  put   200.0     8.31     9.8      0.3426   -0.5191  -0.1135  
+[done ABBV] exit=0
+===== AMGN =====
+── config ───────────────────────────────
+  underlying:        AMGN
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  AMGN session 2026-04-27:  O=343.1 H=347.85 L=339.98 C=340.25
+    volume=93336.0  vwap=342.548851
+  live quote:  bid=324.91  ask=361.45  mid≈343.18
+
+── discovering contracts ────────────────
+  1020 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  154 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  156 contracts
+    DTE  30:  108 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/9] 50 symbols ... 50 returned  (24 with greeks)
+  [batch 2/9] 50 symbols ... 50 returned  (5 with greeks)
+  [batch 3/9] 50 symbols ... 50 returned  (38 with greeks)
+  [batch 4/9] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 5/9] 50 symbols ... 50 returned  (9 with greeks)
+  [batch 6/9] 50 symbols ... 50 returned  (39 with greeks)
+  [batch 7/9] 50 symbols ... 50 returned  (27 with greeks)
+  [batch 8/9] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 9/9] 18 symbols ... 18 returned  (18 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     418
+  rows written:           418
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/AMGN_dte_ladder_20260427_232554.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  342.5     6.78     7.58     0.5497   0.4838   -0.9935  
+  4    2026-05-01  put   342.5     8.82     9.8      0.6035   -0.5126  -1.0555  
+  11   2026-05-08  call  342.5     7.12     9.07     0.3656   0.492    -0.4082  
+  11   2026-05-08  put   342.5     9.92     11.09    0.42     -0.5035  -0.4327  
+  32   2026-05-29  call  345.0     8.07     11.92    0.2816   0.4761   -0.1921  
+  32   2026-05-29  put   345.0     14.88    16.76    0.3542   -0.5113  -0.2039  
+[done AMGN] exit=0
+===== BMY =====
+── config ───────────────────────────────
+  underlying:        BMY
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  BMY session 2026-04-27:  O=58.25 H=59.09 L=57.72 C=57.78
+    volume=497396.0  vwap=58.191228
+  live quote:  bid=55.49  ask=60.75  mid≈58.12
+
+── discovering contracts ────────────────
+  476 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:   64 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:   64 contracts
+    DTE  30:   58 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/4] 50 symbols ... 50 returned  (27 with greeks)
+  [batch 2/4] 50 symbols ... 50 returned  (21 with greeks)
+  [batch 3/4] 50 symbols ... 50 returned  (31 with greeks)
+  [batch 4/4] 36 symbols ... 36 returned  (15 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     186
+  rows written:           186
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/BMY_dte_ladder_20260427_232558.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  58.0      1.24     1.46     0.5984   0.4908   -0.1832  
+  4    2026-05-01  put   58.0      1.42     1.67     0.5977   -0.5092  -0.1771  
+  11   2026-05-08  call  58.0      1.53     1.59     0.4086   0.4989   -0.077   
+  11   2026-05-08  put   58.0      1.57     1.74     0.3933   -0.5022  -0.0685  
+  32   2026-05-29  call  58.0      2.04     2.5      0.3352   0.5173   -0.0385  
+  32   2026-05-29  put   58.0      2.0      2.34     0.3154   -0.484   -0.0306  
+[done BMY] exit=0
+===== JNJ =====
+── config ───────────────────────────────
+  underlying:        JNJ
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  JNJ session 2026-04-27:  O=225.445 H=227.875 L=224.66 C=225.28
+    volume=329407.0  vwap=225.903899
+  live quote:  bid=214.73  ask=238.25  mid≈226.49
+
+── discovering contracts ────────────────
+  702 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  102 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  102 contracts
+    DTE  30:   78 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/6] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 2/6] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 3/6] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 4/6] 50 symbols ... 50 returned  (27 with greeks)
+  [batch 5/6] 50 symbols ... 50 returned  (16 with greeks)
+  [batch 6/6] 32 symbols ... 32 returned  (25 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     282
+  rows written:           282
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/JNJ_dte_ladder_20260427_232602.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  227.5     1.37     1.96     0.2717   0.3793   -0.3132  
+  4    2026-05-01  put   227.5     3.57     4.0      0.2773   -0.6181  -0.2975  
+  11   2026-05-08  call  227.5     2.64     3.69     0.2584   0.4341   -0.1902  
+  11   2026-05-08  put   227.5     4.52     6.09     0.2732   -0.5613  -0.1784  
+  32   2026-05-29  call  225.0     5.8      7.12     0.2228   0.5415   -0.1037  
+  32   2026-05-29  put   225.0     5.48     7.02     0.2548   -0.4602  -0.0945  
+[done JNJ] exit=0
+===== LLY =====
+── config ───────────────────────────────
+  underlying:        LLY
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  LLY session 2026-04-27:  O=873.915 H=891.05 L=868.08 C=868.24
+    volume=70525.0  vwap=877.324139
+  live quote:  bid=835.05  ask=927.15  mid≈881.1
+
+── discovering contracts ────────────────
+  1778 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  284 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  266 contracts
+    DTE  30:  222 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/16] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 2/16] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 3/16] 50 symbols ... 50 returned  (5 with greeks)
+  [batch 4/16] 50 symbols ... 50 returned  (42 with greeks)
+  [batch 5/16] 50 symbols ... 50 returned  (40 with greeks)
+  [batch 6/16] 50 symbols ... 50 returned  (6 with greeks)
+  [batch 7/16] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 8/16] 50 symbols ... 50 returned  (41 with greeks)
+  [batch 9/16] 50 symbols ... 50 returned  (24 with greeks)
+  [batch 10/16] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 11/16] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 12/16] 50 symbols ... 50 returned  (42 with greeks)
+  [batch 13/16] 50 symbols ... 50 returned  (39 with greeks)
+  [batch 14/16] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 15/16] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 16/16] 22 symbols ... 22 returned  (20 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     772
+  rows written:           772
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/LLY_dte_ladder_20260427_232605.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  880.0     22.67    25.08    0.7774   0.4628   -3.5533  
+  4    2026-05-01  put   880.0     33.9     36.02    0.8198   -0.5336  -3.6607  
+  11   2026-05-08  call  880.0     30.04    33.28    0.5938   0.481    -1.6632  
+  11   2026-05-08  put   880.0     37.07    42.56    0.5808   -0.5203  -1.5399  
+  32   2026-05-29  call  880.0     41.33    43.82    0.4464   0.5019   -0.7562  
+  32   2026-05-29  put   880.0     46.73    53.57    0.4511   -0.4976  -0.6762  
+[done LLY] exit=0
+===== MRNA =====
+── config ───────────────────────────────
+  underlying:        MRNA
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  MRNA session 2026-04-27:  O=50.515 H=51.1 L=48.26 C=48.71
+    volume=210970.0  vwap=49.173351
+  live quote:  bid=45.88  ask=51.27  mid≈48.58
+
+── discovering contracts ────────────────
+  748 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  108 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  106 contracts
+    DTE  30:   66 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/6] 50 symbols ... 50 returned  (25 with greeks)
+  [batch 2/6] 50 symbols ... 50 returned  (25 with greeks)
+  [batch 3/6] 50 symbols ... 50 returned  (31 with greeks)
+  [batch 4/6] 50 symbols ... 50 returned  (36 with greeks)
+  [batch 5/6] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 6/6] 30 symbols ... 30 returned  (30 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     280
+  rows written:           280
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/MRNA_dte_ladder_20260427_232609.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  48.5      2.28     2.43     1.069    0.5484   -0.273   
+  4    2026-05-01  put   48.5      2.1      2.19     1.1421   -0.4517  -0.2866  
+  11   2026-05-08  call  48.5      2.85     3.48     0.881    0.5514   -0.1367  
+  11   2026-05-08  put   48.5      2.57     3.22     0.9173   -0.4482  -0.1374  
+  32   2026-05-29  call  49.0      3.73     4.23     0.6915   0.5406   -0.0642  
+  32   2026-05-29  put   49.0      3.86     4.51     0.7263   -0.4574  -0.0625  
+[done MRNA] exit=0
+===== PFE =====
+── config ───────────────────────────────
+  underlying:        PFE
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  PFE session 2026-04-27:  O=26.94 H=27.345 L=26.8 C=26.81
+    volume=1.219505e6  vwap=26.970924
+  live quote:  bid=25.65  ask=0.0  mid≈12.82
+
+── discovering contracts ────────────────
+  416 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:   70 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:   70 contracts
+    DTE  30:   46 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/4] 50 symbols ... 50 returned  (14 with greeks)
+  [batch 2/4] 50 symbols ... 50 returned  (26 with greeks)
+  [batch 3/4] 50 symbols ... 50 returned  (26 with greeks)
+  [batch 4/4] 36 symbols ... 36 returned  (20 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     186
+  rows written:           186
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/PFE_dte_ladder_20260427_232613.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  15.0      11.14    11.75    —        —        —        
+  4    2026-05-01  put   15.0      0.0      0.01     —        —        —        
+  11   2026-05-08  call  15.0      11.79    12.38    —        —        —        
+  11   2026-05-08  put   15.0      0.0      0.03     —        —        —        
+  32   2026-05-29  call  15.0      9.94     13.97    —        —        —        
+  32   2026-05-29  put   15.0      0.0      2.49     —        —        —        
+[done PFE] exit=0
+===== UNH =====
+── config ───────────────────────────────
+  underlying:        UNH
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  UNH session 2026-04-27:  O=354.195 H=356.35 L=349.07 C=354.69
+    volume=289936.0  vwap=352.467847
+  live quote:  bid=335.83  ask=372.23  mid≈354.03
+
+── discovering contracts ────────────────
+  1092 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  172 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  158 contracts
+    DTE  30:  112 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/9] 50 symbols ... 50 returned  (10 with greeks)
+  [batch 2/9] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 3/9] 50 symbols ... 50 returned  (21 with greeks)
+  [batch 4/9] 50 symbols ... 50 returned  (11 with greeks)
+  [batch 5/9] 50 symbols ... 50 returned  (42 with greeks)
+  [batch 6/9] 50 symbols ... 50 returned  (15 with greeks)
+  [batch 7/9] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 8/9] 50 symbols ... 50 returned  (36 with greeks)
+  [batch 9/9] 42 symbols ... 42 returned  (32 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     442
+  rows written:           442
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/UNH_dte_ladder_20260427_232617.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  355.0     4.72     4.93     0.3637   0.4736   -0.6863  
+  4    2026-05-01  put   355.0     4.81     5.22     0.2984   -0.5352  -0.5296  
+  11   2026-05-08  call  355.0     7.02     7.67     0.3176   0.4925   -0.3702  
+  11   2026-05-08  put   355.0     6.87     7.52     0.2745   -0.5119  -0.2868  
+  32   2026-05-29  call  355.0     12.27    13.8     0.3139   0.5166   -0.2217  
+  32   2026-05-29  put   355.0     10.91    12.47    0.2779   -0.4858  -0.163   
+[done UNH] exit=0
+===== BAC =====
+── config ───────────────────────────────
+  underlying:        BAC
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  BAC session 2026-04-27:  O=52.11 H=52.91 L=52.05 C=52.64
+    volume=1.39114e6  vwap=52.622056
+  live quote:  bid=49.22  ask=0.0  mid≈24.61
+
+── discovering contracts ────────────────
+  476 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:   76 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:   74 contracts
+    DTE  30:   58 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/5] 50 symbols ... 50 returned  (16 with greeks)
+  [batch 2/5] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 3/5] 50 symbols ... 50 returned  (31 with greeks)
+  [batch 4/5] 50 symbols ... 50 returned  (37 with greeks)
+  [batch 5/5] 8 symbols ... 8 returned  (6 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     208
+  rows written:           208
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/BAC_dte_ladder_20260427_232621.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  30.0      22.42    23.28    —        —        —        
+  4    2026-05-01  put   30.0      0.0      0.04     —        —        —        
+  11   2026-05-08  call  30.0      22.13    23.73    —        —        —        
+  11   2026-05-08  put   30.0      0.0      0.01     —        —        —        
+  32   2026-05-29  call  30.0      20.93    23.96    —        —        —        
+  32   2026-05-29  put   30.0      0.0      0.07     —        —        —        
+[done BAC] exit=0
+===== GS =====
+── config ───────────────────────────────
+  underlying:        GS
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  GS session 2026-04-27:  O=930.93 H=940.29 L=927.375 C=937.79
+    volume=36626.0  vwap=934.431078
+  live quote:  bid=910.0  ask=0.0  mid≈455.0
+
+── discovering contracts ────────────────
+  2040 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  250 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  248 contracts
+    DTE  30:  224 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/15] 50 symbols ... 50 returned  (3 with greeks)
+  [batch 2/15] 50 symbols ... 50 returned  (46 with greeks)
+  [batch 3/15] 50 symbols ... 50 returned  (10 with greeks)
+  [batch 4/15] 50 symbols ... 50 returned  (25 with greeks)
+  [batch 5/15] 50 symbols ... 50 returned  (40 with greeks)
+  [batch 6/15] 50 symbols ... 50 returned  (10 with greeks)
+  [batch 7/15] 50 symbols ... 50 returned  (48 with greeks)
+  [batch 8/15] 50 symbols ... 50 returned  (10 with greeks)
+  [batch 9/15] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 10/15] 50 symbols ... 50 returned  (43 with greeks)
+  [batch 11/15] 50 symbols ... 50 returned  (28 with greeks)
+  [batch 12/15] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 13/15] 50 symbols ... 50 returned  (11 with greeks)
+  [batch 14/15] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 15/15] 22 symbols ... 22 returned  (22 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     722
+  rows written:           722
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/GS_dte_ladder_20260427_232624.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  480.0     462.03   468.04   —        —        —        
+  4    2026-05-01  put   480.0     0.0      0.07     —        —        —        
+  11   2026-05-08  call  480.0     449.92   453.64   —        —        —        
+  11   2026-05-08  put   480.0     0.0      4.35     —        —        —        
+  32   2026-05-29  call  480.0     457.57   464.92   —        —        —        
+  32   2026-05-29  put   480.0     0.0      4.28     —        —        —        
+[done GS] exit=0
+===== JPM =====
+── config ───────────────────────────────
+  underlying:        JPM
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  JPM session 2026-04-27:  O=307.36 H=312.57 L=307.36 C=311.7
+    volume=162357.0  vwap=311.127029
+  live quote:  bid=290.72  ask=0.0  mid≈145.36
+
+── discovering contracts ────────────────
+  936 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  124 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  122 contracts
+    DTE  30:   94 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/7] 50 symbols ... 50 returned  (24 with greeks)
+  [batch 2/7] 50 symbols ... 50 returned  (17 with greeks)
+  [batch 3/7] 50 symbols ... 50 returned  (25 with greeks)
+  [batch 4/7] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 5/7] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 6/7] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 7/7] 40 symbols ... 40 returned  (30 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     340
+  rows written:           340
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/JPM_dte_ladder_20260427_232628.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  165.0     145.31   147.29   —        —        —        
+  4    2026-05-01  put   165.0     0.0      0.03     —        —        —        
+  11   2026-05-08  call  165.0     143.69   149.78   —        —        —        
+  11   2026-05-08  put   165.0     0.0      0.66     —        —        —        
+  32   2026-05-29  call  165.0     143.86   146.43   —        —        —        
+  32   2026-05-29  put   165.0     0.0      2.17     —        —        —        
+[done JPM] exit=0
+===== WFC =====
+── config ───────────────────────────────
+  underlying:        WFC
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  WFC session 2026-04-27:  O=79.365 H=80.88 L=79.34 C=80.59
+    volume=963411.0  vwap=80.380376
+  live quote:  bid=76.72  ask=83.39  mid≈80.06
+
+── discovering contracts ────────────────
+  624 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:   86 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:   78 contracts
+    DTE  30:   74 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/5] 50 symbols ... 50 returned  (16 with greeks)
+  [batch 2/5] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 3/5] 50 symbols ... 50 returned  (32 with greeks)
+  [batch 4/5] 50 symbols ... 50 returned  (42 with greeks)
+  [batch 5/5] 38 symbols ... 38 returned  (34 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     238
+  rows written:           238
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/WFC_dte_ladder_20260427_232632.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  80.0      1.42     1.64     0.3754   0.5722   -0.1595  
+  4    2026-05-01  put   80.0      0.82     0.87     0.3229   -0.4185  -0.1294  
+  11   2026-05-08  call  80.0      1.96     2.09     0.3109   0.5628   -0.0821  
+  11   2026-05-08  put   80.0      1.48     1.56     0.3222   -0.4386  -0.077   
+  32   2026-05-29  call  80.0      2.9      3.07     0.2749   0.561    -0.0446  
+  32   2026-05-29  put   80.0      2.23     2.63     0.2941   -0.4408  -0.0394  
+[done WFC] exit=0
+===== CVX =====
+── config ───────────────────────────────
+  underlying:        CVX
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  CVX session 2026-04-27:  O=186.125 H=187.9 L=183.68 C=184.85
+    volume=462025.0  vwap=185.237803
+  live quote:  bid=176.63  ask=195.65  mid≈186.14
+
+── discovering contracts ────────────────
+  626 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:   94 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:   94 contracts
+    DTE  30:   70 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/6] 50 symbols ... 50 returned  (26 with greeks)
+  [batch 2/6] 50 symbols ... 50 returned  (17 with greeks)
+  [batch 3/6] 50 symbols ... 50 returned  (31 with greeks)
+  [batch 4/6] 50 symbols ... 50 returned  (31 with greeks)
+  [batch 5/6] 50 symbols ... 50 returned  (31 with greeks)
+  [batch 6/6] 8 symbols ... 8 returned  (8 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     258
+  rows written:           258
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/CVX_dte_ladder_20260427_232635.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  185.0     3.28     3.57     0.4505   0.5045   -0.4436  
+  4    2026-05-01  put   185.0     3.25     3.58     0.4354   -0.4959  -0.4106  
+  11   2026-05-08  call  185.0     4.47     4.93     0.3664   0.5134   -0.222   
+  11   2026-05-08  put   185.0     4.22     4.74     0.351    -0.4871  -0.1947  
+  32   2026-05-29  call  185.0     5.82     6.77     0.2792   0.5272   -0.1041  
+  32   2026-05-29  put   185.0     6.83     7.76     0.344    -0.471   -0.1076  
+[done CVX] exit=0
+===== OXY =====
+── config ───────────────────────────────
+  underlying:        OXY
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  OXY session 2026-04-27:  O=57.355 H=58.0 L=56.97 C=57.27
+    volume=349753.0  vwap=57.410122
+  live quote:  bid=54.24  ask=60.34  mid≈57.29
+
+── discovering contracts ────────────────
+  572 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:   82 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:   84 contracts
+    DTE  30:   76 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/5] 50 symbols ... 50 returned  (17 with greeks)
+  [batch 2/5] 50 symbols ... 50 returned  (26 with greeks)
+  [batch 3/5] 50 symbols ... 50 returned  (31 with greeks)
+  [batch 4/5] 50 symbols ... 50 returned  (38 with greeks)
+  [batch 5/5] 42 symbols ... 42 returned  (34 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     242
+  rows written:           242
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/OXY_dte_ladder_20260427_232639.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  57.0      1.23     1.26     0.458    0.5521   -0.1388  
+  4    2026-05-01  put   57.0      0.95     0.96     0.4591   -0.448   -0.1334  
+  11   2026-05-08  call  57.0      2.13     2.16     0.4994   0.544    -0.0924  
+  11   2026-05-08  put   57.0      1.82     1.88     0.5089   -0.4562  -0.0884  
+  32   2026-05-29  call  57.0      2.9      3.22     0.42     0.5501   -0.0469  
+  32   2026-05-29  put   57.0      2.31     2.69     0.4039   -0.4499  -0.0395  
+[done OXY] exit=0
+===== XOM =====
+── config ───────────────────────────────
+  underlying:        XOM
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  XOM session 2026-04-27:  O=149.155 H=151.165 L=147.98 C=148.15
+    volume=589206.0  vwap=149.076903
+  live quote:  bid=141.36  ask=0.0  mid≈70.68
+
+── discovering contracts ────────────────
+  682 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  130 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  120 contracts
+    DTE  30:   62 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/7] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 2/7] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 3/7] 50 symbols ... 50 returned  (16 with greeks)
+  [batch 4/7] 50 symbols ... 50 returned  (24 with greeks)
+  [batch 5/7] 50 symbols ... 50 returned  (32 with greeks)
+  [batch 6/7] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 7/7] 12 symbols ... 12 returned  (12 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     312
+  rows written:           312
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/XOM_dte_ladder_20260427_232643.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  80.0      67.94    68.79    —        —        —        
+  4    2026-05-01  put   80.0      0.0      0.03     —        —        —        
+  11   2026-05-08  call  80.0      67.97    71.13    —        —        —        
+  11   2026-05-08  put   80.0      0.0      0.03     —        —        —        
+  32   2026-05-29  call  80.0      65.86    71.2     —        —        —        
+  32   2026-05-29  put   80.0      0.0      2.11     —        —        —        
+[done XOM] exit=0
+===== TGT =====
+── config ───────────────────────────────
+  underlying:        TGT
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  TGT session 2026-04-27:  O=129.505 H=130.74 L=127.58 C=129.725
+    volume=240042.0  vwap=129.539617
+  live quote:  bid=122.55  ask=0.0  mid≈61.28
+
+── discovering contracts ────────────────
+  772 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  116 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  120 contracts
+    DTE  30:  106 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/7] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 2/7] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 3/7] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 4/7] 50 symbols ... 50 returned  (22 with greeks)
+  [batch 5/7] 50 symbols ... 50 returned  (41 with greeks)
+  [batch 6/7] 50 symbols ... 50 returned  (39 with greeks)
+  [batch 7/7] 42 symbols ... 42 returned  (42 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     342
+  rows written:           342
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/TGT_dte_ladder_20260427_232646.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  65.0      64.51    66.1     —        —        —        
+  4    2026-05-01  put   65.0      0.0      0.01     —        —        —        
+  11   2026-05-08  call  65.0      64.19    66.03    —        —        —        
+  11   2026-05-08  put   65.0      0.0      0.5      —        —        —        
+  32   2026-05-29  call  65.0      61.53    66.75    —        —        —        
+  32   2026-05-29  put   65.0      0.0      0.77     —        —        —        
+[done TGT] exit=0
+===== UPS =====
+── config ───────────────────────────────
+  underlying:        UPS
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  UPS session 2026-04-27:  O=107.61 H=108.52 L=107.18 C=108.19
+    volume=257229.0  vwap=107.932557
+  live quote:  bid=101.56  ask=112.88  mid≈107.22
+
+── discovering contracts ────────────────
+  692 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  104 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  108 contracts
+    DTE  30:   92 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/7] 50 symbols ... 50 returned  (32 with greeks)
+  [batch 2/7] 50 symbols ... 50 returned  (35 with greeks)
+  [batch 3/7] 50 symbols ... 50 returned  (35 with greeks)
+  [batch 4/7] 50 symbols ... 50 returned  (38 with greeks)
+  [batch 5/7] 50 symbols ... 50 returned  (37 with greeks)
+  [batch 6/7] 50 symbols ... 50 returned  (42 with greeks)
+  [batch 7/7] 4 symbols ... 4 returned  (4 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     304
+  rows written:           304
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/UPS_dte_ladder_20260427_232650.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  107.0     4.27     4.57     0.827    0.5739   -0.4652  
+  4    2026-05-01  put   107.0     2.87     3.17     0.8118   -0.4254  -0.446   
+  11   2026-05-08  call  107.0     4.57     5.54     0.5794   0.5716   -0.2     
+  11   2026-05-08  put   107.0     3.18     3.77     0.5559   -0.4271  -0.1814  
+  32   2026-05-29  call  107.0     5.24     5.8      0.3672   0.5769   -0.0777  
+  32   2026-05-29  put   107.0     4.32     5.34     0.442    -0.428   -0.0818  
+[done UPS] exit=0
+===== WMT =====
+── config ───────────────────────────────
+  underlying:        WMT
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  WMT session 2026-04-27:  O=129.72 H=129.73 L=127.41 C=127.61
+    volume=374375.0  vwap=128.312652
+  live quote:  bid=122.61  ask=133.87  mid≈128.24
+
+── discovering contracts ────────────────
+  728 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  102 contracts
+    DTE   7:    0 contracts   <empty>
+    DTE  14:  100 contracts
+    DTE  30:   98 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/6] 50 symbols ... 50 returned  (28 with greeks)
+  [batch 2/6] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 3/6] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 4/6] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 5/6] 50 symbols ... 50 returned  (43 with greeks)
+  [batch 6/6] 50 symbols ... 50 returned  (42 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     300
+  rows written:           300
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/WMT_dte_ladder_20260427_232654.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  4    2026-05-01  call  128.0     1.37     1.42     0.2909   0.4727   -0.1992  
+  4    2026-05-01  put   128.0     1.69     1.76     0.2917   -0.5272  -0.187   
+  11   2026-05-08  call  128.0     2.08     2.31     0.2613   0.4927   -0.111   
+  11   2026-05-08  put   128.0     2.53     2.64     0.2786   -0.5057  -0.1052  
+  32   2026-05-29  call  128.0     4.55     5.32     0.3265   0.5203   -0.0829  
+  32   2026-05-29  put   128.0     4.5      5.22     0.3236   -0.4799  -0.0695  
+[done WMT] exit=0
+===== IWM =====
+── config ───────────────────────────────
+  underlying:        IWM
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  IWM session 2026-04-27:  O=276.86 H=278.23 L=276.25 C=277.1
+    volume=801245.0  vwap=276.95763
+  live quote:  bid=277.13  ask=277.19  mid≈277.16
+
+── discovering contracts ────────────────
+  2880 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2:  854 contracts
+    DTE   7:  372 contracts
+    DTE  14:  250 contracts
+    DTE  30:  192 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/34] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 2/34] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 3/34] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 4/34] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 5/34] 50 symbols ... 50 returned  (10 with greeks)
+  [batch 6/34] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 7/34] 50 symbols ... 50 returned  (37 with greeks)
+  [batch 8/34] 50 symbols ... 50 returned  (2 with greeks)
+  [batch 9/34] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 10/34] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 11/34] 50 symbols ... 50 returned  (31 with greeks)
+  [batch 12/34] 50 symbols ... 50 returned  (23 with greeks)
+  [batch 13/34] 50 symbols ... 50 returned  (45 with greeks)
+  [batch 14/34] 50 symbols ... 50 returned  (15 with greeks)
+  [batch 15/34] 50 symbols ... 50 returned  (28 with greeks)
+  [batch 16/34] 50 symbols ... 50 returned  (13 with greeks)
+  [batch 17/34] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 18/34] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 19/34] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 20/34] 50 symbols ... 50 returned  (49 with greeks)
+  [batch 21/34] 50 symbols ... 50 returned  (39 with greeks)
+  [batch 22/34] 50 symbols ... 50 returned  (42 with greeks)
+  [batch 23/34] 50 symbols ... 50 returned  (45 with greeks)
+  [batch 24/34] 50 symbols ... 50 returned  (44 with greeks)
+  [batch 25/34] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 26/34] 50 symbols ... 50 returned  (35 with greeks)
+  [batch 27/34] 50 symbols ... 50 returned  (36 with greeks)
+  [batch 28/34] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 29/34] 50 symbols ... 50 returned  (45 with greeks)
+  [batch 30/34] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 31/34] 50 symbols ... 50 returned  (48 with greeks)
+  [batch 32/34] 50 symbols ... 50 returned  (46 with greeks)
+  [batch 33/34] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 34/34] 18 symbols ... 18 returned  (18 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     1668
+  rows written:           1668
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/IWM_dte_ladder_20260427_232658.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  0    2026-04-27  call  277.0     0.28     0.29     —        —        —        
+  0    2026-04-27  put   277.0     0.21     0.23     —        —        —        
+  7    2026-05-04  call  277.0     3.26     3.39     0.1894   0.5497   -0.2207  
+  7    2026-05-04  put   277.0     3.06     3.12     0.2273   -0.4566  -0.2346  
+  11   2026-05-08  call  277.0     4.52     4.61     0.2129   0.5432   -0.1996  
+  11   2026-05-08  put   277.0     4.09     4.2      0.2392   -0.4598  -0.1949  
+  32   2026-05-29  call  277.0     7.62     7.89     0.2134   0.5468   -0.123   
+  32   2026-05-29  put   277.0     6.67     6.98     0.231    -0.4548  -0.1043  
+[done IWM] exit=0
+===== QQQ =====
+── config ───────────────────────────────
+  underlying:        QQQ
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  QQQ session 2026-04-27:  O=663.36 H=664.43 L=660.71 C=664.28
+    volume=675009.0  vwap=662.869956
+  live quote:  bid=663.64  ask=663.71  mid≈663.68
+
+── discovering contracts ────────────────
+  5396 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2: 1588 contracts
+    DTE   7:  396 contracts
+    DTE  14:  548 contracts
+    DTE  30:  362 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/58] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 2/58] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 3/58] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 4/58] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 5/58] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 6/58] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 7/58] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 8/58] 50 symbols ... 50 returned  (7 with greeks)
+  [batch 9/58] 50 symbols ... 50 returned  (13 with greeks)
+  [batch 10/58] 50 symbols ... 50 returned  (12 with greeks)
+  [batch 11/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 12/58] 50 symbols ... 50 returned  (20 with greeks)
+  [batch 13/58] 50 symbols ... 50 returned  (1 with greeks)
+  [batch 14/58] 50 symbols ... 50 returned  (29 with greeks)
+  [batch 15/58] 50 symbols ... 50 returned  (7 with greeks)
+  [batch 16/58] 50 symbols ... 50 returned  (46 with greeks)
+  [batch 17/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 18/58] 50 symbols ... 50 returned  (9 with greeks)
+  [batch 19/58] 50 symbols ... 50 returned  (1 with greeks)
+  [batch 20/58] 50 symbols ... 50 returned  (28 with greeks)
+  [batch 21/58] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 22/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 23/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 24/58] 50 symbols ... 50 returned  (24 with greeks)
+  [batch 25/58] 50 symbols ... 50 returned  (7 with greeks)
+  [batch 26/58] 50 symbols ... 50 returned  (3 with greeks)
+  [batch 27/58] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 28/58] 50 symbols ... 50 returned  (12 with greeks)
+  [batch 29/58] 50 symbols ... 50 returned  (22 with greeks)
+  [batch 30/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 31/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 32/58] 50 symbols ... 50 returned  (28 with greeks)
+  [batch 33/58] 50 symbols ... 50 returned  (7 with greeks)
+  [batch 34/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 35/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 36/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 37/58] 50 symbols ... 50 returned  (37 with greeks)
+  [batch 38/58] 50 symbols ... 50 returned  (39 with greeks)
+  [batch 39/58] 50 symbols ... 50 returned  (42 with greeks)
+  [batch 40/58] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 41/58] 50 symbols ... 50 returned  (8 with greeks)
+  [batch 42/58] 50 symbols ... 50 returned  (11 with greeks)
+  [batch 43/58] 50 symbols ... 50 returned  (8 with greeks)
+  [batch 44/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 45/58] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 46/58] 50 symbols ... 50 returned  (38 with greeks)
+  [batch 47/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 48/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 49/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 50/58] 50 symbols ... 50 returned  (43 with greeks)
+  [batch 51/58] 50 symbols ... 50 returned  (40 with greeks)
+  [batch 52/58] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 53/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 54/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 55/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 56/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 57/58] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 58/58] 44 symbols ... 44 returned  (44 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     2894
+  rows written:           2894
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/QQQ_dte_ladder_20260427_232702.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  0    2026-04-27  call  664.0     0.47     0.49     —        —        —        
+  0    2026-04-27  put   664.0     0.32     0.36     —        —        —        
+  7    2026-05-04  call  664.0     7.94     8.0      0.1916   0.546    -0.535   
+  7    2026-05-04  put   664.0     7.31     7.37     0.2237   -0.459   -0.553   
+  11   2026-05-08  call  664.0     10.55    10.57    0.2063   0.5417   -0.4646  
+  11   2026-05-08  put   664.0     9.22     9.29     0.2229   -0.4603  -0.4332  
+  32   2026-05-29  call  664.0     16.91    17.23    0.1949   0.5474   -0.2723  
+  32   2026-05-29  put   664.0     14.95    15.02    0.2125   -0.4545  -0.2276  
+[done QQQ] exit=0
+===== SPY =====
+── config ───────────────────────────────
+  underlying:        SPY
+  today:             2026-04-27
+  DTE ladder:        [2, 7, 14, 30, 45, 60, 90]
+  tolerance:         ±3 days
+  expiration window: 2026-04-27 → 2026-07-29
+  output dir:        data/options-04-27-26
+
+── preflight ────────────────────────────
+  account: ACTIVE  cash=513.77
+  SPY session 2026-04-27:  O=713.18 H=715.59 L=712.33 C=715.165
+    volume=1.329665e6  vwap=714.312642
+  live quote:  bid=714.84  ask=714.95  mid≈714.9
+
+── discovering contracts ────────────────
+  6038 total contracts in window
+
+  bucket occupancy (target DTE → contracts matched):
+    DTE   2: 1944 contracts
+    DTE   7:  488 contracts
+    DTE  14:  502 contracts
+    DTE  30:  448 contracts
+    DTE  45:    0 contracts   <empty>
+    DTE  60:    0 contracts   <empty>
+    DTE  90:    0 contracts   <empty>
+
+── fetching snapshots ───────────────────
+  [batch 1/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 2/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 3/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 4/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 5/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 6/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 7/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 8/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 9/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 10/68] 50 symbols ... 50 returned  (17 with greeks)
+  [batch 11/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 12/68] 50 symbols ... 50 returned  (14 with greeks)
+  [batch 13/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 14/68] 50 symbols ... 50 returned  (21 with greeks)
+  [batch 15/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 16/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 17/68] 50 symbols ... 50 returned  (33 with greeks)
+  [batch 18/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 19/68] 50 symbols ... 50 returned  (40 with greeks)
+  [batch 20/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 21/68] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 22/68] 50 symbols ... 50 returned  (1 with greeks)
+  [batch 23/68] 50 symbols ... 50 returned  (8 with greeks)
+  [batch 24/68] 50 symbols ... 50 returned  (1 with greeks)
+  [batch 25/68] 50 symbols ... 50 returned  (42 with greeks)
+  [batch 26/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 27/68] 50 symbols ... 50 returned  (18 with greeks)
+  [batch 28/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 29/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 30/68] 50 symbols ... 50 returned  (39 with greeks)
+  [batch 31/68] 50 symbols ... 50 returned  (1 with greeks)
+  [batch 32/68] 50 symbols ... 50 returned  (11 with greeks)
+  [batch 33/68] 50 symbols ... 50 returned  (13 with greeks)
+  [batch 34/68] 50 symbols ... 50 returned  (43 with greeks)
+  [batch 35/68] 50 symbols ... 50 returned  (0 with greeks)
+  [batch 36/68] 50 symbols ... 50 returned  (34 with greeks)
+  [batch 37/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 38/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 39/68] 50 symbols ... 50 returned  (37 with greeks)
+  [batch 40/68] 50 symbols ... 50 returned  (3 with greeks)
+  [batch 41/68] 50 symbols ... 50 returned  (46 with greeks)
+  [batch 42/68] 50 symbols ... 50 returned  (7 with greeks)
+  [batch 43/68] 50 symbols ... 50 returned  (39 with greeks)
+  [batch 44/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 45/68] 50 symbols ... 50 returned  (36 with greeks)
+  [batch 46/68] 50 symbols ... 50 returned  (37 with greeks)
+  [batch 47/68] 50 symbols ... 50 returned  (40 with greeks)
+  [batch 48/68] 50 symbols ... 50 returned  (41 with greeks)
+  [batch 49/68] 50 symbols ... 50 returned  (32 with greeks)
+  [batch 50/68] 50 symbols ... 50 returned  (10 with greeks)
+  [batch 51/68] 50 symbols ... 50 returned  (13 with greeks)
+  [batch 52/68] 50 symbols ... 50 returned  (48 with greeks)
+  [batch 53/68] 50 symbols ... 50 returned  (32 with greeks)
+  [batch 54/68] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 55/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 56/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 57/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 58/68] 50 symbols ... 50 returned  (44 with greeks)
+  [batch 59/68] 50 symbols ... 50 returned  (39 with greeks)
+  [batch 60/68] 50 symbols ... 50 returned  (30 with greeks)
+  [batch 61/68] 50 symbols ... 50 returned  (47 with greeks)
+  [batch 62/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 63/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 64/68] 50 symbols ... 50 returned  (45 with greeks)
+  [batch 65/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 66/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 67/68] 50 symbols ... 50 returned  (50 with greeks)
+  [batch 68/68] 32 symbols ... 32 returned  (32 with greeks)
+
+── summary ──────────────────────────────
+  bucketed contracts:     3382
+  rows written:           3382
+  contracts missing snap: 0
+  wrote: data/options-04-27-26/SPY_dte_ladder_20260427_232708.csv
+
+  sample (one ATM call + put per bucket):
+  dte  exp         type  strike    bid      ask      iv       delta    theta    
+  0    2026-04-27  call  715.0     0.46     0.52     —        —        —        
+  0    2026-04-27  put   715.0     0.33     0.34     —        —        —        
+  7    2026-05-04  call  715.0     6.16     6.18     0.1328   0.5565   -0.4107  
+  7    2026-05-04  put   715.0     5.56     5.57     0.162    -0.4522  -0.4217  
+  11   2026-05-08  call  715.0     8.33     8.36     0.147    0.5494   -0.3674  
+  11   2026-05-08  put   715.0     7.07     7.15     0.1632   -0.4544  -0.3325  
+  32   2026-05-29  call  715.0     14.2     14.34    0.1472   0.5537   -0.231   
+  32   2026-05-29  put   715.0     11.71    11.73    0.1589   -0.4489  -0.1751  
+[done SPY] exit=0
