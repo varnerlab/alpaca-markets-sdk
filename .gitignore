@@ -2,9 +2,11 @@
 conf/apidata.toml
 conf/*.secret.toml
 
-# Generated data output
-/data/
-/logs/
+# Generated data output — DO NOT CHECK IN
+data/
+logs/
+*.csv
+*.parquet
 
 # Julia coverage / allocation tracking
 *.jl.cov
