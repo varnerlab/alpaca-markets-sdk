@@ -3,7 +3,8 @@ conf/apidata.toml
 conf/*.secret.toml
 
 # Generated data output
-# /data/
+/data/
+/logs/
 
 # Julia coverage / allocation tracking
 *.jl.cov
