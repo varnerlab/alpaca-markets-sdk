@@ -75,25 +75,35 @@ end
 """
     Order
 
-A trading order. Returned by [`submit_order`](@ref), [`get_order`](@ref), and
-[`list_orders`](@ref).
+A trading order. Returned by [`submit_order`](@ref), [`submit_multileg_order`](@ref),
+[`get_order`](@ref), and [`list_orders`](@ref).
 
 Selected fields:
 
-- `id`, `client_order_id`, `symbol`, `asset_class`
-- `side` (`"buy"` or `"sell"`), `type`, `time_in_force`, `status`
+- `id`, `client_order_id`
+- `symbol` — `String` for single-leg orders; `nothing` for multi-leg parent orders
+  (Alpaca returns no top-level symbol on an `mleg` parent — each leg has its own)
+- `asset_class`
+- `side` (`"buy"` or `"sell"`) — `nothing` for multi-leg parents (lives on each leg)
+- `type`, `time_in_force`, `status`
+- `order_class` — `""` for simple orders; `"mleg"`, `"bracket"`, `"oco"`, `"oto"` for compound orders
+- `position_intent` — `"buy_to_open"` / `"sell_to_open"` / `"buy_to_close"` / `"sell_to_close"`
+  on option legs; `nothing` otherwise
 - `qty`, `filled_qty`, `limit_price`, `stop_price`, `filled_avg_price`
 - `created_at`, `submitted_at`, `filled_at` (all `DateTime` in UTC, may be `nothing`)
+- `legs` — `Vector{Order}` of child legs on a multi-leg parent; `nothing` otherwise
 - `raw` — the original `JSON3.Object` payload
 """
 struct Order
     id::String
     client_order_id::String
-    symbol::String
+    symbol::Union{String,Nothing}
     asset_class::String
-    side::String
+    side::Union{String,Nothing}
     type::String
     time_in_force::String
+    order_class::String
+    position_intent::Union{String,Nothing}
     qty::Union{Float64,Nothing}
     filled_qty::Float64
     limit_price::Union{Float64,Nothing}
@@ -103,6 +113,7 @@ struct Order
     created_at::Union{DateTime,Nothing}
     submitted_at::Union{DateTime,Nothing}
     filled_at::Union{DateTime,Nothing}
+    legs::Union{Vector{Order},Nothing}
     raw::JSON3.Object
 end
 

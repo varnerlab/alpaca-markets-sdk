@@ -118,3 +118,110 @@ end
     @test log[2].path == "/orders/$(_ORDER_PAYLOAD["id"])"
     @test log[3].method == "DELETE"
 end
+
+const _MLEG_PAYLOAD = Dict(
+    "id"              => "f00dcafe-0000-0000-0000-00000000mleg",
+    "client_order_id" => "client-mleg-1",
+    "asset_class"     => "us_option",
+    "type"            => "limit",
+    "time_in_force"   => "day",
+    "order_class"     => "mleg",
+    "qty"             => "1",
+    "filled_qty"      => "0",
+    "limit_price"     => "-2.00",
+    "stop_price"      => nothing,
+    "filled_avg_price"=> nothing,
+    "status"          => "accepted",
+    "created_at"      => "2026-04-11T14:30:00Z",
+    "submitted_at"    => "2026-04-11T14:30:00Z",
+    "filled_at"       => nothing,
+    # NB: top-level `symbol` and `side` deliberately absent — that is the wire
+    # shape Alpaca returns for an mleg parent.
+    "legs" => [
+        Dict(
+            "id"              => "leg-short-put",
+            "client_order_id" => "client-mleg-1-leg-1",
+            "symbol"          => "SPY250620P00420000",
+            "asset_class"     => "us_option",
+            "side"            => "sell",
+            "type"            => "limit",
+            "time_in_force"   => "day",
+            "order_class"     => "",
+            "position_intent" => "sell_to_open",
+            "qty"             => "1",
+            "filled_qty"      => "0",
+            "limit_price"     => nothing,
+            "stop_price"      => nothing,
+            "filled_avg_price"=> nothing,
+            "status"          => "accepted",
+            "created_at"      => "2026-04-11T14:30:00Z",
+            "submitted_at"    => "2026-04-11T14:30:00Z",
+            "filled_at"       => nothing,
+        ),
+        Dict(
+            "id"              => "leg-long-put",
+            "client_order_id" => "client-mleg-1-leg-2",
+            "symbol"          => "SPY250620P00415000",
+            "asset_class"     => "us_option",
+            "side"            => "buy",
+            "type"            => "limit",
+            "time_in_force"   => "day",
+            "order_class"     => "",
+            "position_intent" => "buy_to_open",
+            "qty"             => "1",
+            "filled_qty"      => "0",
+            "limit_price"     => nothing,
+            "stop_price"      => nothing,
+            "filled_avg_price"=> nothing,
+            "status"          => "accepted",
+            "created_at"      => "2026-04-11T14:30:00Z",
+            "submitted_at"    => "2026-04-11T14:30:00Z",
+            "filled_at"       => nothing,
+        ),
+    ],
+)
+
+@testset "orders: parse mleg parent with two child legs" begin
+    handler = function(_req)
+        return json_response(200, _MLEG_PAYLOAD)
+    end
+
+    with_mock(handler) do client
+        o = get_order(client, _MLEG_PAYLOAD["id"])
+        @test o isa Order
+        @test o.order_class == "mleg"
+        @test o.symbol === nothing
+        @test o.side === nothing
+        @test o.position_intent === nothing
+        @test o.legs !== nothing
+        @test length(o.legs) == 2
+
+        short_leg = o.legs[1]
+        @test short_leg.symbol == "SPY250620P00420000"
+        @test short_leg.side == "sell"
+        @test short_leg.position_intent == "sell_to_open"
+        @test short_leg.order_class == ""
+        @test short_leg.legs === nothing
+        @test short_leg.qty == 1.0
+
+        long_leg = o.legs[2]
+        @test long_leg.symbol == "SPY250620P00415000"
+        @test long_leg.side == "buy"
+        @test long_leg.position_intent == "buy_to_open"
+    end
+end
+
+@testset "orders: simple equity parsing regression" begin
+    handler = function(_req)
+        return json_response(200, _ORDER_PAYLOAD)
+    end
+
+    with_mock(handler) do client
+        o = get_order(client, _ORDER_PAYLOAD["id"])
+        @test o.symbol == "AAPL"
+        @test o.side == "buy"
+        @test o.order_class == ""
+        @test o.position_intent === nothing
+        @test o.legs === nothing
+    end
+end

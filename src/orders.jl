@@ -1,12 +1,23 @@
+_maybe_string(x::Nothing) = nothing
+_maybe_string(x) = String(x)
+
+function _parse_legs(v)
+    v === nothing && return nothing
+    isempty(v)    && return nothing
+    return [_parse_order(leg) for leg in v]
+end
+
 function _parse_order(o::JSON3.Object)
     return Order(
         String(o.id),
         String(get(o, :client_order_id, "")),
-        String(o.symbol),
+        _maybe_string(get(o, :symbol, nothing)),
         String(get(o, :asset_class, "us_equity")),
-        String(o.side),
+        _maybe_string(get(o, :side, nothing)),
         String(o.type),
         String(o.time_in_force),
+        String(get(o, :order_class, "")),
+        _maybe_string(get(o, :position_intent, nothing)),
         _parse_float(get(o, :qty, nothing)),
         _parse_float_default(get(o, :filled_qty, "0")),
         _parse_float(get(o, :limit_price, nothing)),
@@ -16,6 +27,7 @@ function _parse_order(o::JSON3.Object)
         _parse_rfc3339(get(o, :created_at, nothing)),
         _parse_rfc3339(get(o, :submitted_at, nothing)),
         _parse_rfc3339(get(o, :filled_at, nothing)),
+        _parse_legs(get(o, :legs, nothing)),
         o,
     )
 end
