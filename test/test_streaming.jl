@@ -90,7 +90,10 @@ function _alpaca_handshake(body::Function)
 end
 
 # Wait up to `seconds` for `pred()` to become true. Returns true if it did.
-function _wait_for(pred::Function; seconds::Real = 3.0, step::Real = 0.02)
+# Default is generous so slow CI runners (Ubuntu Julia 1.10) don't flake on
+# WebSocket scheduling — the happy path returns as soon as `pred()` is true,
+# so a larger ceiling doesn't slow successful runs.
+function _wait_for(pred::Function; seconds::Real = 10.0, step::Real = 0.02)
     deadline = time() + seconds
     while time() < deadline
         pred() && return true
