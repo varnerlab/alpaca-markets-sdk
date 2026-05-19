@@ -241,6 +241,11 @@ end
     # Leg count: 1 leg
     @test_throws ArgumentError Alpaca._validate_mleg(good[1:1], "limit", -2.0)
 
+    # Leg count: 4 legs is the upper bound (iron condor) — must accept
+    iron_condor = vcat(good, good)
+    @test length(iron_condor) == 4
+    @test Alpaca._validate_mleg(iron_condor, "limit", -2.0) === nothing
+
     # Leg count: 5 legs (build by duplication)
     too_many = vcat(good, good, good[1:1])
     @test length(too_many) == 5
