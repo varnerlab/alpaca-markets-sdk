@@ -118,6 +118,27 @@ struct Order
 end
 
 """
+    OrderLeg(symbol, ratio_qty, side, position_intent)
+
+Input descriptor for one leg of a multi-leg option order. Pass a
+`Vector{OrderLeg}` to [`submit_multileg_order`](@ref).
+
+Fields:
+
+- `symbol` — OCC option symbol (e.g. `"SPY250620P00420000"`)
+- `ratio_qty` — number of contracts per spread unit (typically `1`)
+- `side` — `"buy"` or `"sell"`
+- `position_intent` — `"buy_to_open"`, `"sell_to_open"`, `"buy_to_close"`,
+  or `"sell_to_close"`
+"""
+struct OrderLeg
+    symbol::String
+    ratio_qty::Int
+    side::String
+    position_intent::String
+end
+
+"""
     Position
 
 An open position in the account. Returned by [`list_positions`](@ref) and
@@ -242,27 +263,6 @@ struct CalendarDay
     close::Time
     session_open::Union{Time,Nothing}
     session_close::Union{Time,Nothing}
-end
-
-"""
-    OrderLeg(symbol, ratio_qty, side, position_intent)
-
-Input descriptor for one leg of a multi-leg option order. Pass a
-`Vector{OrderLeg}` to [`submit_multileg_order`](@ref).
-
-Fields:
-
-- `symbol` — OCC option symbol (e.g. `"SPY250620P00420000"`)
-- `ratio_qty` — number of contracts per spread unit (typically `1`)
-- `side` — `"buy"` or `"sell"`
-- `position_intent` — `"buy_to_open"`, `"sell_to_open"`, `"buy_to_close"`,
-  or `"sell_to_close"`
-"""
-struct OrderLeg
-    symbol::String
-    ratio_qty::Int
-    side::String
-    position_intent::String
 end
 
 """
