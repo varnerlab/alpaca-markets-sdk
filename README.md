@@ -63,7 +63,7 @@ order = submit_order(client, "AAPL", 1, "buy";
 |------|-----------|
 | **Account** | `get_account`, `get_clock`, `get_calendar` |
 | **Assets** | `list_assets`, `get_asset` |
-| **Orders** | `submit_order`, `list_orders`, `get_order`, `cancel_order`, `cancel_all_orders` |
+| **Orders** | `submit_order`, `submit_multileg_order`, `list_orders`, `get_order`, `cancel_order`, `cancel_all_orders` |
 | **Positions** | `list_positions`, `get_position`, `close_position`, `close_all_positions` |
 | **Market data** | `get_bars`, `get_quotes`, `get_trades`, `get_snapshot`, `get_latest_bar`, `get_latest_quote`, `get_latest_trade` |
 | **Historical helpers** | `download_bars`, `write_bars_csv`, `read_bars_csv` |
