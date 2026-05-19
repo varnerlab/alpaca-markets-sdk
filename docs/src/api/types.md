@@ -10,6 +10,7 @@ directly on the struct.
 Account
 Asset
 Order
+OrderLeg
 Position
 ```
 

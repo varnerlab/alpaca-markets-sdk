@@ -2,6 +2,7 @@
 
 ```@docs
 submit_order
+submit_multileg_order
 list_orders
 get_order
 cancel_order
