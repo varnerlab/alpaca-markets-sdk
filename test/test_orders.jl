@@ -225,3 +225,58 @@ end
     @test leg.side == "sell"
     @test leg.position_intent == "sell_to_open"
 end
+
+@testset "orders: _validate_mleg" begin
+    good = [
+        OrderLeg("SPY250620P00420000", 1, "sell", "sell_to_open"),
+        OrderLeg("SPY250620P00415000", 1, "buy",  "buy_to_open"),
+    ]
+
+    # Happy path: 2 legs, type=limit, limit_price set
+    @test Alpaca._validate_mleg(good, "limit", -2.0) === nothing
+
+    # Happy path: 2 legs, type=market, no limit_price
+    @test Alpaca._validate_mleg(good, "market", nothing) === nothing
+
+    # Leg count: 1 leg
+    @test_throws ArgumentError Alpaca._validate_mleg(good[1:1], "limit", -2.0)
+
+    # Leg count: 5 legs (build by duplication)
+    too_many = vcat(good, good, good[1:1])
+    @test length(too_many) == 5
+    @test_throws ArgumentError Alpaca._validate_mleg(too_many, "limit", -2.0)
+
+    # Limit without price
+    @test_throws ArgumentError Alpaca._validate_mleg(good, "limit", nothing)
+
+    # Bad type
+    @test_throws ArgumentError Alpaca._validate_mleg(good, "stop", nothing)
+
+    # Bad side
+    bad_side = [
+        OrderLeg("SPY250620P00420000", 1, "shrt", "sell_to_open"),
+        good[2],
+    ]
+    @test_throws ArgumentError Alpaca._validate_mleg(bad_side, "limit", -2.0)
+
+    # Bad position_intent
+    bad_intent = [
+        OrderLeg("SPY250620P00420000", 1, "sell", "open"),
+        good[2],
+    ]
+    @test_throws ArgumentError Alpaca._validate_mleg(bad_intent, "limit", -2.0)
+
+    # ratio_qty < 1
+    bad_ratio = [
+        OrderLeg("SPY250620P00420000", 0, "sell", "sell_to_open"),
+        good[2],
+    ]
+    @test_throws ArgumentError Alpaca._validate_mleg(bad_ratio, "limit", -2.0)
+
+    # Empty symbol
+    empty_sym = [
+        OrderLeg("", 1, "sell", "sell_to_open"),
+        good[2],
+    ]
+    @test_throws ArgumentError Alpaca._validate_mleg(empty_sym, "limit", -2.0)
+end

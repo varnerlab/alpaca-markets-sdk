@@ -32,6 +32,36 @@ function _parse_order(o::JSON3.Object)
     )
 end
 
+const _MLEG_SIDES   = ("buy", "sell")
+const _MLEG_INTENTS = ("buy_to_open", "sell_to_open", "buy_to_close", "sell_to_close")
+const _MLEG_TYPES   = ("market", "limit")
+
+function _validate_mleg(legs::Vector{OrderLeg},
+                        type::AbstractString,
+                        limit_price::Union{Real,Nothing})
+    n = length(legs)
+    (n in 2:4) || throw(ArgumentError(
+        "multi-leg order requires 2–4 legs, got $n"))
+
+    type in _MLEG_TYPES || throw(ArgumentError(
+        "type must be one of $(_MLEG_TYPES), got \"$type\""))
+
+    if type == "limit" && limit_price === nothing
+        throw(ArgumentError("limit_price is required when type=\"limit\""))
+    end
+
+    for (i, l) in pairs(legs)
+        l.side in _MLEG_SIDES || throw(ArgumentError(
+            "leg $i: side must be \"buy\" or \"sell\", got \"$(l.side)\""))
+        l.position_intent in _MLEG_INTENTS || throw(ArgumentError(
+            "leg $i: position_intent must be one of $(_MLEG_INTENTS), got \"$(l.position_intent)\""))
+        l.ratio_qty >= 1 || throw(ArgumentError(
+            "leg $i: ratio_qty must be ≥ 1, got $(l.ratio_qty)"))
+        isempty(l.symbol) && throw(ArgumentError("leg $i: symbol is empty"))
+    end
+    return nothing
+end
+
 """
     submit_order(client, symbol, qty, side; type="market", time_in_force="day",
                  limit_price=nothing, stop_price=nothing, client_order_id=nothing,
