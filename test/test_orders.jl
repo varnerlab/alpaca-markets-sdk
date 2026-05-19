@@ -374,3 +374,32 @@ end
     ]
     @test_throws ArgumentError Alpaca._validate_mleg(empty_sym, "limit", -2.0)
 end
+
+@testset "orders: list_orders returns mleg parent with child legs" begin
+    handler, log = recording_handler() do req
+        uri = HTTP.URI(req.target)
+        if req.method == "GET" && uri.path == "/orders"
+            return json_response(200, [_ORDER_PAYLOAD, _MLEG_PAYLOAD])
+        end
+        return plain_response(404, "not mocked")
+    end
+
+    with_mock(handler) do client
+        orders = list_orders(client; status = "open")
+        @test length(orders) == 2
+
+        simple = orders[1]
+        @test simple.symbol == "AAPL"
+        @test simple.order_class == ""
+        @test simple.legs === nothing
+
+        mleg = orders[2]
+        @test mleg.order_class == "mleg"
+        @test mleg.symbol === nothing
+        @test mleg.legs !== nothing
+        @test length(mleg.legs) == 2
+        @test mleg.legs[1].symbol == "SPY250620P00420000"
+    end
+
+    @test occursin("status=open", log[1].query)
+end
