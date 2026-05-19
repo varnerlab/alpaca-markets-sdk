@@ -98,6 +98,131 @@ if _LIVE
         @test all(l -> l.status in ("canceled", "pending_cancel"),
                   after.legs)  # cancel must have at least started for both legs
     end
+
+    @testset "integration: 4-leg atomic roll (live paper API)" begin
+        # End-to-end test of an mleg atomic roll: open a near put spread,
+        # submit a 4-leg roll that closes it and opens a further-dated
+        # spread, cancel the roll, then close the near spread. Confirms
+        # Alpaca's mleg endpoint accepts the BTC+STC+STO+BTO shape when the
+        # close-legs reference actual holdings.
+        creds_path = get(ENV, "ALPACA_CREDS",
+                         joinpath(dirname(@__DIR__), "conf", "apidata.toml"))
+        client = load_client(creds_path)
+
+        clk = get_clock(client)
+        if !clk.is_open
+            @info "skipping roll test: market is closed" next_open = clk.next_open
+        else
+            today = Date(clk.timestamp)
+
+            function _occ_expiry(sym::AbstractString, root::AbstractString = "SPY")
+                yymmdd = sym[length(root)+1 : length(root)+6]
+                return Date("20" * yymmdd, dateformat"yyyymmdd")
+            end
+            function _occ_strike(sym::AbstractString)
+                return parse(Int, sym[end-7:end]) / 1000
+            end
+
+            # Pick a put credit spread (short ≈ delta -0.30, long $5 OTM
+            # further) in the given DTE window. Returns (short_snap, long_snap).
+            function _pick_spread(window_start::Date, window_end::Date)
+                chain = get_option_chain_snapshot(client, "SPY";
+                                                  type = "put",
+                                                  expiration_date_gte = window_start,
+                                                  expiration_date_lte = window_end,
+                                                  limit = 1000)
+                @test !isempty(chain)
+                by_exp = Dict{Date,Vector{OptionSnapshot}}()
+                for (sym, snap) in chain
+                    push!(get!(by_exp, _occ_expiry(sym), OptionSnapshot[]), snap)
+                end
+                nearest = minimum(keys(by_exp))
+                puts = by_exp[nearest]
+                scored = [(s, abs(s.greeks.delta + 0.30))
+                          for s in puts if s.greeks !== nothing && s.greeks.delta !== nothing]
+                @test !isempty(scored)
+                sort!(scored, by = x -> x[2])
+                short = scored[1][1]
+                long_target = _occ_strike(short.symbol) - 5.0
+                long  = argmin(s -> abs(_occ_strike(s.symbol) - long_target), puts)
+                return short, long
+            end
+
+            # Poll `get_order` until the parent reaches `filled`, with a
+            # timeout. Errors loudly on terminal non-fill outcomes.
+            function _wait_filled(order_id::AbstractString; timeout_s::Real = 60, poll_s::Real = 1)
+                deadline = time() + timeout_s
+                while time() < deadline
+                    o = get_order(client, order_id)
+                    o.status == "filled" && return o
+                    o.status in ("canceled", "rejected", "expired") &&
+                        error("order $order_id terminated with status $(o.status)")
+                    sleep(poll_s)
+                end
+                error("order $order_id did not fill within $(timeout_s)s")
+            end
+
+            # Near spread (7–21 DTE) = what we'd roll OUT of.
+            near_short, near_long = _pick_spread(today + Day(7),  today + Day(21))
+            # Far spread (30–45 DTE) = what we'd roll INTO.
+            far_short,  far_long  = _pick_spread(today + Day(30), today + Day(45))
+
+            @info "atomic roll selections" near_short = near_short.symbol near_long = near_long.symbol far_short = far_short.symbol far_long = far_long.symbol
+
+            # Step 1: open the near put credit spread at market so it fills
+            # and we actually hold the positions the roll will close.
+            open_legs = [
+                OrderLeg(near_short.symbol, 1, "sell", "sell_to_open"),
+                OrderLeg(near_long.symbol,  1, "buy",  "buy_to_open"),
+            ]
+            near_parent = submit_multileg_order(client, open_legs;
+                                                type = "market", qty = 1)
+            @test near_parent.order_class == "mleg"
+            _wait_filled(near_parent.id)
+
+            try
+                # Step 2: submit the 4-leg atomic roll. Wildly-off-market
+                # limit + 5s cancel follows the Smoke 1 pattern so the roll
+                # itself never realizes a fill.
+                roll_legs = [
+                    OrderLeg(near_short.symbol, 1, "buy",  "buy_to_close"),
+                    OrderLeg(near_long.symbol,  1, "sell", "sell_to_close"),
+                    OrderLeg(far_short.symbol,  1, "sell", "sell_to_open"),
+                    OrderLeg(far_long.symbol,   1, "buy",  "buy_to_open"),
+                ]
+                roll_parent = submit_multileg_order(client, roll_legs;
+                                                    type = "limit",
+                                                    limit_price = -0.01,
+                                                    qty = 1)
+                @test roll_parent.order_class == "mleg"
+                @test roll_parent.legs !== nothing
+                @test length(roll_parent.legs) == 4
+
+                cancel_order(client, roll_parent.id)
+                sleep(5)
+                after = get_order(client, roll_parent.id)
+                @test after.legs !== nothing
+                @test all(l -> l.status in ("canceled", "pending_cancel"),
+                          after.legs)
+            finally
+                # Step 3: cleanup — close the near spread we opened, no
+                # matter how the roll-submission block ended. Swallow
+                # cleanup errors with a loud warning so they don't mask the
+                # real test outcome.
+                try
+                    close_legs = [
+                        OrderLeg(near_short.symbol, 1, "buy",  "buy_to_close"),
+                        OrderLeg(near_long.symbol,  1, "sell", "sell_to_close"),
+                    ]
+                    close_parent = submit_multileg_order(client, close_legs;
+                                                        type = "market", qty = 1)
+                    _wait_filled(close_parent.id)
+                catch e
+                    @warn "near-spread cleanup failed; check paper account for stray positions" exception = e
+                end
+            end
+        end
+    end
 else
     @info "skipping live integration tests (set ALPACA_LIVE_TESTS=1 to enable)"
 end
