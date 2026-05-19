@@ -53,7 +53,7 @@ export AlpacaStream, connect_market_stream,
        start!, stop!, isrunning
 
 # Types
-export Account, Order, Position, Asset, Bar, Quote, Trade, MarketClock,
+export Account, Order, OrderLeg, Position, Asset, Bar, Quote, Trade, MarketClock,
        CalendarDay, AlpacaError,
        OptionContract, OptionGreeks, OptionSnapshot
 

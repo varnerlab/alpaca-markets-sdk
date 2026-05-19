@@ -217,3 +217,11 @@ end
         @test o.legs === nothing
     end
 end
+
+@testset "orders: OrderLeg construction" begin
+    leg = OrderLeg("SPY250620P00420000", 1, "sell", "sell_to_open")
+    @test leg.symbol == "SPY250620P00420000"
+    @test leg.ratio_qty == 1
+    @test leg.side == "sell"
+    @test leg.position_intent == "sell_to_open"
+end
