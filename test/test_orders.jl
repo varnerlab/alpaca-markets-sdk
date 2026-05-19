@@ -284,7 +284,8 @@ end
     ]
 
     with_mock(handler) do client
-        submit_multileg_order(client, legs; type = "market", qty = 2)
+        o = submit_multileg_order(client, legs; type = "market", qty = 2)
+        @test o isa Order
     end
 
     body = JSON3.read(log[1].body)
