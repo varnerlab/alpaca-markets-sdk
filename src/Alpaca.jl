@@ -28,7 +28,8 @@ export get_account, get_clock, get_calendar
 export list_assets, get_asset
 
 # Orders
-export submit_order, list_orders, get_order, cancel_order, cancel_all_orders
+export submit_order, submit_multileg_order,
+       list_orders, get_order, cancel_order, cancel_all_orders
 
 # Positions
 export list_positions, get_position, close_position, close_all_positions

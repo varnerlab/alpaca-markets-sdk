@@ -226,6 +226,94 @@ end
     @test leg.position_intent == "sell_to_open"
 end
 
+@testset "orders: submit_multileg_order body shape" begin
+    handler, log = recording_handler() do _req
+        return json_response(200, _MLEG_PAYLOAD)
+    end
+
+    legs = [
+        OrderLeg("SPY250620P00420000", 1, "sell", "sell_to_open"),
+        OrderLeg("SPY250620P00415000", 1, "buy",  "buy_to_open"),
+    ]
+
+    with_mock(handler) do client
+        o = submit_multileg_order(client, legs;
+                                  type = "limit",
+                                  limit_price = -2.00,
+                                  qty = 1,
+                                  client_order_id = "client-mleg-1")
+        @test o isa Order
+        @test o.order_class == "mleg"
+        @test length(o.legs) == 2
+    end
+
+    req = log[1]
+    @test req.method == "POST"
+    @test req.path == "/orders"
+
+    body = JSON3.read(req.body)
+    @test body.order_class == "mleg"
+    @test body.qty == "1"
+    @test body.type == "limit"
+    @test body.time_in_force == "day"
+    @test body.limit_price == "-2.0"
+    @test body.client_order_id == "client-mleg-1"
+    @test length(body.legs) == 2
+
+    leg1 = body.legs[1]
+    @test leg1.symbol          == "SPY250620P00420000"
+    @test leg1.ratio_qty       == "1"
+    @test leg1.side            == "sell"
+    @test leg1.position_intent == "sell_to_open"
+
+    leg2 = body.legs[2]
+    @test leg2.symbol          == "SPY250620P00415000"
+    @test leg2.ratio_qty       == "1"
+    @test leg2.side            == "buy"
+    @test leg2.position_intent == "buy_to_open"
+end
+
+@testset "orders: submit_multileg_order market order omits limit_price" begin
+    handler, log = recording_handler() do _req
+        return json_response(200, _MLEG_PAYLOAD)
+    end
+
+    legs = [
+        OrderLeg("SPY250620P00420000", 1, "buy",  "buy_to_close"),
+        OrderLeg("SPY250620P00415000", 1, "sell", "sell_to_close"),
+    ]
+
+    with_mock(handler) do client
+        submit_multileg_order(client, legs; type = "market", qty = 2)
+    end
+
+    body = JSON3.read(log[1].body)
+    @test body.type == "market"
+    @test body.qty  == "2"
+    @test !haskey(body, :limit_price)
+    @test !haskey(body, :client_order_id)
+end
+
+@testset "orders: submit_multileg_order rejects bad input before HTTP" begin
+    # Handler intentionally returns 500 so any HTTP call would fail loudly;
+    # validation should short-circuit before we get there.
+    handler = _ -> plain_response(500, "should not reach server")
+
+    with_mock(handler) do client
+        @test_throws ArgumentError submit_multileg_order(
+            client,
+            [OrderLeg("SPY250620P00420000", 1, "sell", "sell_to_open")];
+            type = "limit", limit_price = -2.0,
+        )
+
+        legs = [
+            OrderLeg("SPY250620P00420000", 1, "sell", "sell_to_open"),
+            OrderLeg("SPY250620P00415000", 1, "buy",  "buy_to_open"),
+        ]
+        @test_throws ArgumentError submit_multileg_order(client, legs; type = "limit")
+    end
+end
+
 @testset "orders: _validate_mleg" begin
     good = [
         OrderLeg("SPY250620P00420000", 1, "sell", "sell_to_open"),

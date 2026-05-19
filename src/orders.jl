@@ -112,6 +112,61 @@ function submit_order(client::AlpacaClient,
 end
 
 """
+    submit_multileg_order(client, legs;
+                          type="limit", time_in_force="day",
+                          limit_price=nothing, qty=1,
+                          client_order_id=nothing,
+                          extended_hours=false)
+
+Submit a multi-leg options order (Alpaca `order_class="mleg"`).
+
+- `legs::Vector{OrderLeg}`: 2–4 option legs, all on the same underlying.
+- `qty`: number of spread units. Each leg's submitted quantity is
+  `qty * leg.ratio_qty`.
+- `type`: `"market"` or `"limit"`. For `"limit"`, `limit_price` is the **net
+  price for one spread unit** (positive = debit, negative = credit), per
+  Alpaca's convention.
+- `time_in_force`: `"day"` is the only TIF Alpaca currently accepts for mleg.
+
+Returns the parsed parent [`Order`](@ref) with `legs` populated from Alpaca's
+response.
+
+Stock+option combos (covered calls, married puts, collars-with-shares) are
+not supported as a single mleg order by Alpaca; submit the equity side via
+[`submit_order`](@ref) and the option side via this function.
+"""
+function submit_multileg_order(client::AlpacaClient,
+                                legs::Vector{OrderLeg};
+                                type::AbstractString = "limit",
+                                time_in_force::AbstractString = "day",
+                                limit_price::Union{Real,Nothing} = nothing,
+                                qty::Integer = 1,
+                                client_order_id::Union{AbstractString,Nothing} = nothing,
+                                extended_hours::Bool = false)
+    _validate_mleg(legs, type, limit_price)
+
+    body = Dict{String,Any}(
+        "order_class"    => "mleg",
+        "qty"            => string(qty),
+        "type"           => type,
+        "time_in_force"  => time_in_force,
+        "extended_hours" => extended_hours,
+        "legs"           => [
+            Dict(
+                "symbol"          => l.symbol,
+                "ratio_qty"       => string(l.ratio_qty),
+                "side"            => l.side,
+                "position_intent" => l.position_intent,
+            ) for l in legs
+        ],
+    )
+    limit_price     === nothing || (body["limit_price"]     = string(limit_price))
+    client_order_id === nothing || (body["client_order_id"] = client_order_id)
+
+    return _parse_order(_trading_post(client, "/orders"; body = body))
+end
+
+"""
     list_orders(client; status="open", limit=50, after=nothing, until=nothing,
                 direction="desc", symbols=nothing)
 
