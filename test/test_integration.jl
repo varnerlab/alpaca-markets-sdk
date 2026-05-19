@@ -3,13 +3,13 @@
 #
 #   ALPACA_LIVE_TESTS=1 julia --project=. -e 'using Pkg; Pkg.test()'
 #
-# Requires conf/apiidata.toml (or a path supplied via ALPACA_CREDS).
+# Requires conf/apidata.toml (or a path supplied via ALPACA_CREDS).
 
 const _LIVE = get(ENV, "ALPACA_LIVE_TESTS", "0") == "1"
 
 if _LIVE
     @testset "integration (live paper API)" begin
-        creds_path = get(ENV, "ALPACA_CREDS", joinpath(dirname(@__DIR__), "conf", "apiidata.toml"))
+        creds_path = get(ENV, "ALPACA_CREDS", joinpath(dirname(@__DIR__), "conf", "apidata.toml"))
         @test isfile(creds_path)
 
         client = load_client(creds_path)
@@ -28,7 +28,7 @@ if _LIVE
 
     @testset "integration: multi-leg options (live paper API)" begin
         creds_path = get(ENV, "ALPACA_CREDS",
-                         joinpath(dirname(@__DIR__), "conf", "apiidata.toml"))
+                         joinpath(dirname(@__DIR__), "conf", "apidata.toml"))
         client = load_client(creds_path)
 
         # Find the nearest monthly expiry 30-45 DTE out.

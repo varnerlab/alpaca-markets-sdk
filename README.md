@@ -31,7 +31,7 @@ key      = "YOUR_ALPACA_KEY_ID"
 secret   = "YOUR_ALPACA_SECRET_KEY"
 ```
 
-A starter template lives at `conf/apiidata.example.toml`. Multiple credentials
+A starter template lives at `conf/apidata.example.toml`. Multiple credentials
 can live in one file under different section names — pass `section=` to pick
 one (e.g. `load_client("creds.toml"; section = "paper_research")`).
 

@@ -92,7 +92,7 @@ end
         rm(path; force = true)
     end
 
-    @test_throws ArgumentError load_client("/does/not/exist/apiidata.toml")
+    @test_throws ArgumentError load_client("/does/not/exist/apidata.toml")
 end
 
 @testset "client: load_client selects by section" begin
