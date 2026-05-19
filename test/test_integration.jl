@@ -59,9 +59,9 @@ if _LIVE
         nearest_exp = minimum(keys(by_exp))
         puts_on_exp = by_exp[nearest_exp]
 
-        # Short leg: closest |delta| to 0.30.
-        scored = [(snap, abs(snap.greeks === nothing ? 1.0 :
-                             (snap.greeks.delta === nothing ? 1.0 : snap.greeks.delta) + 0.30))
+        # Short leg: closest |delta| to 0.30. The guard filters out snapshots
+        # without delta, so `snap.greeks.delta` is non-nothing inside `abs(...)`.
+        scored = [(snap, abs(snap.greeks.delta + 0.30))
                   for snap in puts_on_exp if snap.greeks !== nothing && snap.greeks.delta !== nothing]
         @test !isempty(scored)  # expected at least one put with delta available
         sort!(scored, by = x -> x[2])
@@ -92,11 +92,11 @@ if _LIVE
         @test length(parent.legs) == 2
 
         cancel_order(client, parent.id)
-        sleep(2)
+        sleep(5)
         after = get_order(client, parent.id)
         @test after.legs !== nothing
-        @test all(l -> l.status in ("canceled", "pending_cancel", "accepted"),
-                  after.legs)  # all legs should be canceling/canceled
+        @test all(l -> l.status in ("canceled", "pending_cancel"),
+                  after.legs)  # cancel must have at least started for both legs
     end
 else
     @info "skipping live integration tests (set ALPACA_LIVE_TESTS=1 to enable)"
