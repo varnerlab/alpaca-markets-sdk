@@ -1,4 +1,4 @@
-_maybe_string(x::Nothing) = nothing
+_maybe_string(::Nothing) = nothing
 _maybe_string(x) = String(x)
 
 function _parse_legs(v)

@@ -182,11 +182,7 @@ const _MLEG_PAYLOAD = Dict(
 )
 
 @testset "orders: parse mleg parent with two child legs" begin
-    handler = function(_req)
-        return json_response(200, _MLEG_PAYLOAD)
-    end
-
-    with_mock(handler) do client
+    with_mock(_ -> json_response(200, _MLEG_PAYLOAD)) do client
         o = get_order(client, _MLEG_PAYLOAD["id"])
         @test o isa Order
         @test o.order_class == "mleg"
@@ -212,11 +208,7 @@ const _MLEG_PAYLOAD = Dict(
 end
 
 @testset "orders: simple equity parsing regression" begin
-    handler = function(_req)
-        return json_response(200, _ORDER_PAYLOAD)
-    end
-
-    with_mock(handler) do client
+    with_mock(_ -> json_response(200, _ORDER_PAYLOAD)) do client
         o = get_order(client, _ORDER_PAYLOAD["id"])
         @test o.symbol == "AAPL"
         @test o.side == "buy"
