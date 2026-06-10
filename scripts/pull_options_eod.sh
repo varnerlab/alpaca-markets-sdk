@@ -21,9 +21,10 @@ LOG="logs/options-${DATE_TAG}.log"
 mkdir -p logs
 
 # Cron strips PATH to `/usr/bin:/bin`, so `which julia` returns nothing.
-# Prepend juliaup's bin dir before resolving.
+# Prepend juliaup's bin dir before resolving. ALPACA_JULIA_BIN overrides
+# (used by the masking-bug verification in the 2026-06-10 fix).
 export PATH="$HOME/.juliaup/bin:$PATH"
-JULIA="$(which julia)"
+JULIA="${ALPACA_JULIA_BIN:-$(which julia)}"
 if [ -z "$JULIA" ]; then
     echo "[$(date)] error: julia not in PATH" | tee -a "$LOG"
     exit 1
@@ -33,9 +34,21 @@ echo "=== pull start $(date) ===" | tee -a "$LOG"
 
 # Preflight: bail cleanly on non-trading days (weekends are already
 # excluded by the cron mask, but holidays still slip through).
-if ! "$JULIA" --project=. scripts/check_trading_day.jl >> "$LOG" 2>&1; then
-    echo "=== pull skipped (non-trading day) $(date) ===" | tee -a "$LOG"
-    exit 0
+#
+# A julia CRASH is NOT a holiday. Only the check's explicit "[skip]" marker
+# may skip the pull; any other non-zero exit aborts LOUDLY (exit 1) so cron
+# surfaces it. The old `if ! julia ...` form treated TCC init-crashes as
+# non-trading days and silently dropped 06-05→06-10 2026 (4 sessions).
+CHECK_OUT="$("$JULIA" --project=. scripts/check_trading_day.jl 2>&1)"
+CHECK_RC=$?
+printf '%s\n' "$CHECK_OUT" >> "$LOG"
+if [ "$CHECK_RC" -ne 0 ]; then
+    if printf '%s\n' "$CHECK_OUT" | grep -q '^\[skip\]'; then
+        echo "=== pull skipped (non-trading day) $(date) ===" | tee -a "$LOG"
+        exit 0
+    fi
+    echo "=== pull ABORTED: trading-day check died rc=$CHECK_RC — not a holiday verdict $(date) ===" | tee -a "$LOG"
+    exit 1
 fi
 
 TICKERS=(
