@@ -19,8 +19,9 @@
 # therefore a liquid-only subset — see the README this script drops in each
 # output dir).
 #
-# Output mirrors the live layout so downstream loaders find it:
-#   data/options-MM-DD-YY/<TICKER>_dte_ladder_backfill_<D>T200000.csv
+# Output is QUARANTINED away from the live archive (backfilled rows have
+# empty quote/IV/greek columns and would corrupt naive data/options-* globs):
+#   data/options-partial/options-MM-DD-YY/<TICKER>_dte_ladder_backfill_<D>T200000.csv
 #
 # Run from the repo root (defaults to the three lost sessions):
 #   julia --project=. scripts/backfill_options_eod.jl [YYYY-MM-DD ...]
@@ -88,7 +89,8 @@ for D in DATES
         continue
     end
 
-    out_dir = "data/options-" * Dates.format(D, dateformat"mm-dd-yy")
+    out_dir = joinpath("data", "options-partial",
+                       "options-" * Dates.format(D, dateformat"mm-dd-yy"))
     mkpath(out_dir)
     write(joinpath(out_dir, "README-BACKFILL.md"), README)
 
