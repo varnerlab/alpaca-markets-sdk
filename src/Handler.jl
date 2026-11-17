@@ -28,6 +28,11 @@ function _json_records(body::String, list_keys::Vector{String})::Vector{Any}
     # a JSON object can hold the list of records under a key -
     for key in list_keys
         if (haskey(parsed, Symbol(key)) == true)
+
+            # a list key that holds JSON null means there are no records -
+            if (parsed[Symbol(key)] === nothing)
+                return records;
+            end
             for record in parsed[Symbol(key)]
                 push!(records, record);
             end

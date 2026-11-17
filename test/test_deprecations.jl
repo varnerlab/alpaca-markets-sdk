@@ -13,3 +13,12 @@
         @test_deprecated get_option_contract(c, "SPY261218P00500000")
     end
 end
+
+@testset "legacy: a null contract list is an empty result" begin
+    null_handler = req -> json_response(200, Dict("option_contracts" => nothing, "next_page_token" => nothing))
+    with_mock(null_handler) do c
+        result = @test_deprecated list_option_contracts(c; underlying_symbols = "SPY")
+        @test result isa Vector{OptionContract}
+        @test isempty(result)
+    end
+end

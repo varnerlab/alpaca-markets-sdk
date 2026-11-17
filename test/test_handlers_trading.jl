@@ -186,4 +186,8 @@ end
     empty = Alpaca._default_handler(MyOptionContractsEndpointModel, JSON3.write(Dict("option_contracts" => Any[])))
     @test size(empty, 1) == 0
     @test names(empty) == cols
+    null_list = Alpaca._default_handler(MyOptionContractsEndpointModel,
+        "{\"option_contracts\":null,\"next_page_token\":null}")
+    @test size(null_list, 1) == 0
+    @test names(null_list) == cols
 end
