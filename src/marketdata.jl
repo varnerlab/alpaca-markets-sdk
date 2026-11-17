@@ -1,13 +1,6 @@
 # Market data endpoints live under data.alpaca.markets/v2/stocks/...
 # Docs: https://docs.alpaca.markets/reference/stockbars
 
-_symbols_param(s::AbstractString) = s
-_symbols_param(s::AbstractVector) = join(s, ",")
-
-_fmt_ts(x::AbstractString) = String(x)
-_fmt_ts(x::DateTime) = Dates.format(x, dateformat"yyyy-mm-ddTHH:MM:SSZ")
-_fmt_ts(x::Date)     = string(x)
-
 function _parse_bar(symbol::AbstractString, o)
     return Bar(
         String(symbol),

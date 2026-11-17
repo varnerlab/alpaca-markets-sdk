@@ -1,4 +1,71 @@
 """
+    AbstractAlpacaEndpointModel
+
+Supertype of every endpoint model. An endpoint model describes one Alpaca REST request.
+"""
+abstract type AbstractAlpacaEndpointModel end
+
+"""
+    AbstractAlpacaTradingEndpointModel <: AbstractAlpacaEndpointModel
+
+Supertype of the endpoint models that call the trading API.
+"""
+abstract type AbstractAlpacaTradingEndpointModel <: AbstractAlpacaEndpointModel end
+
+"""
+    AbstractAlpacaStockDataEndpointModel <: AbstractAlpacaEndpointModel
+
+Supertype of the endpoint models that call the stock market data API.
+"""
+abstract type AbstractAlpacaStockDataEndpointModel <: AbstractAlpacaEndpointModel end
+
+"""
+    AbstractAlpacaOptionDataEndpointModel <: AbstractAlpacaEndpointModel
+
+Supertype of the endpoint models that call the options market data API.
+"""
+abstract type AbstractAlpacaOptionDataEndpointModel <: AbstractAlpacaEndpointModel end
+
+"""
+    AbstractAlpacaOrderModel
+
+Supertype of the order models that describe an order to submit.
+"""
+abstract type AbstractAlpacaOrderModel end
+
+"""
+    AlpacaClient(trading_url, data_url, [options_data_url,] key_id, secret_key)
+
+Holds credentials and base URLs for the Alpaca REST APIs. Usually
+constructed via [`load_client`](@ref) from a TOML config file.
+
+Fields:
+
+- `trading_url` — trading API base, e.g. `https://paper-api.alpaca.markets/v2`
+- `data_url` — stock market data base, e.g. `https://data.alpaca.markets/v2`
+- `options_data_url` — options market data base, e.g. `https://data.alpaca.markets/v1beta1`
+- `key_id`, `secret_key` — Alpaca API credentials
+
+The four-argument constructor `AlpacaClient(trading_url, data_url, key_id, secret_key)`
+is preserved for convenience and derives `options_data_url` from `data_url`
+automatically.
+"""
+struct AlpacaClient
+    trading_url::String
+    data_url::String
+    options_data_url::String
+    key_id::String
+    secret_key::String
+end
+
+# Four-arg convenience constructor (backwards compatible).
+AlpacaClient(trading_url::AbstractString, data_url::AbstractString,
+             key_id::AbstractString, secret_key::AbstractString) =
+    AlpacaClient(trading_url, data_url,
+                 _derive_options_url(data_url),
+                 key_id, secret_key)
+
+"""
     AlpacaError(status, code, message, body)
 
 Raised when the Alpaca REST API returns a non-2xx response. `status` is the

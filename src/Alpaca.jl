@@ -5,9 +5,11 @@ using JSON3
 using TOML
 using URIs
 using Dates
+import DataFrames: DataFrame
 
-include("types.jl")
-include("client.jl")
+include("Types.jl")
+include("Utility.jl")
+include("Network.jl")
 include("account.jl")
 include("clock.jl")
 include("assets.jl")
@@ -20,6 +22,11 @@ include("streaming.jl")
 
 # Client
 export AlpacaClient, load_client
+
+# Abstract types
+export AbstractAlpacaEndpointModel, AbstractAlpacaTradingEndpointModel,
+       AbstractAlpacaStockDataEndpointModel, AbstractAlpacaOptionDataEndpointModel,
+       AbstractAlpacaOrderModel
 
 # Account / clock
 export get_account, get_clock, get_calendar
