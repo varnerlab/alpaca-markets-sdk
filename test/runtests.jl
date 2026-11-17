@@ -20,4 +20,5 @@ include("mock_server.jl")
     include("test_options.jl")
     include("test_streaming.jl")
     include("test_integration.jl")
+    include("test_golden.jl")
 end
