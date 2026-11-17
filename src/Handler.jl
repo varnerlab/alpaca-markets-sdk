@@ -1393,46 +1393,64 @@ function _parse_option_snapshot(symbol::AbstractString, record::JSON3.Object)::O
         implied_volatility, greeks, record);
 end
 
-# _legacy_bars_by_symbol: the bars of one page, keyed by symbol. A missing or null bars object is an empty result -
-function _legacy_bars_by_symbol(body::String)::Dict{String,Vector{Bar}}
+"""
+    _legacy_by_symbol(body::String, key::Symbol, element_type::Type, parser::Function) -> Dict{String,Vector{element_type}}
+
+Parse the records of one page of a historical bars, quotes, or trades response. The records sit under `key`, in one
+list for each symbol. A missing or null `key` object is an empty result.
+
+### Arguments
+- `body::String`: the response body of one page.
+- `key::Symbol`: the key of the response object that holds the records, e.g., `:bars`.
+- `element_type::Type`: the type that `parser` returns, e.g., `Bar`.
+- `parser::Function`: the function that builds one `element_type` from a symbol and a record, e.g., `_parse_bar`.
+
+### Returns
+- A `Dict{String,Vector{element_type}}` keyed by symbol.
+"""
+function _legacy_by_symbol(body::String, key::Symbol, element_type::Type, parser::Function)
+
+    # read the page, and start with an empty result -
     resp = JSON3.read(body);
-    out = Dict{String,Vector{Bar}}();
-    if (haskey(resp, :bars) == true && resp.bars !== nothing)
-        for (symbol, records) in pairs(resp.bars)
-            bucket = get!(out, String(symbol), Bar[]);
+    out = Dict{String,Vector{element_type}}();
+
+    # skip a missing or null object, otherwise parse the records of each symbol -
+    if (haskey(resp, key) == true && resp[key] !== nothing)
+        for (symbol, records) in pairs(resp[key])
+            bucket = get!(out, String(symbol), element_type[]);
             for record in records
-                push!(bucket, _parse_bar(String(symbol), record));
+                push!(bucket, parser(String(symbol), record));
             end
         end
     end
     return out;
 end
 
-# _legacy_quotes_by_symbol: the quotes of one page, keyed by symbol. A missing or null quotes object is empty -
-function _legacy_quotes_by_symbol(body::String)::Dict{String,Vector{Quote}}
-    resp = JSON3.read(body);
-    out = Dict{String,Vector{Quote}}();
-    if (haskey(resp, :quotes) == true && resp.quotes !== nothing)
-        for (symbol, records) in pairs(resp.quotes)
-            bucket = get!(out, String(symbol), Quote[]);
-            for record in records
-                push!(bucket, _parse_quote(String(symbol), record));
-            end
-        end
-    end
-    return out;
-end
+"""
+    _legacy_latest_by_symbol(body::String, key::Symbol, element_type::Type, parser::Function) -> Dict{String,element_type}
 
-# _legacy_trades_by_symbol: the trades of one page, keyed by symbol. A missing or null trades object is empty -
-function _legacy_trades_by_symbol(body::String)::Dict{String,Vector{Trade}}
+Parse the response of a latest bars, quotes, or trades endpoint. The records sit under `key`, one record for each
+symbol. A missing or null `key` object is an empty result.
+
+### Arguments
+- `body::String`: the response body.
+- `key::Symbol`: the key of the response object that holds the records, e.g., `:bars`.
+- `element_type::Type`: the type that `parser` returns, e.g., `Bar`.
+- `parser::Function`: the function that builds one `element_type` from a symbol and a record, e.g., `_parse_bar`.
+
+### Returns
+- A `Dict{String,element_type}` keyed by symbol.
+"""
+function _legacy_latest_by_symbol(body::String, key::Symbol, element_type::Type, parser::Function)
+
+    # read the response, and start with an empty result -
     resp = JSON3.read(body);
-    out = Dict{String,Vector{Trade}}();
-    if (haskey(resp, :trades) == true && resp.trades !== nothing)
-        for (symbol, records) in pairs(resp.trades)
-            bucket = get!(out, String(symbol), Trade[]);
-            for record in records
-                push!(bucket, _parse_trade(String(symbol), record));
-            end
+    out = Dict{String,element_type}();
+
+    # skip a missing or null object, otherwise parse the record of each symbol -
+    if (haskey(resp, key) == true && resp[key] !== nothing)
+        for (symbol, record) in pairs(resp[key])
+            out[String(symbol)] = parser(String(symbol), record);
         end
     end
     return out;
@@ -1440,32 +1458,32 @@ end
 
 # _legacy_handler: /stocks/bars returns the bars of each symbol -
 function _legacy_handler(model::Type{MyStockBarsEndpointModel}, body::String)::Dict{String,Vector{Bar}}
-    return _legacy_bars_by_symbol(body);
+    return _legacy_by_symbol(body, :bars, Bar, _parse_bar);
 end
 
 # _legacy_handler: /options/bars returns the bars of each option symbol -
 function _legacy_handler(model::Type{MyOptionBarsEndpointModel}, body::String)::Dict{String,Vector{Bar}}
-    return _legacy_bars_by_symbol(body);
+    return _legacy_by_symbol(body, :bars, Bar, _parse_bar);
 end
 
 # _legacy_handler: /stocks/quotes returns the quotes of each symbol -
 function _legacy_handler(model::Type{MyStockQuotesEndpointModel}, body::String)::Dict{String,Vector{Quote}}
-    return _legacy_quotes_by_symbol(body);
+    return _legacy_by_symbol(body, :quotes, Quote, _parse_quote);
 end
 
 # _legacy_handler: /options/quotes returns the quotes of each option symbol -
 function _legacy_handler(model::Type{MyOptionQuotesEndpointModel}, body::String)::Dict{String,Vector{Quote}}
-    return _legacy_quotes_by_symbol(body);
+    return _legacy_by_symbol(body, :quotes, Quote, _parse_quote);
 end
 
 # _legacy_handler: /stocks/trades returns the trades of each symbol -
 function _legacy_handler(model::Type{MyStockTradesEndpointModel}, body::String)::Dict{String,Vector{Trade}}
-    return _legacy_trades_by_symbol(body);
+    return _legacy_by_symbol(body, :trades, Trade, _parse_trade);
 end
 
 # _legacy_handler: /options/trades returns the trades of each option symbol -
 function _legacy_handler(model::Type{MyOptionTradesEndpointModel}, body::String)::Dict{String,Vector{Trade}}
-    return _legacy_trades_by_symbol(body);
+    return _legacy_by_symbol(body, :trades, Trade, _parse_trade);
 end
 
 # _legacy_handler: the latest stock bar returns the parsed JSON value. The legacy function builds the Bar from it -
@@ -1490,38 +1508,17 @@ end
 
 # _legacy_handler: /options/bars/latest returns the latest Bar of each option symbol -
 function _legacy_handler(model::Type{MyOptionLatestBarEndpointModel}, body::String)::Dict{String,Bar}
-    resp = JSON3.read(body);
-    out = Dict{String,Bar}();
-    if (haskey(resp, :bars) == true && resp.bars !== nothing)
-        for (symbol, record) in pairs(resp.bars)
-            out[String(symbol)] = _parse_bar(String(symbol), record);
-        end
-    end
-    return out;
+    return _legacy_latest_by_symbol(body, :bars, Bar, _parse_bar);
 end
 
 # _legacy_handler: /options/quotes/latest returns the latest Quote of each option symbol -
 function _legacy_handler(model::Type{MyOptionLatestQuoteEndpointModel}, body::String)::Dict{String,Quote}
-    resp = JSON3.read(body);
-    out = Dict{String,Quote}();
-    if (haskey(resp, :quotes) == true && resp.quotes !== nothing)
-        for (symbol, record) in pairs(resp.quotes)
-            out[String(symbol)] = _parse_quote(String(symbol), record);
-        end
-    end
-    return out;
+    return _legacy_latest_by_symbol(body, :quotes, Quote, _parse_quote);
 end
 
 # _legacy_handler: /options/trades/latest returns the latest Trade of each option symbol -
 function _legacy_handler(model::Type{MyOptionLatestTradeEndpointModel}, body::String)::Dict{String,Trade}
-    resp = JSON3.read(body);
-    out = Dict{String,Trade}();
-    if (haskey(resp, :trades) == true && resp.trades !== nothing)
-        for (symbol, record) in pairs(resp.trades)
-            out[String(symbol)] = _parse_trade(String(symbol), record);
-        end
-    end
-    return out;
+    return _legacy_latest_by_symbol(body, :trades, Trade, _parse_trade);
 end
 
 # _legacy_handler: /options/snapshots returns one OptionSnapshot for each option symbol. The endpoint either wraps
