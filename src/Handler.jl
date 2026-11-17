@@ -962,4 +962,286 @@ function _default_handler(model::Type{MyOptionChainEndpointModel}, body::String)
     (symbols, snapshots) = _option_snapshot_records(body);
     return _snapshots_table(symbols, snapshots, true);
 end
+
+# --- Legacy handlers: return the legacy structs of v0.3.1 -------------------------------------------------------- #
+
+# _maybe_string: a text value that can be null; nothing when the value is nothing -
+function _maybe_string(value)
+    if (value === nothing)
+        return nothing;
+    end
+    return String(value);
+end
+
+# _parse_cal_time: Alpaca sends the regular session times of /calendar as "HH:MM" and the extended session times as
+# "HHMM" (no colon). This function reads both forms -
+function _parse_cal_time(text::AbstractString)::Time
+
+    # a time with a colon is already in the form that Time reads -
+    if (occursin(':', text) == true)
+        return Time(text);
+    end
+
+    # a time without a colon has the hour in the first two characters and the minute in the next two -
+    return Time(text[1:2] * ":" * text[3:4]);
+end
+
+"""
+    _parse_account(record::JSON3.Object) -> Account
+
+Build an `Account` from one record of the `/account` endpoint. The `Account` keeps the record in its `raw` field.
+"""
+function _parse_account(record::JSON3.Object)::Account
+    return Account(
+        String(record.id),
+        String(record.account_number),
+        String(record.status),
+        String(record.currency),
+        _parse_float_default(get(record, :cash, "0")),
+        _parse_float_default(get(record, :buying_power, "0")),
+        _parse_float_default(get(record, :portfolio_value, "0")),
+        _parse_float_default(get(record, :equity, "0")),
+        _parse_float_default(get(record, :last_equity, "0")),
+        Bool(get(record, :pattern_day_trader, false)),
+        Bool(get(record, :trading_blocked, false)),
+        Bool(get(record, :transfers_blocked, false)),
+        Bool(get(record, :account_blocked, false)),
+        record,
+    );
+end
+
+"""
+    _parse_asset(record::JSON3.Object) -> Asset
+
+Build an `Asset` from one record of the `/assets` endpoint. The `Asset` keeps the record in its `raw` field.
+"""
+function _parse_asset(record::JSON3.Object)::Asset
+    return Asset(
+        String(record.id),
+        String(record.class),
+        String(record.exchange),
+        String(record.symbol),
+        String(get(record, :name, "")),
+        String(record.status),
+        Bool(get(record, :tradable, false)),
+        Bool(get(record, :marginable, false)),
+        Bool(get(record, :shortable, false)),
+        Bool(get(record, :easy_to_borrow, false)),
+        Bool(get(record, :fractionable, false)),
+        record,
+    );
+end
+
+"""
+    _parse_position(record::JSON3.Object) -> Position
+
+Build a `Position` from one record of the `/positions` endpoint. The `Position` keeps the record in its `raw` field.
+"""
+function _parse_position(record::JSON3.Object)::Position
+    return Position(
+        String(record.asset_id),
+        String(record.symbol),
+        String(get(record, :exchange, "")),
+        String(get(record, :asset_class, "us_equity")),
+        _parse_float_default(get(record, :qty, "0")),
+        String(get(record, :side, "long")),
+        _parse_float_default(get(record, :avg_entry_price, "0")),
+        _parse_float_default(get(record, :market_value, "0")),
+        _parse_float_default(get(record, :cost_basis, "0")),
+        _parse_float_default(get(record, :unrealized_pl, "0")),
+        _parse_float_default(get(record, :unrealized_plpc, "0")),
+        _parse_float_default(get(record, :current_price, "0")),
+        _parse_float_default(get(record, :lastday_price, "0")),
+        _parse_float_default(get(record, :change_today, "0")),
+        record,
+    );
+end
+
+"""
+    _parse_legs(legs) -> Union{Nothing,Vector{Order}}
+
+Build the child `Order` values of a multi-leg order. The result is `nothing` when the response has no legs.
+"""
+function _parse_legs(legs)::Union{Nothing,Vector{Order}}
+
+    # a response without legs, or with an empty list of legs, has no child orders -
+    if (legs === nothing)
+        return nothing;
+    end
+    if (isempty(legs) == true)
+        return nothing;
+    end
+
+    # build one Order for each leg -
+    leg_orders = Order[];
+    for leg in legs
+        push!(leg_orders, _parse_order(leg));
+    end
+    return leg_orders;
+end
+
+"""
+    _parse_order(record::JSON3.Object) -> Order
+
+Build an `Order` from one record of the `/orders` endpoint. The `Order` keeps the record in its `raw` field.
+"""
+function _parse_order(record::JSON3.Object)::Order
+    return Order(
+        String(record.id),
+        String(get(record, :client_order_id, "")),
+        _maybe_string(get(record, :symbol, nothing)),
+        String(get(record, :asset_class, "us_equity")),
+        _maybe_string(get(record, :side, nothing)),
+        String(record.type),
+        String(record.time_in_force),
+        String(get(record, :order_class, "")),
+        _maybe_string(get(record, :position_intent, nothing)),
+        _parse_float(get(record, :qty, nothing)),
+        _parse_float_default(get(record, :filled_qty, "0")),
+        _parse_float(get(record, :limit_price, nothing)),
+        _parse_float(get(record, :stop_price, nothing)),
+        _parse_float(get(record, :filled_avg_price, nothing)),
+        String(record.status),
+        _parse_rfc3339(get(record, :created_at, nothing)),
+        _parse_rfc3339(get(record, :submitted_at, nothing)),
+        _parse_rfc3339(get(record, :filled_at, nothing)),
+        _parse_legs(get(record, :legs, nothing)),
+        record,
+    );
+end
+
+"""
+    _parse_option_contract(record::JSON3.Object) -> OptionContract
+
+Build an `OptionContract` from one record of the `/options/contracts` endpoint. The `OptionContract` keeps the
+record in its `raw` field.
+"""
+function _parse_option_contract(record::JSON3.Object)::OptionContract
+    return OptionContract(
+        String(record.id),
+        String(record.symbol),
+        String(get(record, :name, "")),
+        String(get(record, :status, "")),
+        Bool(get(record, :tradable, false)),
+        Date(String(record.expiration_date)),
+        String(get(record, :root_symbol, get(record, :underlying_symbol, ""))),
+        String(record.underlying_symbol),
+        String(get(record, :underlying_asset_id, "")),
+        String(record.type),
+        String(get(record, :style, "american")),
+        _parse_float_default(get(record, :strike_price, "0")),
+        _parse_float_default(get(record, :multiplier, "100")),
+        _parse_float_default(get(record, :size, "100")),
+        _parse_float(get(record, :open_interest, nothing)),
+        _parse_date_maybe(get(record, :open_interest_date, nothing)),
+        _parse_float(get(record, :close_price, nothing)),
+        _parse_date_maybe(get(record, :close_price_date, nothing)),
+        record,
+    );
+end
+
+"""
+    _legacy_handler(model::Type, body::String)
+
+The handlers that return the legacy values of v0.3.1 instead of a `DataFrame`. The legacy functions pass these
+handlers to `api`. Each method receives the type of the endpoint model and the body of one response.
+"""
+function _legacy_handler end
+
+# _legacy_handler: /account returns one Account -
+function _legacy_handler(model::Type{MyAccountEndpointModel}, body::String)::Account
+    return _parse_account(JSON3.read(body));
+end
+
+# _legacy_handler: /clock returns one MarketClock -
+function _legacy_handler(model::Type{MyClockEndpointModel}, body::String)::MarketClock
+    record = JSON3.read(body);
+    return MarketClock(
+        _parse_rfc3339(String(record.timestamp)),
+        Bool(record.is_open),
+        _parse_rfc3339(String(record.next_open)),
+        _parse_rfc3339(String(record.next_close)),
+    );
+end
+
+# _legacy_handler: /calendar returns one CalendarDay for each trading day -
+function _legacy_handler(model::Type{MyCalendarEndpointModel}, body::String)::Vector{CalendarDay}
+
+    # build one CalendarDay for each record. The session times are optional -
+    days = CalendarDay[];
+    for record in JSON3.read(body)
+        session_open = nothing;
+        if (haskey(record, :session_open) == true)
+            session_open = _parse_cal_time(String(record.session_open));
+        end
+        session_close = nothing;
+        if (haskey(record, :session_close) == true)
+            session_close = _parse_cal_time(String(record.session_close));
+        end
+        push!(days, CalendarDay(
+            Date(String(record.date)),
+            _parse_cal_time(String(record.open)),
+            _parse_cal_time(String(record.close)),
+            session_open,
+            session_close,
+        ));
+    end
+    return days;
+end
+
+# _legacy_handler: /assets returns one Asset for each asset. The handler does not filter on tradable -
+function _legacy_handler(model::Type{MyAssetsEndpointModel}, body::String)::Vector{Asset}
+    assets = Asset[];
+    for record in JSON3.read(body)
+        push!(assets, _parse_asset(record));
+    end
+    return assets;
+end
+
+# _legacy_handler: /assets/{symbol} returns one Asset -
+function _legacy_handler(model::Type{MyAssetEndpointModel}, body::String)::Asset
+    return _parse_asset(JSON3.read(body));
+end
+
+# _legacy_handler: /positions returns one Position for each open position -
+function _legacy_handler(model::Type{MyPositionsEndpointModel}, body::String)::Vector{Position}
+    positions = Position[];
+    for record in JSON3.read(body)
+        push!(positions, _parse_position(record));
+    end
+    return positions;
+end
+
+# _legacy_handler: /positions/{symbol} returns one Position -
+function _legacy_handler(model::Type{MyPositionEndpointModel}, body::String)::Position
+    return _parse_position(JSON3.read(body));
+end
+
+# _legacy_handler: /orders returns one Order for each order -
+function _legacy_handler(model::Type{MyOrdersEndpointModel}, body::String)::Vector{Order}
+    orders = Order[];
+    for record in JSON3.read(body)
+        push!(orders, _parse_order(record));
+    end
+    return orders;
+end
+
+# _legacy_handler: /orders/{id} and /orders:by_client_order_id return one Order -
+function _legacy_handler(model::Type{MyOrderEndpointModel}, body::String)::Order
+    return _parse_order(JSON3.read(body));
+end
+
+# _legacy_handler: /options/contracts returns one OptionContract for each contract on the page -
+function _legacy_handler(model::Type{MyOptionContractsEndpointModel}, body::String)::Vector{OptionContract}
+    contracts = OptionContract[];
+    for record in _json_records(body, String["option_contracts", "contracts"])
+        push!(contracts, _parse_option_contract(record));
+    end
+    return contracts;
+end
+
+# _legacy_handler: /options/contracts/{symbol} returns one OptionContract -
+function _legacy_handler(model::Type{MyOptionContractEndpointModel}, body::String)::OptionContract
+    return _parse_option_contract(JSON3.read(body));
+end
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #

@@ -1,37 +1,3 @@
-_maybe_string(::Nothing) = nothing
-_maybe_string(x) = String(x)
-
-function _parse_legs(v)
-    v === nothing && return nothing
-    isempty(v)    && return nothing
-    return [_parse_order(leg) for leg in v]
-end
-
-function _parse_order(o::JSON3.Object)
-    return Order(
-        String(o.id),
-        String(get(o, :client_order_id, "")),
-        _maybe_string(get(o, :symbol, nothing)),
-        String(get(o, :asset_class, "us_equity")),
-        _maybe_string(get(o, :side, nothing)),
-        String(o.type),
-        String(o.time_in_force),
-        String(get(o, :order_class, "")),
-        _maybe_string(get(o, :position_intent, nothing)),
-        _parse_float(get(o, :qty, nothing)),
-        _parse_float_default(get(o, :filled_qty, "0")),
-        _parse_float(get(o, :limit_price, nothing)),
-        _parse_float(get(o, :stop_price, nothing)),
-        _parse_float(get(o, :filled_avg_price, nothing)),
-        String(o.status),
-        _parse_rfc3339(get(o, :created_at, nothing)),
-        _parse_rfc3339(get(o, :submitted_at, nothing)),
-        _parse_rfc3339(get(o, :filled_at, nothing)),
-        _parse_legs(get(o, :legs, nothing)),
-        o,
-    )
-end
-
 const _MLEG_SIDES   = ("buy", "sell")
 const _MLEG_INTENTS = ("buy_to_open", "sell_to_open", "buy_to_close", "sell_to_close")
 const _MLEG_TYPES   = ("market", "limit")
@@ -164,40 +130,6 @@ function submit_multileg_order(client::AlpacaClient,
     client_order_id === nothing || (body["client_order_id"] = client_order_id)
 
     return _parse_order(_trading_post(client, "/orders"; body = body))
-end
-
-"""
-    list_orders(client; status="open", limit=50, after=nothing, until=nothing,
-                direction="desc", symbols=nothing)
-
-List orders. `status` is one of `"open"`, `"closed"`, or `"all"`.
-`symbols` may be a `Vector{String}` or comma-separated string.
-"""
-function list_orders(client::AlpacaClient;
-                     status::AbstractString = "open",
-                     limit::Integer = 50,
-                     after::Union{AbstractString,DateTime,Nothing} = nothing,
-                     until::Union{AbstractString,DateTime,Nothing} = nothing,
-                     direction::AbstractString = "desc",
-                     symbols::Union{AbstractVector,AbstractString,Nothing} = nothing)
-    q = Dict{String,Any}("status" => status, "limit" => limit, "direction" => direction)
-    after  === nothing || (q["after"] = string(after))
-    until  === nothing || (q["until"] = string(until))
-    if symbols !== nothing
-        q["symbols"] = symbols isa AbstractString ? symbols : join(symbols, ",")
-    end
-    arr = _trading_get(client, "/orders"; query = q)
-    return [_parse_order(o) for o in arr]
-end
-
-"""
-    get_order(client, order_id; by_client_order_id=false)
-"""
-function get_order(client::AlpacaClient, order_id::AbstractString;
-                   by_client_order_id::Bool = false)
-    path = by_client_order_id ? "/orders:by_client_order_id" : "/orders/$(order_id)"
-    q = by_client_order_id ? Dict("client_order_id" => order_id) : nothing
-    return _parse_order(_trading_get(client, path; query = q))
 end
 
 """

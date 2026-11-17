@@ -12,15 +12,13 @@ include("Utility.jl")
 include("Network.jl")
 include("Factory.jl")
 include("Handler.jl")
-include("account.jl")
-include("clock.jl")
-include("assets.jl")
 include("orders.jl")
 include("positions.jl")
 include("marketdata.jl")
 include("historical.jl")
 include("options.jl")
 include("streaming.jl")
+include("Legacy.jl")
 
 # Client
 export AlpacaClient, load_client
