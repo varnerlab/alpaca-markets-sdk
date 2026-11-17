@@ -1249,4 +1249,304 @@ end
 function _legacy_handler(model::Type{MyOptionContractEndpointModel}, body::String)::OptionContract
     return _parse_option_contract(JSON3.read(body));
 end
+
+"""
+    _parse_bar(symbol::AbstractString, record) -> Bar
+
+Build a `Bar` from one bar record of a market data endpoint. The `symbol` argument fills the `symbol` field,
+because a bar record does not carry its symbol. The trade count `n` and the volume weighted price `vw` are optional.
+"""
+function _parse_bar(symbol::AbstractString, record)::Bar
+
+    # the trade count and the volume weighted price are optional -
+    trade_count = nothing;
+    if (haskey(record, :n) == true)
+        trade_count = Int(record.n);
+    end
+    vwap = nothing;
+    if (haskey(record, :vw) == true)
+        vwap = Float64(record.vw);
+    end
+
+    # build the bar -
+    return Bar(
+        String(symbol),
+        _parse_rfc3339(String(record.t)),
+        Float64(record.o),
+        Float64(record.h),
+        Float64(record.l),
+        Float64(record.c),
+        Float64(record.v),
+        trade_count,
+        vwap,
+    );
+end
+
+"""
+    _parse_quote(symbol::AbstractString, record) -> Quote
+
+Build a `Quote` from one quote record of a market data endpoint. The `symbol` argument fills the `symbol` field.
+A missing price, size, or exchange takes the value `0.0` or `""`.
+"""
+function _parse_quote(symbol::AbstractString, record)::Quote
+    return Quote(
+        String(symbol),
+        _parse_rfc3339(String(record.t)),
+        Float64(get(record, :bp, 0.0)),
+        Float64(get(record, :bs, 0.0)),
+        Float64(get(record, :ap, 0.0)),
+        Float64(get(record, :as, 0.0)),
+        String(get(record, :bx, "")),
+        String(get(record, :ax, "")),
+    );
+end
+
+"""
+    _parse_trade(symbol::AbstractString, record) -> Trade
+
+Build a `Trade` from one trade record of a market data endpoint. The `symbol` argument fills the `symbol` field.
+The trade identifier `i` is optional.
+"""
+function _parse_trade(symbol::AbstractString, record)::Trade
+
+    # the trade identifier is optional -
+    trade_id = nothing;
+    if (haskey(record, :i) == true)
+        trade_id = Int(record.i);
+    end
+
+    # build the trade -
+    return Trade(
+        String(symbol),
+        _parse_rfc3339(String(record.t)),
+        Float64(get(record, :p, 0.0)),
+        Float64(get(record, :s, 0.0)),
+        String(get(record, :x, "")),
+        trade_id,
+    );
+end
+
+# _maybe_float: the value of the key as a Float64, or nothing when the key is missing or null -
+function _maybe_float(record, key::Symbol)::Union{Nothing,Float64}
+    if (haskey(record, key) == true && record[key] !== nothing)
+        return Float64(record[key]);
+    end
+    return nothing;
+end
+
+# _parse_greeks: an OptionGreeks from a greeks record, or nothing when the record is nothing -
+function _parse_greeks(record)::Union{Nothing,OptionGreeks}
+    if (record === nothing)
+        return nothing;
+    end
+    return OptionGreeks(
+        _maybe_float(record, :delta),
+        _maybe_float(record, :gamma),
+        _maybe_float(record, :theta),
+        _maybe_float(record, :vega),
+        _maybe_float(record, :rho),
+    );
+end
+
+"""
+    _parse_option_snapshot(symbol::AbstractString, record::JSON3.Object) -> OptionSnapshot
+
+Build an `OptionSnapshot` from one snapshot record of an option data endpoint. Each part of the snapshot is optional,
+and a missing or null part becomes `nothing`. The `OptionSnapshot` keeps the record in its `raw` field.
+"""
+function _parse_option_snapshot(symbol::AbstractString, record::JSON3.Object)::OptionSnapshot
+
+    # the latest quote, the latest trade, and the three bars -
+    latest_quote = nothing;
+    if (haskey(record, :latestQuote) == true && record.latestQuote !== nothing)
+        latest_quote = _parse_quote(String(symbol), record.latestQuote);
+    end
+    latest_trade = nothing;
+    if (haskey(record, :latestTrade) == true && record.latestTrade !== nothing)
+        latest_trade = _parse_trade(String(symbol), record.latestTrade);
+    end
+    minute_bar = nothing;
+    if (haskey(record, :minuteBar) == true && record.minuteBar !== nothing)
+        minute_bar = _parse_bar(String(symbol), record.minuteBar);
+    end
+    daily_bar = nothing;
+    if (haskey(record, :dailyBar) == true && record.dailyBar !== nothing)
+        daily_bar = _parse_bar(String(symbol), record.dailyBar);
+    end
+    previous_daily_bar = nothing;
+    if (haskey(record, :prevDailyBar) == true && record.prevDailyBar !== nothing)
+        previous_daily_bar = _parse_bar(String(symbol), record.prevDailyBar);
+    end
+
+    # the implied volatility and the greeks -
+    implied_volatility = nothing;
+    if (haskey(record, :impliedVolatility) == true && record.impliedVolatility !== nothing)
+        implied_volatility = Float64(record.impliedVolatility);
+    end
+    greeks = nothing;
+    if (haskey(record, :greeks) == true && record.greeks !== nothing)
+        greeks = _parse_greeks(record.greeks);
+    end
+
+    # build the snapshot -
+    return OptionSnapshot(String(symbol), latest_quote, latest_trade, minute_bar, daily_bar, previous_daily_bar,
+        implied_volatility, greeks, record);
+end
+
+# _legacy_bars_by_symbol: the bars of one page, keyed by symbol. A missing or null bars object is an empty result -
+function _legacy_bars_by_symbol(body::String)::Dict{String,Vector{Bar}}
+    resp = JSON3.read(body);
+    out = Dict{String,Vector{Bar}}();
+    if (haskey(resp, :bars) == true && resp.bars !== nothing)
+        for (symbol, records) in pairs(resp.bars)
+            bucket = get!(out, String(symbol), Bar[]);
+            for record in records
+                push!(bucket, _parse_bar(String(symbol), record));
+            end
+        end
+    end
+    return out;
+end
+
+# _legacy_quotes_by_symbol: the quotes of one page, keyed by symbol. A missing or null quotes object is empty -
+function _legacy_quotes_by_symbol(body::String)::Dict{String,Vector{Quote}}
+    resp = JSON3.read(body);
+    out = Dict{String,Vector{Quote}}();
+    if (haskey(resp, :quotes) == true && resp.quotes !== nothing)
+        for (symbol, records) in pairs(resp.quotes)
+            bucket = get!(out, String(symbol), Quote[]);
+            for record in records
+                push!(bucket, _parse_quote(String(symbol), record));
+            end
+        end
+    end
+    return out;
+end
+
+# _legacy_trades_by_symbol: the trades of one page, keyed by symbol. A missing or null trades object is empty -
+function _legacy_trades_by_symbol(body::String)::Dict{String,Vector{Trade}}
+    resp = JSON3.read(body);
+    out = Dict{String,Vector{Trade}}();
+    if (haskey(resp, :trades) == true && resp.trades !== nothing)
+        for (symbol, records) in pairs(resp.trades)
+            bucket = get!(out, String(symbol), Trade[]);
+            for record in records
+                push!(bucket, _parse_trade(String(symbol), record));
+            end
+        end
+    end
+    return out;
+end
+
+# _legacy_handler: /stocks/bars returns the bars of each symbol -
+function _legacy_handler(model::Type{MyStockBarsEndpointModel}, body::String)::Dict{String,Vector{Bar}}
+    return _legacy_bars_by_symbol(body);
+end
+
+# _legacy_handler: /options/bars returns the bars of each option symbol -
+function _legacy_handler(model::Type{MyOptionBarsEndpointModel}, body::String)::Dict{String,Vector{Bar}}
+    return _legacy_bars_by_symbol(body);
+end
+
+# _legacy_handler: /stocks/quotes returns the quotes of each symbol -
+function _legacy_handler(model::Type{MyStockQuotesEndpointModel}, body::String)::Dict{String,Vector{Quote}}
+    return _legacy_quotes_by_symbol(body);
+end
+
+# _legacy_handler: /options/quotes returns the quotes of each option symbol -
+function _legacy_handler(model::Type{MyOptionQuotesEndpointModel}, body::String)::Dict{String,Vector{Quote}}
+    return _legacy_quotes_by_symbol(body);
+end
+
+# _legacy_handler: /stocks/trades returns the trades of each symbol -
+function _legacy_handler(model::Type{MyStockTradesEndpointModel}, body::String)::Dict{String,Vector{Trade}}
+    return _legacy_trades_by_symbol(body);
+end
+
+# _legacy_handler: /options/trades returns the trades of each option symbol -
+function _legacy_handler(model::Type{MyOptionTradesEndpointModel}, body::String)::Dict{String,Vector{Trade}}
+    return _legacy_trades_by_symbol(body);
+end
+
+# _legacy_handler: the latest stock bar returns the parsed JSON value. The legacy function builds the Bar from it -
+function _legacy_handler(model::Type{MyStockLatestBarEndpointModel}, body::String)
+    return JSON3.read(body);
+end
+
+# _legacy_handler: the latest stock quote returns the parsed JSON value. The legacy function builds the Quote from it -
+function _legacy_handler(model::Type{MyStockLatestQuoteEndpointModel}, body::String)
+    return JSON3.read(body);
+end
+
+# _legacy_handler: the latest stock trade returns the parsed JSON value. The legacy function builds the Trade from it -
+function _legacy_handler(model::Type{MyStockLatestTradeEndpointModel}, body::String)
+    return JSON3.read(body);
+end
+
+# _legacy_handler: /stocks/snapshots returns the parsed JSON value, keyed by symbol -
+function _legacy_handler(model::Type{MyStockSnapshotsEndpointModel}, body::String)
+    return JSON3.read(body);
+end
+
+# _legacy_handler: /options/bars/latest returns the latest Bar of each option symbol -
+function _legacy_handler(model::Type{MyOptionLatestBarEndpointModel}, body::String)::Dict{String,Bar}
+    resp = JSON3.read(body);
+    out = Dict{String,Bar}();
+    if (haskey(resp, :bars) == true && resp.bars !== nothing)
+        for (symbol, record) in pairs(resp.bars)
+            out[String(symbol)] = _parse_bar(String(symbol), record);
+        end
+    end
+    return out;
+end
+
+# _legacy_handler: /options/quotes/latest returns the latest Quote of each option symbol -
+function _legacy_handler(model::Type{MyOptionLatestQuoteEndpointModel}, body::String)::Dict{String,Quote}
+    resp = JSON3.read(body);
+    out = Dict{String,Quote}();
+    if (haskey(resp, :quotes) == true && resp.quotes !== nothing)
+        for (symbol, record) in pairs(resp.quotes)
+            out[String(symbol)] = _parse_quote(String(symbol), record);
+        end
+    end
+    return out;
+end
+
+# _legacy_handler: /options/trades/latest returns the latest Trade of each option symbol -
+function _legacy_handler(model::Type{MyOptionLatestTradeEndpointModel}, body::String)::Dict{String,Trade}
+    resp = JSON3.read(body);
+    out = Dict{String,Trade}();
+    if (haskey(resp, :trades) == true && resp.trades !== nothing)
+        for (symbol, record) in pairs(resp.trades)
+            out[String(symbol)] = _parse_trade(String(symbol), record);
+        end
+    end
+    return out;
+end
+
+# _legacy_handler: /options/snapshots returns one OptionSnapshot for each option symbol. The endpoint either wraps
+# the snapshots under the snapshots key or does not -
+function _legacy_handler(model::Type{MyOptionSnapshotsEndpointModel}, body::String)::Dict{String,OptionSnapshot}
+    resp = JSON3.read(body);
+    out = Dict{String,OptionSnapshot}();
+    snapshots = get(resp, :snapshots, resp);
+    for (symbol, record) in pairs(snapshots)
+        out[String(symbol)] = _parse_option_snapshot(String(symbol), record);
+    end
+    return out;
+end
+
+# _legacy_handler: /options/snapshots/{underlying} returns one OptionSnapshot for each option symbol on the page.
+# A missing or null snapshots object is an empty result -
+function _legacy_handler(model::Type{MyOptionChainEndpointModel}, body::String)::Dict{String,OptionSnapshot}
+    resp = JSON3.read(body);
+    out = Dict{String,OptionSnapshot}();
+    snapshots = get(resp, :snapshots, nothing);
+    if (snapshots !== nothing)
+        for (symbol, record) in pairs(snapshots)
+            out[String(symbol)] = _parse_option_snapshot(String(symbol), record);
+        end
+    end
+    return out;
+end
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #
