@@ -10,6 +10,7 @@ import DataFrames: DataFrame
 include("Types.jl")
 include("Utility.jl")
 include("Network.jl")
+include("Factory.jl")
 include("account.jl")
 include("clock.jl")
 include("assets.jl")
@@ -27,6 +28,22 @@ export AlpacaClient, load_client
 export AbstractAlpacaEndpointModel, AbstractAlpacaTradingEndpointModel,
        AbstractAlpacaStockDataEndpointModel, AbstractAlpacaOptionDataEndpointModel,
        AbstractAlpacaOrderModel
+
+# Read endpoint models and url
+export url,
+       MyAccountEndpointModel, MyClockEndpointModel,
+       MyPositionsEndpointModel, MyCalendarEndpointModel,
+       MyAssetsEndpointModel, MyAssetEndpointModel,
+       MyPositionEndpointModel, MyOrdersEndpointModel,
+       MyOrderEndpointModel, MyOptionContractsEndpointModel,
+       MyOptionContractEndpointModel, MyStockBarsEndpointModel,
+       MyStockQuotesEndpointModel, MyStockTradesEndpointModel,
+       MyStockLatestBarEndpointModel, MyStockLatestQuoteEndpointModel,
+       MyStockLatestTradeEndpointModel, MyStockSnapshotsEndpointModel,
+       MyOptionBarsEndpointModel, MyOptionQuotesEndpointModel,
+       MyOptionTradesEndpointModel, MyOptionLatestBarEndpointModel,
+       MyOptionLatestQuoteEndpointModel, MyOptionLatestTradeEndpointModel,
+       MyOptionSnapshotsEndpointModel, MyOptionChainEndpointModel
 
 # Account / clock
 export get_account, get_clock, get_calendar
