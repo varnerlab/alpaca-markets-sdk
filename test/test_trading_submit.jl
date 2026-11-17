@@ -74,3 +74,52 @@ end
     @test log[1].method == "DELETE"
     @test log[1].path == "/orders/ord-1"
 end
+
+@testset "submit: invalid input raises ArgumentError and sends nothing" begin
+    handler, log = recording_handler() do _req
+        return json_response(200, _N_EQUITY_ORDER)
+    end
+    with_mock(handler) do client
+        # an empty vector -
+        @test_throws ArgumentError submit(client, MyOptionLegModel[]; limit_price = 1.0)
+
+        # a 1-leg vector with the default type (limit) and no limit price -
+        one_leg = [MyOptionLegModel(symbol = "SPY261218C00600000", side = "buy", ratio = 2)]
+        @test_throws ArgumentError submit(client, one_leg)
+
+        # a 2-leg vector where one side changed after construction -
+        legs = [MyOptionLegModel(symbol = "A", side = "sell"), MyOptionLegModel(symbol = "B", side = "buy")]
+        legs[2].side = "long"
+        @test_throws ArgumentError submit(client, legs; limit_price = 1.0)
+
+        # a 2-leg vector where one ratio changed after construction -
+        legs = [MyOptionLegModel(symbol = "A", side = "sell"), MyOptionLegModel(symbol = "B", side = "buy")]
+        legs[1].ratio = 0
+        @test_throws ArgumentError submit(client, legs; limit_price = 1.0)
+
+        # a single leg changed after construction -
+        leg = MyOptionLegModel(symbol = "A", side = "buy")
+        leg.ratio = 0
+        @test_throws ArgumentError submit(client, leg)
+
+        # an equity limit order without a limit price -
+        @test_throws ArgumentError submit(client, MyEquityOrderModel(symbol = "AAPL", side = "buy", qty = 1); type = "limit")
+    end
+    @test length(log) == 0
+end
+
+@testset "submit: 1-leg vector with a limit price sends one single order" begin
+    handler, log = recording_handler() do _req
+        return json_response(200, _N_EQUITY_ORDER)
+    end
+    one_leg = [MyOptionLegModel(symbol = "SPY261218C00600000", side = "sell", ratio = 2)]
+    with_mock(handler) do client
+        @test submit(client, one_leg; qty = 3, limit_price = 1.5) isa Order
+    end
+    @test length(log) == 1
+    body = JSON3.read(log[1].body)
+    @test body.qty == "6"
+    @test body.position_intent == "sell_to_open"
+    @test body.limit_price == "1.5"
+    @test !haskey(body, :order_class)
+end

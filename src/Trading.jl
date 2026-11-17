@@ -23,11 +23,15 @@ Submit one equity or ETF order, using an HTTP POST call to the Alpaca `/orders` 
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
+- `ArgumentError`: when the `type` requires a price that is `nothing`, e.g., `"limit"` without `limit_price`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function submit(client::AlpacaClient, m::MyEquityOrderModel; type::AbstractString = "market", time_in_force::AbstractString = "day",
     limit_price::Union{Nothing,Real} = nothing, stop_price::Union{Nothing,Real} = nothing, trail_price::Union{Nothing,Real} = nothing,
     trail_percent::Union{Nothing,Real} = nothing, client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false)::Order
+
+    # check the prices that the order type requires, before any request -
+    _check_order_prices(type, limit_price, stop_price, trail_price, trail_percent, true);
 
     # build the request body from the model and the keywords -
     body = _single_order_body(m.symbol, m.qty, m.side; type = type, time_in_force = time_in_force, limit_price = limit_price,
@@ -59,11 +63,18 @@ The order sends `qty * leg.ratio` contracts with the position intent `buy_to_ope
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
+- `ArgumentError`: when `leg.side` is not `"buy"` or `"sell"`, when `leg.ratio < 1`, or when the `type` requires a price that is `nothing`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function submit(client::AlpacaClient, leg::MyOptionLegModel; qty::Int = 1, type::AbstractString = "market", time_in_force::AbstractString = "day",
     limit_price::Union{Nothing,Real} = nothing, stop_price::Union{Nothing,Real} = nothing,
     client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false)::Order
+
+    # the model is mutable, so check the side and the ratio of the leg again -
+    _check_leg_fields(leg.side, leg.ratio);
+
+    # check the prices that the order type requires, before any request -
+    _check_order_prices(type, limit_price, stop_price, nothing, nothing, false);
 
     # the number of contracts is the number of units times the ratio of the leg -
     contracts = qty * leg.ratio;
@@ -99,7 +110,7 @@ For an `mleg` order, `limit_price` is the net price of one unit of the structure
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when there are no legs, more than 4 legs, or the order is invalid. The call sends no request.
+- `ArgumentError`: when there are no legs, more than 4 legs, or a leg is invalid. For one leg, the single-leg checks apply, e.g., `"limit"` requires `limit_price`. For 2 to 4 legs, a `"limit"` order requires `limit_price`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function submit(client::AlpacaClient, legs::Vector{MyOptionLegModel}; qty::Int = 1, type::AbstractString = "limit", time_in_force::AbstractString = "day",
@@ -211,6 +222,41 @@ end
 const _LEG_SIDES = ("buy", "sell");
 const _LEG_INTENTS = ("buy_to_open", "sell_to_open", "buy_to_close", "sell_to_close");
 const _MLEG_ORDER_TYPES = ("market", "limit");
+
+# _check_order_prices: check that the prices that the order type requires are set. This runs in the public submit methods -
+function _check_order_prices(type::AbstractString, limit_price, stop_price, trail_price, trail_percent, is_equity::Bool)::Nothing
+
+    # limit and stop_limit orders need a limit price -
+    if ((type == "limit" || type == "stop_limit") && limit_price === nothing)
+        throw(ArgumentError("limit_price is required when type=\"$(type)\""));
+    end
+
+    # stop and stop_limit orders need a stop price -
+    if ((type == "stop" || type == "stop_limit") && stop_price === nothing)
+        throw(ArgumentError("stop_price is required when type=\"$(type)\""));
+    end
+
+    # an equity trailing stop needs a trail price or a trail percent -
+    if (is_equity == true && type == "trailing_stop" && trail_price === nothing && trail_percent === nothing)
+        throw(ArgumentError("trail_price or trail_percent is required when type=\"trailing_stop\""));
+    end
+    return nothing;
+end
+
+# _check_leg_fields: check the side and the ratio of an option leg. The leg model is mutable, so its fields can change after construction -
+function _check_leg_fields(side::AbstractString, ratio::Integer)::Nothing
+
+    # the side is buy or sell -
+    if ((side in _LEG_SIDES) == false)
+        throw(ArgumentError("side must be \"buy\" or \"sell\", got \"$(side)\""));
+    end
+
+    # the ratio is at least 1 -
+    if (ratio < 1)
+        throw(ArgumentError("ratio must be at least 1, got $(ratio)"));
+    end
+    return nothing;
+end
 
 # _single_order_body: build the body of a single-leg order. Prices are written with string(x), so 150.25 is sent as "150.25" -
 function _single_order_body(symbol, qty, side; type = "market", time_in_force = "day", limit_price = nothing, stop_price = nothing,
