@@ -12,6 +12,7 @@ include("Utility.jl")
 include("Network.jl")
 include("Factory.jl")
 include("Handler.jl")
+include("Trading.jl")
 include("orders.jl")
 include("positions.jl")
 include("streaming.jl")
@@ -46,6 +47,9 @@ export get_account, get_clock, get_calendar
 
 # Assets
 export list_assets, get_asset
+
+# Order models and trading verbs
+export submit, cancel, MyEquityOrderModel, MyOptionLegModel
 
 # Orders
 export submit_order, submit_multileg_order,

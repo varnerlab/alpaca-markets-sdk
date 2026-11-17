@@ -1089,3 +1089,79 @@ mutable struct MyOptionChainEndpointModel <: AbstractAlpacaOptionDataEndpointMod
     MyOptionChainEndpointModel(;
         underlying::String, type::Union{Nothing,String} = nothing, strike_price_gte::Union{Nothing,Real} = nothing, strike_price_lte::Union{Nothing,Real} = nothing, expiration_date::Union{Nothing,Date,String} = nothing, expiration_date_gte::Union{Nothing,Date,String} = nothing, expiration_date_lte::Union{Nothing,Date,String} = nothing, limit::Int = 1000) = new(underlying, type, strike_price_gte, strike_price_lte, expiration_date, expiration_date_gte, expiration_date_lte, limit);
 end
+
+"""
+    mutable struct MyEquityOrderModel <: AbstractAlpacaOrderModel
+
+Order model for one equity or ETF order. The model says what to trade. The `submit` method supplies the order keywords.
+
+### Fields
+- `symbol::String`: the ticker symbol of the equity.
+- `side::String`: `"buy"` or `"sell"`.
+- `qty::Union{Nothing,Real}`: the number of shares (can be fractional), or `nothing` when `notional` is set.
+- `notional::Union{Nothing,Real}`: the dollar amount to trade, or `nothing` when `qty` is set.
+
+### Constructors
+- `MyEquityOrderModel(; symbol::String, side::String, qty::Union{Nothing,Real} = nothing, notional::Union{Nothing,Real} = nothing)`: returns a new `MyEquityOrderModel` instance.
+  The constructor throws an `ArgumentError` unless `side` is `"buy"` or `"sell"` and exactly one of `qty` and `notional` is set.
+"""
+mutable struct MyEquityOrderModel <: AbstractAlpacaOrderModel
+
+    # data -
+    symbol::String
+    side::String
+    qty::Union{Nothing,Real}
+    notional::Union{Nothing,Real}
+
+    # methods -
+    function MyEquityOrderModel(; symbol::String, side::String, qty::Union{Nothing,Real} = nothing, notional::Union{Nothing,Real} = nothing)
+
+        # the side must be buy or sell -
+        if ((side == "buy" || side == "sell") == false)
+            throw(ArgumentError("side must be \"buy\" or \"sell\", got \"$(side)\""));
+        end
+
+        # exactly one of qty and notional must be set -
+        if ((qty === nothing && notional === nothing) || (qty !== nothing && notional !== nothing))
+            throw(ArgumentError("set exactly one of `qty` and `notional`"));
+        end
+        return new(symbol, side, qty, notional);
+    end
+end
+
+"""
+    mutable struct MyOptionLegModel <: AbstractAlpacaOrderModel
+
+Order model for one option leg. A leg has no position intent. The verb (`submit`, and later `close` and `roll`) supplies the intent.
+
+### Fields
+- `symbol::String`: the OCC symbol of the option contract.
+- `side::String`: `"buy"` (long the contract) or `"sell"` (short the contract).
+- `ratio::Int`: the number of contracts of this leg in one unit of the structure.
+
+### Constructors
+- `MyOptionLegModel(; symbol::String, side::String, ratio::Int = 1)`: returns a new `MyOptionLegModel` instance.
+  The constructor throws an `ArgumentError` unless `side` is `"buy"` or `"sell"` and `ratio >= 1`.
+"""
+mutable struct MyOptionLegModel <: AbstractAlpacaOrderModel
+
+    # data -
+    symbol::String
+    side::String
+    ratio::Int
+
+    # methods -
+    function MyOptionLegModel(; symbol::String, side::String, ratio::Int = 1)
+
+        # the side must be buy or sell -
+        if ((side == "buy" || side == "sell") == false)
+            throw(ArgumentError("side must be \"buy\" or \"sell\", got \"$(side)\""));
+        end
+
+        # the ratio must be at least 1 -
+        if (ratio < 1)
+            throw(ArgumentError("ratio must be at least 1, got $(ratio)"));
+        end
+        return new(symbol, side, ratio);
+    end
+end
