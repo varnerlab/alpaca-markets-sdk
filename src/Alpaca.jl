@@ -5,7 +5,7 @@ using JSON3
 using TOML
 using URIs
 using Dates
-import DataFrames: DataFrame
+import DataFrames: DataFrame, Not, select!, rename!
 
 include("Types.jl")
 include("Utility.jl")

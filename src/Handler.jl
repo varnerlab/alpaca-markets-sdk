@@ -536,4 +536,430 @@ Process the response of the `/options/contracts/{symbol_or_id}` endpoint. The ta
 function _default_handler(model::Type{MyOptionContractEndpointModel}, body::String)::DataFrame
     return _option_contracts_table(_json_records(body, String[]));
 end
+# _text_or_missing: an optional value that Alpaca can send as text or as a number (e.g., a trade id), kept as text -
+function _text_or_missing(record, key::Symbol)::Union{Missing,String}
+
+    # look up the field -
+    value = get(record, key, nothing);
+    if (value === nothing)
+        return missing;
+    end
+    return string(value);
+end
+
+# _int_or_missing: an optional whole number; missing when there is no value -
+function _int_or_missing(record, key::Symbol)::Union{Missing,Int}
+
+    # parse the field as a number, and round it to a whole number -
+    value = _parse_float(get(record, key, nothing));
+    if (value === nothing)
+        return missing;
+    end
+    return Int(round(value));
+end
+
+# _as_record: a record that is absent or null has no fields, so every lookup on it finds no value -
+function _as_record(record)
+    if (record === nothing)
+        return Dict{Symbol,Any}();
+    end
+    return record;
+end
+
+"""
+    _symbol_records(container) -> Tuple{Vector{Union{Missing,String}}, Vector{Any}}
+
+Flatten a JSON object that maps a symbol to a record, or to a list of records, into two vectors of the same length:
+the symbol of each record, and the record. The rows follow the order of the JSON object, and the order of each list.
+A `container` that is `nothing` (a `null` in the response), or an entry that is not an object or a list, adds no rows.
+"""
+function _symbol_records(container)::Tuple{Vector{Union{Missing,String}},Vector{Any}}
+
+    # initialize: the symbol and the record of each row -
+    symbols = Union{Missing,String}[];
+    records = Any[];
+    if (container === nothing)
+        return (symbols, records);
+    end
+
+    # visit the symbols in the order of the response -
+    for (key, value) in pairs(container)
+        if (value isa JSON3.Array)
+            for record in value
+                push!(symbols, String(key));
+                push!(records, record);
+            end
+        elseif (value isa JSON3.Object)
+            push!(symbols, String(key));
+            push!(records, value);
+        end
+    end
+    return (symbols, records);
+end
+
+# _symbol_records_under: the symbol records under one key of the response body -
+function _symbol_records_under(body::String, key::Symbol)::Tuple{Vector{Union{Missing,String}},Vector{Any}}
+    return _symbol_records(get(JSON3.read(body), key, nothing));
+end
+
+# _latest_stock_records: the one record under `key` of a latest stock response, and the top-level symbol (or missing) -
+function _latest_stock_records(body::String, key::Symbol)::Tuple{Vector{Union{Missing,String}},Vector{Any}}
+
+    # a latest stock response holds one record, and may name its symbol at the top level -
+    parsed = JSON3.read(body);
+    symbols = Union{Missing,String}[];
+    records = Any[];
+    record = get(parsed, key, nothing);
+    if (record !== nothing)
+        push!(symbols, _string_or_missing(parsed, :symbol));
+        push!(records, record);
+    end
+    return (symbols, records);
+end
+
+# _option_snapshot_records: the snapshots of an option response, under the `snapshots` key or unwrapped -
+function _option_snapshot_records(body::String)::Tuple{Vector{Union{Missing,String}},Vector{Any}}
+
+    # the snapshots are under a key, or the response is the object of snapshots itself -
+    parsed = JSON3.read(body);
+    if (haskey(parsed, :snapshots) == true)
+        return _symbol_records(parsed[:snapshots]);
+    end
+    return _symbol_records(parsed);
+end
+
+"""
+    _bars_table(symbols::Vector{Union{Missing,String}}, records::Vector{Any}) -> DataFrame
+
+Build the bars table, one row for each bar record. The columns are `timestamp`, `symbol`, `open`, `high`, `low`,
+`close`, `volume`, `trade_count`, and `vwap`. A field that Alpaca does not send is `missing`.
+"""
+function _bars_table(symbols::Vector{Union{Missing,String}}, records::Vector{Any})::DataFrame
+
+    # initialize: one array for each column of the table -
+    timestamps = Array{Union{Missing,DateTime},1}();
+    opens = Array{Union{Missing,Float64},1}();
+    highs = Array{Union{Missing,Float64},1}();
+    lows = Array{Union{Missing,Float64},1}();
+    closes = Array{Union{Missing,Float64},1}();
+    volumes = Array{Union{Missing,Float64},1}();
+    trade_counts = Array{Union{Missing,Int},1}();
+    vwaps = Array{Union{Missing,Float64},1}();
+
+    # visit the records, and select the fields we want -
+    for item in records
+        record = _as_record(item);
+        push!(timestamps, _parse_utc(get(record, :t, nothing)));
+        push!(opens, _float_or_missing(record, :o));
+        push!(highs, _float_or_missing(record, :h));
+        push!(lows, _float_or_missing(record, :l));
+        push!(closes, _float_or_missing(record, :c));
+        push!(volumes, _float_or_missing(record, :v));
+        push!(trade_counts, _int_or_missing(record, :n));
+        push!(vwaps, _float_or_missing(record, :vw));
+    end
+
+    # put the columns into a table, and return it -
+    return DataFrame(timestamp = timestamps, symbol = symbols, open = opens, high = highs, low = lows,
+        close = closes, volume = volumes, trade_count = trade_counts, vwap = vwaps);
+end
+
+"""
+    _quotes_table(symbols::Vector{Union{Missing,String}}, records::Vector{Any}) -> DataFrame
+
+Build the quotes table, one row for each quote record. The columns are `timestamp`, `symbol`, `bid_price`,
+`bid_size`, `ask_price`, `ask_size`, `bid_exchange`, and `ask_exchange`. A field that Alpaca does not send is `missing`.
+"""
+function _quotes_table(symbols::Vector{Union{Missing,String}}, records::Vector{Any})::DataFrame
+
+    # initialize: one array for each column of the table -
+    timestamps = Array{Union{Missing,DateTime},1}();
+    bid_prices = Array{Union{Missing,Float64},1}();
+    bid_sizes = Array{Union{Missing,Float64},1}();
+    ask_prices = Array{Union{Missing,Float64},1}();
+    ask_sizes = Array{Union{Missing,Float64},1}();
+    bid_exchanges = Array{Union{Missing,String},1}();
+    ask_exchanges = Array{Union{Missing,String},1}();
+
+    # visit the records, and select the fields we want -
+    for item in records
+        record = _as_record(item);
+        push!(timestamps, _parse_utc(get(record, :t, nothing)));
+        push!(bid_prices, _float_or_missing(record, :bp));
+        push!(bid_sizes, _float_or_missing(record, :bs));
+        push!(ask_prices, _float_or_missing(record, :ap));
+        push!(ask_sizes, _float_or_missing(record, :as));
+        push!(bid_exchanges, _text_or_missing(record, :bx));
+        push!(ask_exchanges, _text_or_missing(record, :ax));
+    end
+
+    # put the columns into a table, and return it -
+    return DataFrame(timestamp = timestamps, symbol = symbols, bid_price = bid_prices, bid_size = bid_sizes,
+        ask_price = ask_prices, ask_size = ask_sizes, bid_exchange = bid_exchanges, ask_exchange = ask_exchanges);
+end
+
+"""
+    _trades_table(symbols::Vector{Union{Missing,String}}, records::Vector{Any}) -> DataFrame
+
+Build the trades table, one row for each trade record. The columns are `timestamp`, `symbol`, `price`, `size`,
+`exchange`, and `id`. The `id` is text. A field that Alpaca does not send is `missing`.
+"""
+function _trades_table(symbols::Vector{Union{Missing,String}}, records::Vector{Any})::DataFrame
+
+    # initialize: one array for each column of the table -
+    timestamps = Array{Union{Missing,DateTime},1}();
+    prices = Array{Union{Missing,Float64},1}();
+    sizes = Array{Union{Missing,Float64},1}();
+    exchanges = Array{Union{Missing,String},1}();
+    ids = Array{Union{Missing,String},1}();
+
+    # visit the records, and select the fields we want -
+    for item in records
+        record = _as_record(item);
+        push!(timestamps, _parse_utc(get(record, :t, nothing)));
+        push!(prices, _float_or_missing(record, :p));
+        push!(sizes, _float_or_missing(record, :s));
+        push!(exchanges, _text_or_missing(record, :x));
+        push!(ids, _text_or_missing(record, :i));
+    end
+
+    # put the columns into a table, and return it -
+    return DataFrame(timestamp = timestamps, symbol = symbols, price = prices, size = sizes,
+        exchange = exchanges, id = ids);
+end
+
+"""
+    _snapshots_table(symbols::Vector{Union{Missing,String}}, snapshots::Vector{Any}, with_greeks::Bool) -> DataFrame
+
+Build the snapshots table, one row for each snapshot. The columns are `symbol`, then the columns of the trades,
+quotes, and bars tables (without `symbol`) for the `latestTrade`, `latestQuote`, `minuteBar`, `dailyBar`, and
+`prevDailyBar` objects, with the prefixes `latest_trade_`, `latest_quote_`, `minute_bar_`, `daily_bar_`, and
+`prev_daily_bar_`. An object that is absent makes every column of its group `missing`. When `with_greeks` is `true`
+(option snapshots), the columns `implied_volatility`, `delta`, `gamma`, `theta`, `vega`, and `rho` follow.
+"""
+function _snapshots_table(symbols::Vector{Union{Missing,String}}, snapshots::Vector{Any}, with_greeks::Bool)::DataFrame
+
+    # the groups of a snapshot: the key in the response, the column prefix, and the kind of table -
+    group_keys = [:latestTrade, :latestQuote, :minuteBar, :dailyBar, :prevDailyBar];
+    prefixes = ["latest_trade_", "latest_quote_", "minute_bar_", "daily_bar_", "prev_daily_bar_"];
+    kinds = ["trade", "quote", "bar", "bar", "bar"];
+
+    # start the table with the symbol column -
+    table = DataFrame(symbol = symbols);
+
+    # build the table of each group, prefix its columns, and add it to the right of the others -
+    for i in eachindex(group_keys)
+        group_records = Any[];
+        for snapshot in snapshots
+            push!(group_records, get(snapshot, group_keys[i], nothing));
+        end
+
+        # the group table has the same rows as the snapshots, and its symbol column is dropped -
+        group = DataFrame();
+        if (kinds[i] == "trade")
+            group = _trades_table(symbols, group_records);
+        elseif (kinds[i] == "quote")
+            group = _quotes_table(symbols, group_records);
+        else
+            group = _bars_table(symbols, group_records);
+        end
+        select!(group, Not(:symbol));
+        for name in names(group)
+            rename!(group, name => prefixes[i] * name);
+        end
+        table = hcat(table, group);
+    end
+
+    # option snapshots also carry the implied volatility and the greeks -
+    if (with_greeks == true)
+        implied_volatilities = Array{Union{Missing,Float64},1}();
+        deltas = Array{Union{Missing,Float64},1}();
+        gammas = Array{Union{Missing,Float64},1}();
+        thetas = Array{Union{Missing,Float64},1}();
+        vegas = Array{Union{Missing,Float64},1}();
+        rhos = Array{Union{Missing,Float64},1}();
+        for snapshot in snapshots
+            greeks = _as_record(get(snapshot, :greeks, nothing));
+            push!(implied_volatilities, _float_or_missing(snapshot, :impliedVolatility));
+            push!(deltas, _float_or_missing(greeks, :delta));
+            push!(gammas, _float_or_missing(greeks, :gamma));
+            push!(thetas, _float_or_missing(greeks, :theta));
+            push!(vegas, _float_or_missing(greeks, :vega));
+            push!(rhos, _float_or_missing(greeks, :rho));
+        end
+        table.implied_volatility = implied_volatilities;
+        table.delta = deltas;
+        table.gamma = gammas;
+        table.theta = thetas;
+        table.vega = vegas;
+        table.rho = rhos;
+    end
+    return table;
+end
+
+"""
+    _default_handler(model::Type{MyStockBarsEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/stocks/bars` endpoint. The records are under the `bars` key, grouped by symbol. The table has one
+row for each record, with the columns of `_bars_table`. A `null` or empty `bars` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyStockBarsEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :bars);
+    return _bars_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyStockQuotesEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/stocks/quotes` endpoint. The records are under the `quotes` key, grouped by symbol. The table has one
+row for each record, with the columns of `_quotes_table`. A `null` or empty `quotes` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyStockQuotesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :quotes);
+    return _quotes_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyStockTradesEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/stocks/trades` endpoint. The records are under the `trades` key, grouped by symbol. The table has one
+row for each record, with the columns of `_trades_table`. A `null` or empty `trades` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyStockTradesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :trades);
+    return _trades_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyOptionBarsEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/options/bars` endpoint. The records are under the `bars` key, grouped by symbol. The table has one
+row for each record, with the columns of `_bars_table`. A `null` or empty `bars` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyOptionBarsEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :bars);
+    return _bars_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyOptionQuotesEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/options/quotes` endpoint. The records are under the `quotes` key, grouped by symbol. The table has one
+row for each record, with the columns of `_quotes_table`. A `null` or empty `quotes` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyOptionQuotesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :quotes);
+    return _quotes_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyOptionTradesEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/options/trades` endpoint. The records are under the `trades` key, grouped by symbol. The table has one
+row for each record, with the columns of `_trades_table`. A `null` or empty `trades` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyOptionTradesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :trades);
+    return _trades_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyStockLatestBarEndpointModel}, body::String) -> DataFrame
+
+Process the response of the latest bar endpoint for one stock. The table has one row, with the columns of
+`_bars_table`. The `symbol` is the top-level `symbol` key of the response, or `missing` when the response has none.
+"""
+function _default_handler(model::Type{MyStockLatestBarEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _latest_stock_records(body, :bar);
+    return _bars_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyStockLatestQuoteEndpointModel}, body::String) -> DataFrame
+
+Process the response of the latest quote endpoint for one stock. The table has one row, with the columns of
+`_quotes_table`. The `symbol` is the top-level `symbol` key of the response, or `missing` when the response has none.
+"""
+function _default_handler(model::Type{MyStockLatestQuoteEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _latest_stock_records(body, :quote);
+    return _quotes_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyStockLatestTradeEndpointModel}, body::String) -> DataFrame
+
+Process the response of the latest trade endpoint for one stock. The table has one row, with the columns of
+`_trades_table`. The `symbol` is the top-level `symbol` key of the response, or `missing` when the response has none.
+"""
+function _default_handler(model::Type{MyStockLatestTradeEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _latest_stock_records(body, :trade);
+    return _trades_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyOptionLatestBarEndpointModel}, body::String) -> DataFrame
+
+Process the response of the latest bar endpoint for option contracts. The records are under the `bars` key,
+one for each symbol. The table has one row for each symbol, with the columns of `_bars_table`.
+"""
+function _default_handler(model::Type{MyOptionLatestBarEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :bars);
+    return _bars_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyOptionLatestQuoteEndpointModel}, body::String) -> DataFrame
+
+Process the response of the latest quote endpoint for option contracts. The records are under the `quotes` key,
+one for each symbol. The table has one row for each symbol, with the columns of `_quotes_table`.
+"""
+function _default_handler(model::Type{MyOptionLatestQuoteEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :quotes);
+    return _quotes_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyOptionLatestTradeEndpointModel}, body::String) -> DataFrame
+
+Process the response of the latest trade endpoint for option contracts. The records are under the `trades` key,
+one for each symbol. The table has one row for each symbol, with the columns of `_trades_table`.
+"""
+function _default_handler(model::Type{MyOptionLatestTradeEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :trades);
+    return _trades_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyStockSnapshotsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/stocks/snapshots` endpoint. The snapshots are the top-level keys of the response, one
+for each symbol. The table has one row for each symbol, with the columns of `_snapshots_table` (without the greeks).
+"""
+function _default_handler(model::Type{MyStockSnapshotsEndpointModel}, body::String)::DataFrame
+    (symbols, snapshots) = _symbol_records(JSON3.read(body));
+    return _snapshots_table(symbols, snapshots, false);
+end
+
+"""
+    _default_handler(model::Type{MyOptionSnapshotsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/options/snapshots` endpoint. The snapshots are under the `snapshots` key, or are the
+top-level keys of the response. The table has one row for each symbol, with the columns of `_snapshots_table`
+(with the greeks).
+"""
+function _default_handler(model::Type{MyOptionSnapshotsEndpointModel}, body::String)::DataFrame
+    (symbols, snapshots) = _option_snapshot_records(body);
+    return _snapshots_table(symbols, snapshots, true);
+end
+
+"""
+    _default_handler(model::Type{MyOptionChainEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/options/snapshots/{underlying}` endpoint. The table has one row for each option contract,
+with the columns of `_snapshots_table` (with the greeks).
+"""
+function _default_handler(model::Type{MyOptionChainEndpointModel}, body::String)::DataFrame
+    (symbols, snapshots) = _option_snapshot_records(body);
+    return _snapshots_table(symbols, snapshots, true);
+end
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #

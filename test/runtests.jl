@@ -24,4 +24,5 @@ include("mock_server.jl")
     include("test_models_url.jl")
     include("test_api.jl")
     include("test_handlers_trading.jl")
+    include("test_handlers_marketdata.jl")
 end
