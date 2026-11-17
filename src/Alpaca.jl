@@ -30,7 +30,7 @@ export AbstractAlpacaEndpointModel, AbstractAlpacaTradingEndpointModel,
        AbstractAlpacaOrderModel
 
 # Read endpoint models and url
-export url,
+export api, url,
        MyAccountEndpointModel, MyClockEndpointModel,
        MyPositionsEndpointModel, MyCalendarEndpointModel,
        MyAssetsEndpointModel, MyAssetEndpointModel,
