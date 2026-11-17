@@ -204,7 +204,7 @@ function cancel(client::AlpacaClient; all::Bool = false)::DataFrame
     end
 
     # send the request and read the per-order status -
-    body = _http_call(client, "DELETE", "$(client.trading_url)/orders");
+    body = _cancel_all_orders(client);
     ids = String[];
     statuses = Any[];
     if (isempty(body) == false)
@@ -214,6 +214,343 @@ function cancel(client::AlpacaClient; all::Bool = false)::DataFrame
         end
     end
     return DataFrame(id = ids, status = statuses);
+end
+
+"""
+    Base.close(client::AlpacaClient, symbol::String; qty = nothing, percentage = nothing) -> Order
+
+Close the position in one symbol at market, using an HTTP DELETE call to the Alpaca `/positions/{symbol}` endpoint.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `symbol::String`: the symbol of the position, e.g., `"AAPL"` or an OCC contract symbol.
+- `qty`: the number of shares or contracts to close, or `nothing` to close the whole position.
+- `percentage`: the percentage of the position to close, or `nothing`.
+
+### Returns
+- `Order`: the order that Alpaca created to close the position.
+
+### Throws
+- `AlpacaError`: when Alpaca rejects the request, e.g., there is no position in the symbol.
+"""
+function Base.close(client::AlpacaClient, symbol::String; qty::Union{Nothing,Real} = nothing, percentage::Union{Nothing,Real} = nothing)::Order
+    response = _close_position(client, symbol; qty = qty, percentage = percentage);
+    return _parse_order(JSON3.read(response));
+end
+
+"""
+    Base.close(client::AlpacaClient; all::Bool = false, cancel_orders::Bool = false) -> DataFrame
+
+Close every position at market, using an HTTP DELETE call to the Alpaca `/positions` endpoint.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `all::Bool`: must be `true`. The keyword makes the close of every position explicit.
+- `cancel_orders::Bool`: `true` cancels the open orders before the positions close.
+
+### Returns
+- `DataFrame`: one row for each position that Alpaca tried to close, with the columns `symbol` and `status`.
+
+### Throws
+- `ArgumentError`: when `all` is not `true`. The call sends no request.
+- `AlpacaError`: when Alpaca rejects the request.
+"""
+function Base.close(client::AlpacaClient; all::Bool = false, cancel_orders::Bool = false)::DataFrame
+
+    # closing every position must be requested explicitly -
+    if (all == false)
+        throw(ArgumentError("pass `all = true` to close every position"));
+    end
+
+    # send the request and read the per-position status -
+    body = _close_all_positions(client; cancel_orders = cancel_orders);
+    symbols = String[];
+    statuses = Any[];
+    if (isempty(body) == false)
+        for record in _json_records(body, String[])
+            push!(symbols, String(get(record, :symbol, "")));
+            push!(statuses, get(record, :status, nothing));
+        end
+    end
+    return DataFrame(symbol = symbols, status = statuses);
+end
+
+"""
+    Base.close(client::AlpacaClient, m::MyEquityOrderModel; type = "market", time_in_force = "day",
+        limit_price = nothing, stop_price = nothing, trail_price = nothing, trail_percent = nothing,
+        client_order_id = nothing, extended_hours = false) -> Order
+
+Close an equity or ETF order by submitting the reverse order, using an HTTP POST call to the Alpaca `/orders` endpoint.
+The reverse order has the opposite side and the same `qty` or `notional` as the model.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `m::MyEquityOrderModel`: the order model to reverse.
+- `type::String`: `"market"`, `"limit"`, `"stop"`, `"stop_limit"`, or `"trailing_stop"`.
+- `time_in_force::String`: `"day"`, `"gtc"`, `"opg"`, `"cls"`, `"ioc"`, or `"fok"`.
+- `limit_price`, `stop_price`, `trail_price`, `trail_percent`: the prices of the order, or `nothing`.
+- `client_order_id`: the order identifier assigned by the client, or `nothing`.
+- `extended_hours::Bool`: `true` allows the order to fill outside regular trading hours.
+
+### Returns
+- `Order`: the order as Alpaca accepted it.
+
+### Throws
+- `ArgumentError`: when the `type` requires a price that is `nothing`. The call sends no request.
+- `AlpacaError`: when Alpaca rejects the request.
+"""
+function Base.close(client::AlpacaClient, m::MyEquityOrderModel; type::AbstractString = "market", time_in_force::AbstractString = "day",
+    limit_price::Union{Nothing,Real} = nothing, stop_price::Union{Nothing,Real} = nothing, trail_price::Union{Nothing,Real} = nothing,
+    trail_percent::Union{Nothing,Real} = nothing, client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false)::Order
+
+    # run the same checks as submit, before any request -
+    _check_order_prices(type, limit_price, stop_price, trail_price, trail_percent, true);
+
+    # build the body of the reverse order -
+    body = _single_order_body(m.symbol, m.qty, _opposite_side(m.side); type = type, time_in_force = time_in_force, limit_price = limit_price,
+        stop_price = stop_price, trail_price = trail_price, trail_percent = trail_percent, client_order_id = client_order_id,
+        extended_hours = extended_hours, notional = m.notional);
+
+    # send the order -
+    return _post_order(client, body);
+end
+
+"""
+    Base.close(client::AlpacaClient, leg::MyOptionLegModel; qty = 1, type = "market", time_in_force = "day",
+        limit_price = nothing, stop_price = nothing, client_order_id = nothing, extended_hours = false) -> Order
+
+Close an option leg by submitting the reverse order, using an HTTP POST call to the Alpaca `/orders` endpoint.
+The reverse order has the opposite side of the leg, sends `qty * leg.ratio` contracts, and has the position intent `buy_to_close` or `sell_to_close`.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `leg::MyOptionLegModel`: the option leg to close.
+- `qty::Int`: the number of units of the leg.
+- `type::String`: `"market"`, `"limit"`, `"stop"`, or `"stop_limit"`.
+- `time_in_force::String`: the time in force of the order, e.g., `"day"`.
+- `limit_price`, `stop_price`: the prices of the order, or `nothing`.
+- `client_order_id`: the order identifier assigned by the client, or `nothing`.
+- `extended_hours::Bool`: `true` allows the order to fill outside regular trading hours.
+
+### Returns
+- `Order`: the order as Alpaca accepted it.
+
+### Throws
+- `ArgumentError`: when `leg.side` is not `"buy"` or `"sell"`, when `leg.ratio < 1`, or when the `type` requires a price that is `nothing`. The call sends no request.
+- `AlpacaError`: when Alpaca rejects the request.
+"""
+function Base.close(client::AlpacaClient, leg::MyOptionLegModel; qty::Int = 1, type::AbstractString = "market", time_in_force::AbstractString = "day",
+    limit_price::Union{Nothing,Real} = nothing, stop_price::Union{Nothing,Real} = nothing,
+    client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false)::Order
+
+    # run the same checks as submit, before any request -
+    _check_leg_fields(leg.side, leg.ratio);
+    _check_order_prices(type, limit_price, stop_price, nothing, nothing, false);
+
+    # the number of contracts is the number of units times the ratio of the leg -
+    contracts = qty * leg.ratio;
+
+    # build the body of the reverse order, with the intent that closes the leg -
+    reverse_side = _opposite_side(leg.side);
+    body = _single_order_body(leg.symbol, contracts, reverse_side; type = type, time_in_force = time_in_force, limit_price = limit_price,
+        stop_price = stop_price, client_order_id = client_order_id, extended_hours = extended_hours,
+        position_intent = reverse_side * "_to_close");
+
+    # send the order -
+    return _post_order(client, body);
+end
+
+"""
+    Base.close(client::AlpacaClient, legs::Vector{MyOptionLegModel}; qty = 1, type = "limit", time_in_force = "day",
+        limit_price = nothing, client_order_id = nothing, extended_hours = false) -> Order
+
+Close a structure of option legs by submitting the reverse order, using an HTTP POST call to the Alpaca `/orders` endpoint.
+The reverse order has the opposite side of every leg and the position intent `buy_to_close` or `sell_to_close`.
+One leg is sent as a single option order. Two to four legs are sent as one atomic `mleg` order.
+For an `mleg` order, `limit_price` is the net price of one unit of the structure (positive is a debit, negative is a credit).
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `legs::Vector{MyOptionLegModel}`: the legs to close.
+- `qty::Int`: the number of units of the structure.
+- `type::String`: `"market"` or `"limit"`.
+- `time_in_force::String`: the time in force of the order, e.g., `"day"`.
+- `limit_price`: the limit price, or `nothing`. A limit order requires it.
+- `client_order_id`: the order identifier assigned by the client, or `nothing`.
+- `extended_hours::Bool`: `true` allows the order to fill outside regular trading hours.
+
+### Returns
+- `Order`: the order as Alpaca accepted it.
+
+### Throws
+- `ArgumentError`: when there are no legs, more than 4 legs, or a leg is invalid. A `"limit"` order requires `limit_price`. The call sends no request.
+- `AlpacaError`: when Alpaca rejects the request.
+"""
+function Base.close(client::AlpacaClient, legs::Vector{MyOptionLegModel}; qty::Int = 1, type::AbstractString = "limit", time_in_force::AbstractString = "day",
+    limit_price::Union{Nothing,Real} = nothing, client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false)::Order
+
+    # one leg is a single option order -
+    if (length(legs) == 1)
+        return close(client, legs[1]; qty = qty, type = type, time_in_force = time_in_force, limit_price = limit_price,
+            client_order_id = client_order_id, extended_hours = extended_hours);
+    end
+
+    # check the fields of each leg -
+    for leg in legs
+        _check_leg_fields(leg.side, leg.ratio);
+    end
+
+    # reverse every leg -
+    symbols = String[];
+    sides = String[];
+    intents = String[];
+    ratios = Int[];
+    _append_legs!(symbols, sides, intents, ratios, legs, true);
+
+    # build the mleg body (this checks the legs, so an invalid order sends nothing) and send the order -
+    body = _mleg_body(symbols, sides, intents, ratios; qty = qty, type = type, time_in_force = time_in_force,
+        limit_price = limit_price, client_order_id = client_order_id, extended_hours = extended_hours);
+    return _post_order(client, body);
+end
+
+"""
+    Base.close(client::AlpacaClient, order::Order; type = "market", limit_price = nothing, time_in_force = "day") -> Order
+
+Close a filled order by submitting the reverse order, using an HTTP POST call to the Alpaca `/orders` endpoint.
+The reverse order uses the filled quantities of the order. The kind of the order comes from the `Order` value:
+an order with `legs` is a multi-leg order, an order with the asset class `"us_option"` is a single option order, and any other order is an equity order.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `order::Order`: the filled order to reverse, e.g., an order that `submit` returned.
+- `type::String`: the type of the reverse order. Use `"market"` or `"limit"`.
+- `limit_price`: the limit price of the reverse order, or `nothing`. For a multi-leg order, this is the net price of one unit of the structure.
+- `time_in_force::String`: the time in force of the reverse order, e.g., `"day"`.
+
+### Returns
+- `Order`: the reverse order as Alpaca accepted it.
+
+### Throws
+- `ArgumentError`: when the status of `order` is not `"filled"`. Use `cancel` for an order that has not filled. The call sends no request.
+- `AlpacaError`: when Alpaca rejects the request.
+"""
+function Base.close(client::AlpacaClient, order::Order; type::AbstractString = "market", limit_price::Union{Nothing,Real} = nothing,
+    time_in_force::AbstractString = "day")::Order
+
+    # only a filled order can be reversed -
+    _check_filled(order);
+
+    # a multi-leg order is reversed as one unit of every leg, for each filled unit -
+    if (order.legs !== nothing)
+        return close(client, _legs_from_order(order); qty = Int(order.filled_qty), type = type, time_in_force = time_in_force,
+            limit_price = limit_price);
+    end
+
+    # a single option order is reversed with the close intent -
+    if (order.asset_class == "us_option")
+        leg = MyOptionLegModel(symbol = order.symbol, side = order.side);
+        return close(client, leg; qty = Int(order.filled_qty), type = type, time_in_force = time_in_force, limit_price = limit_price);
+    end
+
+    # any other order is an equity order, reversed with the filled quantity -
+    m = MyEquityOrderModel(symbol = order.symbol, side = order.side, qty = _whole_qty(order.filled_qty));
+    return close(client, m; type = type, time_in_force = time_in_force, limit_price = limit_price);
+end
+
+"""
+    roll(client::AlpacaClient, from, to; qty = 1, type = "limit", time_in_force = "day",
+        limit_price = nothing, client_order_id = nothing) -> Order
+
+Roll option legs from one set of contracts to another, using an HTTP POST call to the Alpaca `/orders` endpoint.
+The call sends one atomic `mleg` order. Each `from` leg is reversed with the position intent `buy_to_close` or `sell_to_close`,
+and each `to` leg is opened with the position intent `buy_to_open` or `sell_to_open`.
+`limit_price` is the net price of one unit of the structure (positive is a debit, negative is a credit).
+
+`roll` covers a single contract (2 legs) and a vertical spread (4 legs). An iron condor has 8 legs, so it rolls as two `roll` calls, one for each wing.
+The two calls are not atomic: the first order can fill while the second order does not.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `from::Union{MyOptionLegModel,Vector{MyOptionLegModel}}`: the legs to close.
+- `to::Union{MyOptionLegModel,Vector{MyOptionLegModel}}`: the legs to open.
+- `qty::Int`: the number of units of the structure.
+- `type::String`: `"market"` or `"limit"`.
+- `time_in_force::String`: the time in force of the order, e.g., `"day"`.
+- `limit_price`: the limit price, or `nothing`. A limit order requires it.
+- `client_order_id`: the order identifier assigned by the client, or `nothing`.
+
+### Returns
+- `Order`: the order as Alpaca accepted it.
+
+### Throws
+- `ArgumentError`: when the `from` and `to` legs together are fewer than 2 or more than 4, when a leg is invalid, or when a `"limit"` order has no `limit_price`. The call sends no request.
+- `AlpacaError`: when Alpaca rejects the request.
+"""
+function roll(client::AlpacaClient, from::Union{MyOptionLegModel,Vector{MyOptionLegModel}}, to::Union{MyOptionLegModel,Vector{MyOptionLegModel}};
+    qty::Int = 1, type::AbstractString = "limit", time_in_force::AbstractString = "day", limit_price::Union{Nothing,Real} = nothing,
+    client_order_id::Union{Nothing,AbstractString} = nothing)::Order
+
+    # a single leg is a vector of one leg -
+    from_legs = _as_legs(from);
+    to_legs = _as_legs(to);
+
+    # check the fields of each leg -
+    for leg in from_legs
+        _check_leg_fields(leg.side, leg.ratio);
+    end
+    for leg in to_legs
+        _check_leg_fields(leg.side, leg.ratio);
+    end
+
+    # close the from legs, then open the to legs -
+    symbols = String[];
+    sides = String[];
+    intents = String[];
+    ratios = Int[];
+    _append_legs!(symbols, sides, intents, ratios, from_legs, true);
+    _append_legs!(symbols, sides, intents, ratios, to_legs, false);
+
+    # build the mleg body (this checks the number of legs, so an invalid roll sends nothing) and send the order -
+    body = _mleg_body(symbols, sides, intents, ratios; qty = qty, type = type, time_in_force = time_in_force,
+        limit_price = limit_price, client_order_id = client_order_id);
+    return _post_order(client, body);
+end
+
+"""
+    roll(client::AlpacaClient, from::Order, to; qty = Int(from.filled_qty), type = "limit", time_in_force = "day",
+        limit_price = nothing, client_order_id = nothing) -> Order
+
+Roll the legs of a filled order to another set of contracts. The legs of `from` are the legs to close, and `qty` defaults to the filled quantity of `from`.
+The call sends one atomic `mleg` order, as described for `roll(client, from, to)`.
+An iron condor rolls as two `roll` calls, one for each wing, and the two calls are not atomic.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `from::Order`: the filled order that holds the legs to close, e.g., an order that `submit` returned.
+- `to::Union{MyOptionLegModel,Vector{MyOptionLegModel}}`: the legs to open.
+- `qty::Int`: the number of units of the structure.
+- `type::String`: `"market"` or `"limit"`.
+- `time_in_force::String`: the time in force of the order, e.g., `"day"`.
+- `limit_price`: the limit price, or `nothing`. A limit order requires it.
+- `client_order_id`: the order identifier assigned by the client, or `nothing`.
+
+### Returns
+- `Order`: the order as Alpaca accepted it.
+
+### Throws
+- `ArgumentError`: when the status of `from` is not `"filled"`, when the legs together are fewer than 2 or more than 4, or when a `"limit"` order has no `limit_price`. The call sends no request.
+- `AlpacaError`: when Alpaca rejects the request.
+"""
+function roll(client::AlpacaClient, from::Order, to::Union{MyOptionLegModel,Vector{MyOptionLegModel}}; qty::Int = Int(from.filled_qty),
+    type::AbstractString = "limit", time_in_force::AbstractString = "day", limit_price::Union{Nothing,Real} = nothing,
+    client_order_id::Union{Nothing,AbstractString} = nothing)::Order
+
+    # only a filled order can be rolled -
+    _check_filled(from);
+
+    # convert the filled order to legs, then roll the legs -
+    return roll(client, _legs_from_order(from), to; qty = qty, type = type, time_in_force = time_in_force,
+        limit_price = limit_price, client_order_id = client_order_id);
 end
 
 # --- PUBLIC METHODS ABOVE HERE -------------------------------------------------------------------------------- #
@@ -398,6 +735,105 @@ end
 # _cancel_order: send DELETE /orders/{id}. Alpaca answers 204 with an empty body -
 function _cancel_order(client::AlpacaClient, id::String)::String
     return _http_call(client, "DELETE", "$(client.trading_url)/orders/$(id)");
+end
+
+# _opposite_side: the side that reverses a leg or an order -
+function _opposite_side(side::AbstractString)::String
+    if (side == "buy")
+        return "sell";
+    end
+    return "buy";
+end
+
+# _whole_qty: a whole-number quantity becomes an Int, so it is sent as "7" and not "7.0" -
+function _whole_qty(x::Float64)::Union{Int,Float64}
+    if (x == round(x))
+        return Int(x);
+    end
+    return x;
+end
+
+# _check_filled: only a filled order can be closed or rolled -
+function _check_filled(order::Order)::Nothing
+    if (order.status != "filled")
+        throw(ArgumentError("order $(order.id) has status $(order.status); use `cancel` for an order that has not filled"));
+    end
+    return nothing;
+end
+
+# _as_legs: a single leg is a vector of one leg, and a vector of legs stays as it is -
+function _as_legs(leg::MyOptionLegModel)::Vector{MyOptionLegModel}
+    return [leg];
+end
+
+function _as_legs(legs::Vector{MyOptionLegModel})::Vector{MyOptionLegModel}
+    return legs;
+end
+
+# _append_legs!: add the symbol, side, intent, and ratio of each leg. A closing leg is reversed and gets the *_to_close intent -
+function _append_legs!(symbols::Vector{String}, sides::Vector{String}, intents::Vector{String}, ratios::Vector{Int},
+    legs::Vector{MyOptionLegModel}, closing::Bool)::Nothing
+    for leg in legs
+        push!(symbols, leg.symbol);
+        push!(ratios, leg.ratio);
+        if (closing == true)
+            reverse_side = _opposite_side(leg.side);
+            push!(sides, reverse_side);
+            push!(intents, reverse_side * "_to_close");
+        else
+            push!(sides, leg.side);
+            push!(intents, leg.side * "_to_open");
+        end
+    end
+    return nothing;
+end
+
+# _leg_ratio: the number of contracts of a leg in one unit of the structure. Alpaca sends ratio_qty as a string or a number -
+function _leg_ratio(leg::Order, parent::Order)::Int
+    if (haskey(leg.raw, :ratio_qty) && leg.raw.ratio_qty !== nothing)
+        value = leg.raw.ratio_qty;
+        if (value isa AbstractString)
+            return parse(Int, value);
+        end
+        return Int(value);
+    end
+    return Int(leg.qty / parent.qty);
+end
+
+# _legs_from_order: convert the legs of a multi-leg order to option leg models -
+function _legs_from_order(order::Order)::Vector{MyOptionLegModel}
+    legs = MyOptionLegModel[];
+    if (order.legs !== nothing)
+        for leg in order.legs
+            push!(legs, MyOptionLegModel(symbol = leg.symbol, side = leg.side, ratio = _leg_ratio(leg, order)));
+        end
+    end
+    return legs;
+end
+
+# _cancel_all_orders: send DELETE /orders and return the response body -
+function _cancel_all_orders(client::AlpacaClient)::String
+    return _http_call(client, "DELETE", "$(client.trading_url)/orders");
+end
+
+# _close_position: send DELETE /positions/{symbol}, with the qty and percentage query parameters when set, and return the response body -
+function _close_position(client::AlpacaClient, symbol::AbstractString; qty::Union{Nothing,Real} = nothing,
+    percentage::Union{Nothing,Real} = nothing)::String
+    query = Dict{String,Any}();
+    if (qty !== nothing)
+        query["qty"] = string(qty);
+    end
+    if (percentage !== nothing)
+        query["percentage"] = string(percentage);
+    end
+    request_url = _build_url(client.trading_url, "/positions/$(symbol)", query);
+    return _http_call(client, "DELETE", request_url);
+end
+
+# _close_all_positions: send DELETE /positions?cancel_orders=<bool> and return the response body -
+function _close_all_positions(client::AlpacaClient; cancel_orders::Bool = false)::String
+    request_url = _build_url(client.trading_url, "/positions", Dict("cancel_orders" => cancel_orders));
+    return _http_call(client, "DELETE", request_url);
 end
 
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #

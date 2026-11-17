@@ -49,7 +49,7 @@ export get_account, get_clock, get_calendar
 export list_assets, get_asset
 
 # Order models and trading verbs
-export submit, cancel, MyEquityOrderModel, MyOptionLegModel
+export submit, cancel, roll, MyEquityOrderModel, MyOptionLegModel
 
 # Orders
 export submit_order, submit_multileg_order,
