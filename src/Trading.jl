@@ -517,18 +517,19 @@ function roll(client::AlpacaClient, from::Union{MyOptionLegModel,Vector{MyOption
 end
 
 """
-    roll(client::AlpacaClient, from::Order, to; qty = Int(from.filled_qty), type = "limit", time_in_force = "day",
+    roll(client::AlpacaClient, from::Order, to; qty = nothing, type = "limit", time_in_force = "day",
         limit_price = nothing, client_order_id = nothing) -> Order
 
-Roll the legs of a filled order to another set of contracts. The legs of `from` are the legs to close, and `qty` defaults to the filled quantity of `from`.
+Roll the legs of a filled option order to another set of contracts. The legs of `from` are the legs to close. A single option order is one leg, and a multi-leg order is one leg for each of its legs.
+When `qty` is `nothing`, the call uses the filled quantity of `from`.
 The call sends one atomic `mleg` order, as described for `roll(client, from, to)`.
 An iron condor rolls as two `roll` calls, one for each wing, and the two calls are not atomic.
 
 ### Arguments
 - `client::AlpacaClient`: the client that holds the credentials and the base URLs.
-- `from::Order`: the filled order that holds the legs to close, e.g., an order that `submit` returned.
+- `from::Order`: the filled option order that holds the legs to close, e.g., an order that `submit` returned.
 - `to::Union{MyOptionLegModel,Vector{MyOptionLegModel}}`: the legs to open.
-- `qty::Int`: the number of units of the structure.
+- `qty`: the number of units of the structure, or `nothing` to use the filled quantity of `from`.
 - `type::String`: `"market"` or `"limit"`.
 - `time_in_force::String`: the time in force of the order, e.g., `"day"`.
 - `limit_price`: the limit price, or `nothing`. A limit order requires it.
@@ -538,18 +539,24 @@ An iron condor rolls as two `roll` calls, one for each wing, and the two calls a
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when the status of `from` is not `"filled"`, when the legs together are fewer than 2 or more than 4, or when a `"limit"` order has no `limit_price`. The call sends no request.
+- `ArgumentError`: when the status of `from` is not `"filled"`, when `from` is an equity order (use `close` or `submit` for shares), when the legs together are fewer than 2 or more than 4, or when a `"limit"` order has no `limit_price`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
-function roll(client::AlpacaClient, from::Order, to::Union{MyOptionLegModel,Vector{MyOptionLegModel}}; qty::Int = Int(from.filled_qty),
+function roll(client::AlpacaClient, from::Order, to::Union{MyOptionLegModel,Vector{MyOptionLegModel}}; qty::Union{Nothing,Int} = nothing,
     type::AbstractString = "limit", time_in_force::AbstractString = "day", limit_price::Union{Nothing,Real} = nothing,
     client_order_id::Union{Nothing,AbstractString} = nothing)::Order
 
     # only a filled order can be rolled -
     _check_filled(from);
 
+    # the default number of units is the filled quantity -
+    units = qty;
+    if (units === nothing)
+        units = Int(from.filled_qty);
+    end
+
     # convert the filled order to legs, then roll the legs -
-    return roll(client, _legs_from_order(from), to; qty = qty, type = type, time_in_force = time_in_force,
+    return roll(client, _legs_from_order(from), to; qty = units, type = type, time_in_force = time_in_force,
         limit_price = limit_price, client_order_id = client_order_id);
 end
 
@@ -800,15 +807,27 @@ function _leg_ratio(leg::Order, parent::Order)::Int
     return Int(leg.qty / parent.qty);
 end
 
-# _legs_from_order: convert the legs of a multi-leg order to option leg models -
+# _legs_from_order: convert an option order to option leg models. A multi-leg order gives one leg for each of its legs,
+# a single option order gives one leg, and an equity order raises an ArgumentError -
 function _legs_from_order(order::Order)::Vector{MyOptionLegModel}
     legs = MyOptionLegModel[];
+
+    # a multi-leg order gives one leg model for each leg -
     if (order.legs !== nothing)
         for leg in order.legs
             push!(legs, MyOptionLegModel(symbol = leg.symbol, side = leg.side, ratio = _leg_ratio(leg, order)));
         end
+        return legs;
     end
-    return legs;
+
+    # a single option order gives one leg model -
+    if (order.asset_class == "us_option")
+        push!(legs, MyOptionLegModel(symbol = order.symbol, side = order.side, ratio = 1));
+        return legs;
+    end
+
+    # an equity order has no option legs -
+    throw(ArgumentError("order $(order.id) is an equity order; `roll` is for option orders, use `close` or `submit` for shares"));
 end
 
 # _cancel_all_orders: send DELETE /orders and return the response body -

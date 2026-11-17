@@ -201,3 +201,36 @@ end
     @test legs[1].symbol == "AAPL261218C00200000"
     @test legs[1].side == "buy"
 end
+
+@testset "roll: a filled single option order closes that contract" begin
+    payload = merge(_N_EQUITY_ORDER, Dict("asset_class" => "us_option", "symbol" => "SPY261218P00540000", "side" => "sell"))
+    order = _n_filled_order(payload, "3")
+    new = MyOptionLegModel(symbol = "SPY270115P00540000", side = "sell")
+    handler, log = recording_handler() do _req
+        return json_response(200, _N_MLEG_ORDER)
+    end
+    with_mock(handler) do client
+        roll(client, order, new; limit_price = 0.10)
+    end
+    @test length(log) == 1
+    body = JSON3.read(log[1].body)
+    @test [l.position_intent for l in body.legs] == ["buy_to_close", "sell_to_open"]
+    @test body.qty == "3"
+end
+
+@testset "roll: an equity order or an unfilled order is refused before any request" begin
+    new = [MyOptionLegModel(symbol = "A", side = "sell"), MyOptionLegModel(symbol = "B", side = "buy")]
+    handler, log = recording_handler() do _req
+        return json_response(200, _N_MLEG_ORDER)
+    end
+    equity = _n_filled_order(_N_EQUITY_ORDER, "5")
+    partial = merge(_N_MLEG_ORDER, Dict("status" => "partially_filled", "filled_qty" => "1.5"))
+    partial_order = Alpaca._parse_order(JSON3.read(JSON3.write(partial)))
+    with_mock(handler) do client
+        @test_throws ArgumentError roll(client, equity, new; limit_price = 0.1)
+        err = try roll(client, partial_order, new; limit_price = 0.1); nothing catch e; e end
+        @test err isa ArgumentError
+        @test occursin("cancel", err.msg)
+    end
+    @test length(log) == 0
+end
