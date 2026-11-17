@@ -23,7 +23,7 @@ end
 
 # One recorded request becomes [method, path, sorted query pairs, body].
 function golden_canonical_request(r)
-    body = isempty(r.body) ? nothing : golden_canonical(JSON3.read(r.body))
+    body = isempty(r.body) ? nothing : golden_canonical(JSON3.read(r.body, Dict{String,Any}))
     query = isempty(r.query) ? String[] : sort(String.(split(r.query, '&')))
     return [r.method, r.path, query, body]
 end
