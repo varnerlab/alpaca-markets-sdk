@@ -480,8 +480,8 @@ Endpoint model for the Alpaca `/calendar` endpoint.
 This endpoint returns the market calendar: the trading days and their open and close times.
 
 ### Fields
-- `start::Union{Nothing,Date,String}`: the first time of the request, a `String`, `Date`, or `DateTime`.
-- `finish::Union{Nothing,Date,String}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `start::Union{Nothing,Date,String}`: the first day of the request, a `Date` or an ISO `"YYYY-MM-DD"` `String`.
+- `finish::Union{Nothing,Date,String}`: the last day of the request, or `nothing` to leave it open. The URL sends this field as `end`.
 
 ### Constructors
 - `MyCalendarEndpointModel(; start::Union{Nothing,Date,String} = nothing, finish::Union{Nothing,Date,String} = nothing)`: returns a new `MyCalendarEndpointModel` instance.

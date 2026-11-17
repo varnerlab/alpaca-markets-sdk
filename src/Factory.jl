@@ -919,45 +919,102 @@ end
 
 # --- PRIVATE METHODS BELOW HERE ------------------------------------------------------------------------------- #
 # _base_url: the base URL of the API that a model calls -
-_base_url(client::AlpacaClient, model::AbstractAlpacaTradingEndpointModel)::String = client.trading_url;
-_base_url(client::AlpacaClient, model::AbstractAlpacaStockDataEndpointModel)::String = client.data_url;
-_base_url(client::AlpacaClient, model::AbstractAlpacaOptionDataEndpointModel)::String = client.options_data_url;
+function _base_url(client::AlpacaClient, model::AbstractAlpacaTradingEndpointModel)::String
+    return client.trading_url;
+end
 
-# _is_paginated: true when the response of the endpoint holds a next_page_token -
-_is_paginated(model::AbstractAlpacaEndpointModel)::Bool = false;
-_is_paginated(model::MyOptionBarsEndpointModel)::Bool = true;
-_is_paginated(model::MyOptionChainEndpointModel)::Bool = true;
-_is_paginated(model::MyOptionContractsEndpointModel)::Bool = true;
-_is_paginated(model::MyOptionQuotesEndpointModel)::Bool = true;
-_is_paginated(model::MyOptionTradesEndpointModel)::Bool = true;
-_is_paginated(model::MyStockBarsEndpointModel)::Bool = true;
-_is_paginated(model::MyStockQuotesEndpointModel)::Bool = true;
-_is_paginated(model::MyStockTradesEndpointModel)::Bool = true;
+function _base_url(client::AlpacaClient, model::AbstractAlpacaStockDataEndpointModel)::String
+    return client.data_url;
+end
 
-# _query_value: a field value as a query value; nothing stays nothing -
-_query_value(x::Nothing) = nothing;
-_query_value(x) = string(x);
+function _base_url(client::AlpacaClient, model::AbstractAlpacaOptionDataEndpointModel)::String
+    return client.options_data_url;
+end
 
-# _time_value: a start or finish field as a query value; nothing stays nothing -
-_time_value(x::Nothing) = nothing;
-_time_value(x) = _fmt_ts(x);
+# _is_paginated: true when the response of the endpoint holds a next_page_token. The default is false -
+function _is_paginated(model::AbstractAlpacaEndpointModel)::Bool
+    return false;
+end
 
-# _symbols_value: a symbol vector as one comma-separated query value; nothing stays nothing -
-_symbols_value(x::Nothing) = nothing;
-_symbols_value(x::Vector{String}) = join(x, ",");
+function _is_paginated(model::MyOptionBarsEndpointModel)::Bool
+    return true;
+end
 
-# _to_symbol_vector: a symbol keyword (a String or a vector of strings) as a Vector{String} -
-_to_symbol_vector(x::Nothing) = nothing;
-_to_symbol_vector(x::String) = String[x];
+function _is_paginated(model::MyOptionChainEndpointModel)::Bool
+    return true;
+end
 
-function _to_symbol_vector(x::AbstractVector{<:AbstractString})::Vector{String}
+function _is_paginated(model::MyOptionContractsEndpointModel)::Bool
+    return true;
+end
 
-    # copy each symbol into a new Vector{String} -
-    symbols = String[];
-    for symbol in x
-        push!(symbols, String(symbol));
+function _is_paginated(model::MyOptionQuotesEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyOptionTradesEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyStockBarsEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyStockQuotesEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyStockTradesEndpointModel)::Bool
+    return true;
+end
+
+"""
+    _query_value(x) -> Union{Nothing,String}
+
+Convert a field value to a query value. A value of `nothing` stays `nothing`, and any other value becomes
+the string that `string(x)` returns, so `140` stays `"140"`.
+"""
+function _query_value(x)::Union{Nothing,String}
+
+    # an unset field stays unset -
+    if (x === nothing)
+        return nothing;
     end
-    return symbols;
+
+    # write the value as the caller gave it -
+    return string(x);
+end
+
+"""
+    _time_value(x) -> Union{Nothing,String}
+
+Convert a start or finish field (a `String`, `Date`, or `DateTime`) to a query value. A value of `nothing` stays `nothing`.
+"""
+function _time_value(x)::Union{Nothing,String}
+
+    # an unset field stays unset -
+    if (x === nothing)
+        return nothing;
+    end
+
+    # format the time the way Alpaca expects it -
+    return _fmt_ts(x);
+end
+
+"""
+    _symbols_value(x::Union{Nothing,Vector{String}}) -> Union{Nothing,String}
+
+Convert a symbol vector to one comma-separated query value. A value of `nothing` stays `nothing`.
+"""
+function _symbols_value(x::Union{Nothing,Vector{String}})::Union{Nothing,String}
+
+    # an unset field stays unset -
+    if (x === nothing)
+        return nothing;
+    end
+
+    # join the symbols with commas -
+    return join(x, ",");
 end
 
 """
