@@ -206,21 +206,21 @@ function _fmt_ts(x::Date)::String
     return string(x);
 end
 
-# _to_symbol_vector: a symbol keyword (a String or a vector of strings) as a Vector{String}; nothing stays nothing -
+# _to_symbol_vector: a symbol keyword (a string or a vector) as a Vector{String}; nothing stays nothing -
 function _to_symbol_vector(x::Nothing)
     return nothing;
 end
 
-function _to_symbol_vector(x::String)::Vector{String}
-    return String[x];
+function _to_symbol_vector(x::AbstractString)::Vector{String}
+    return String[String(x)];
 end
 
-function _to_symbol_vector(x::AbstractVector{<:AbstractString})::Vector{String}
+function _to_symbol_vector(x::AbstractVector)::Vector{String}
 
-    # copy each symbol into a new Vector{String} -
+    # print each element as text into a new Vector{String}, as join did in v0.3.1 -
     symbols = String[];
     for symbol in x
-        push!(symbols, String(symbol));
+        push!(symbols, string(symbol));
     end
     return symbols;
 end

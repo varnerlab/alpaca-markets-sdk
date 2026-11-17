@@ -53,3 +53,16 @@ end
         @test isempty(result)
     end
 end
+
+@testset "legacy: a Vector{Any} of symbols sends the same query as a Vector{String}" begin
+    targets = Dict{String,String}()
+    for (name, symbols) in (("string", ["AAPL", "MSFT"]), ("any", Any["AAPL", "MSFT"]))
+        handler, log = recording_handler(golden_handler)
+        with_mock(handler) do c
+            @test_deprecated get_bars(c, symbols, "1Day"; start = Date(2025, 1, 2), finish = Date(2025, 1, 3))
+        end
+        targets[name] = log[1].target
+    end
+    @test targets["any"] == targets["string"]
+    @test occursin("symbols=AAPL%2CMSFT", targets["any"])
+end

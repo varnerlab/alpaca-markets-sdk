@@ -101,3 +101,17 @@ end
         @test occursin('?', url("http://h", m))
     end
 end
+
+@testset "url: symbol keywords accept any string or vector" begin
+    base = MyStockBarsEndpointModel(symbols = ["AAPL", "MSFT"], timeframe = "1Day", start = "2025-01-02")
+    as_any = MyStockBarsEndpointModel(symbols = Any["AAPL", "MSFT"], timeframe = "1Day", start = "2025-01-02")
+    @test url("http://h", as_any) == url("http://h", base)
+    sub = MyStockBarsEndpointModel(symbols = SubString("AAPL,x", 1, 4), timeframe = "1Day", start = "2025-01-02")
+    single = MyStockBarsEndpointModel(symbols = "AAPL", timeframe = "1Day", start = "2025-01-02")
+    @test url("http://h", sub) == url("http://h", single)
+    @test as_any.symbols isa Vector{String}
+    orders = MyOrdersEndpointModel(symbols = ["AAPL", "MSFT"])
+    @test url("http://h", MyOrdersEndpointModel(symbols = Any["AAPL", "MSFT"])) == url("http://h", orders)
+    @test url("http://h", MyOrdersEndpointModel(symbols = SubString("AAPL,x", 1, 4))) ==
+          url("http://h", MyOrdersEndpointModel(symbols = "AAPL"))
+end

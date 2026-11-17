@@ -580,7 +580,7 @@ This endpoint returns the orders of the account that match a status.
 - `symbols::Union{Nothing,Vector{String}}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
 
 ### Constructors
-- `MyOrdersEndpointModel(; status::String = "open", limit::Int = 50, after::Union{Nothing,String,DateTime} = nothing, until::Union{Nothing,String,DateTime} = nothing, direction::String = "desc", symbols::Union{Nothing,String,AbstractVector{<:AbstractString}} = nothing)`: returns a new `MyOrdersEndpointModel` instance.
+- `MyOrdersEndpointModel(; status::String = "open", limit::Int = 50, after::Union{Nothing,String,DateTime} = nothing, until::Union{Nothing,String,DateTime} = nothing, direction::String = "desc", symbols::Union{Nothing,AbstractString,AbstractVector} = nothing)`: returns a new `MyOrdersEndpointModel` instance.
 """
 mutable struct MyOrdersEndpointModel <: AbstractAlpacaTradingEndpointModel
 
@@ -594,7 +594,7 @@ mutable struct MyOrdersEndpointModel <: AbstractAlpacaTradingEndpointModel
 
     # methods -
     MyOrdersEndpointModel(;
-        status::String = "open", limit::Int = 50, after::Union{Nothing,String,DateTime} = nothing, until::Union{Nothing,String,DateTime} = nothing, direction::String = "desc", symbols::Union{Nothing,String,AbstractVector{<:AbstractString}} = nothing) = new(status, limit, after, until, direction, _to_symbol_vector(symbols));
+        status::String = "open", limit::Int = 50, after::Union{Nothing,String,DateTime} = nothing, until::Union{Nothing,String,DateTime} = nothing, direction::String = "desc", symbols::Union{Nothing,AbstractString,AbstractVector} = nothing) = new(status, limit, after, until, direction, _to_symbol_vector(symbols));
 end
 
 """
@@ -647,7 +647,7 @@ This endpoint returns the option contracts that match the filters.
 - `limit::Int`: the largest number of rows to return per page.
 
 ### Constructors
-- `MyOptionContractsEndpointModel(; underlying_symbols::Union{String,AbstractVector{<:AbstractString}}, status::String = "active", expiration_date::Union{Nothing,Date,String} = nothing, expiration_date_gte::Union{Nothing,Date,String} = nothing, expiration_date_lte::Union{Nothing,Date,String} = nothing, strike_price_gte::Union{Nothing,Real} = nothing, strike_price_lte::Union{Nothing,Real} = nothing, type::Union{Nothing,String} = nothing, style::Union{Nothing,String} = nothing, limit::Int = 1000)`: returns a new `MyOptionContractsEndpointModel` instance.
+- `MyOptionContractsEndpointModel(; underlying_symbols::Union{AbstractString,AbstractVector}, status::String = "active", expiration_date::Union{Nothing,Date,String} = nothing, expiration_date_gte::Union{Nothing,Date,String} = nothing, expiration_date_lte::Union{Nothing,Date,String} = nothing, strike_price_gte::Union{Nothing,Real} = nothing, strike_price_lte::Union{Nothing,Real} = nothing, type::Union{Nothing,String} = nothing, style::Union{Nothing,String} = nothing, limit::Int = 1000)`: returns a new `MyOptionContractsEndpointModel` instance.
 """
 mutable struct MyOptionContractsEndpointModel <: AbstractAlpacaTradingEndpointModel
 
@@ -665,7 +665,7 @@ mutable struct MyOptionContractsEndpointModel <: AbstractAlpacaTradingEndpointMo
 
     # methods -
     MyOptionContractsEndpointModel(;
-        underlying_symbols::Union{String,AbstractVector{<:AbstractString}}, status::String = "active", expiration_date::Union{Nothing,Date,String} = nothing, expiration_date_gte::Union{Nothing,Date,String} = nothing, expiration_date_lte::Union{Nothing,Date,String} = nothing, strike_price_gte::Union{Nothing,Real} = nothing, strike_price_lte::Union{Nothing,Real} = nothing, type::Union{Nothing,String} = nothing, style::Union{Nothing,String} = nothing, limit::Int = 1000) = new(_to_symbol_vector(underlying_symbols), status, expiration_date, expiration_date_gte, expiration_date_lte, strike_price_gte, strike_price_lte, type, style, limit);
+        underlying_symbols::Union{AbstractString,AbstractVector}, status::String = "active", expiration_date::Union{Nothing,Date,String} = nothing, expiration_date_gte::Union{Nothing,Date,String} = nothing, expiration_date_lte::Union{Nothing,Date,String} = nothing, strike_price_gte::Union{Nothing,Real} = nothing, strike_price_lte::Union{Nothing,Real} = nothing, type::Union{Nothing,String} = nothing, style::Union{Nothing,String} = nothing, limit::Int = 1000) = new(_to_symbol_vector(underlying_symbols), status, expiration_date, expiration_date_gte, expiration_date_lte, strike_price_gte, strike_price_lte, type, style, limit);
 end
 
 """
@@ -706,7 +706,7 @@ This endpoint returns historical stock bars.
 - `feed::String`: the market data feed, e.g., `"iex"`.
 
 ### Constructors
-- `MyStockBarsEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, adjustment::String = "raw", feed::String = "iex")`: returns a new `MyStockBarsEndpointModel` instance.
+- `MyStockBarsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, adjustment::String = "raw", feed::String = "iex")`: returns a new `MyStockBarsEndpointModel` instance.
 """
 mutable struct MyStockBarsEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
@@ -721,7 +721,7 @@ mutable struct MyStockBarsEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
     # methods -
     MyStockBarsEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, adjustment::String = "raw", feed::String = "iex") = new(_to_symbol_vector(symbols), timeframe, start, finish, limit, adjustment, feed);
+        symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, adjustment::String = "raw", feed::String = "iex") = new(_to_symbol_vector(symbols), timeframe, start, finish, limit, adjustment, feed);
 end
 
 """
@@ -738,7 +738,7 @@ This endpoint returns historical stock quotes.
 - `feed::String`: the market data feed, e.g., `"iex"`.
 
 ### Constructors
-- `MyStockQuotesEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "iex")`: returns a new `MyStockQuotesEndpointModel` instance.
+- `MyStockQuotesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "iex")`: returns a new `MyStockQuotesEndpointModel` instance.
 """
 mutable struct MyStockQuotesEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
@@ -751,7 +751,7 @@ mutable struct MyStockQuotesEndpointModel <: AbstractAlpacaStockDataEndpointMode
 
     # methods -
     MyStockQuotesEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "iex") = new(_to_symbol_vector(symbols), start, finish, limit, feed);
+        symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "iex") = new(_to_symbol_vector(symbols), start, finish, limit, feed);
 end
 
 """
@@ -768,7 +768,7 @@ This endpoint returns historical stock trades.
 - `feed::String`: the market data feed, e.g., `"iex"`.
 
 ### Constructors
-- `MyStockTradesEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "iex")`: returns a new `MyStockTradesEndpointModel` instance.
+- `MyStockTradesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "iex")`: returns a new `MyStockTradesEndpointModel` instance.
 """
 mutable struct MyStockTradesEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
@@ -781,7 +781,7 @@ mutable struct MyStockTradesEndpointModel <: AbstractAlpacaStockDataEndpointMode
 
     # methods -
     MyStockTradesEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "iex") = new(_to_symbol_vector(symbols), start, finish, limit, feed);
+        symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "iex") = new(_to_symbol_vector(symbols), start, finish, limit, feed);
 end
 
 """
@@ -867,7 +867,7 @@ This endpoint returns the snapshots of several stocks.
 - `feed::String`: the market data feed, e.g., `"iex"`.
 
 ### Constructors
-- `MyStockSnapshotsEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}}, feed::String = "iex")`: returns a new `MyStockSnapshotsEndpointModel` instance.
+- `MyStockSnapshotsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, feed::String = "iex")`: returns a new `MyStockSnapshotsEndpointModel` instance.
 """
 mutable struct MyStockSnapshotsEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
@@ -877,7 +877,7 @@ mutable struct MyStockSnapshotsEndpointModel <: AbstractAlpacaStockDataEndpointM
 
     # methods -
     MyStockSnapshotsEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}, feed::String = "iex") = new(_to_symbol_vector(symbols), feed);
+        symbols::Union{AbstractString,AbstractVector}, feed::String = "iex") = new(_to_symbol_vector(symbols), feed);
 end
 
 """
@@ -894,7 +894,7 @@ This endpoint returns historical option bars.
 - `limit::Int`: the largest number of rows to return per page.
 
 ### Constructors
-- `MyOptionBarsEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000)`: returns a new `MyOptionBarsEndpointModel` instance.
+- `MyOptionBarsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000)`: returns a new `MyOptionBarsEndpointModel` instance.
 """
 mutable struct MyOptionBarsEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
@@ -907,7 +907,7 @@ mutable struct MyOptionBarsEndpointModel <: AbstractAlpacaOptionDataEndpointMode
 
     # methods -
     MyOptionBarsEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000) = new(_to_symbol_vector(symbols), timeframe, start, finish, limit);
+        symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000) = new(_to_symbol_vector(symbols), timeframe, start, finish, limit);
 end
 
 """
@@ -923,7 +923,7 @@ This endpoint returns historical option quotes.
 - `limit::Int`: the largest number of rows to return per page.
 
 ### Constructors
-- `MyOptionQuotesEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000)`: returns a new `MyOptionQuotesEndpointModel` instance.
+- `MyOptionQuotesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000)`: returns a new `MyOptionQuotesEndpointModel` instance.
 """
 mutable struct MyOptionQuotesEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
@@ -935,7 +935,7 @@ mutable struct MyOptionQuotesEndpointModel <: AbstractAlpacaOptionDataEndpointMo
 
     # methods -
     MyOptionQuotesEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000) = new(_to_symbol_vector(symbols), start, finish, limit);
+        symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000) = new(_to_symbol_vector(symbols), start, finish, limit);
 end
 
 """
@@ -951,7 +951,7 @@ This endpoint returns historical option trades.
 - `limit::Int`: the largest number of rows to return per page.
 
 ### Constructors
-- `MyOptionTradesEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000)`: returns a new `MyOptionTradesEndpointModel` instance.
+- `MyOptionTradesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000)`: returns a new `MyOptionTradesEndpointModel` instance.
 """
 mutable struct MyOptionTradesEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
@@ -963,7 +963,7 @@ mutable struct MyOptionTradesEndpointModel <: AbstractAlpacaOptionDataEndpointMo
 
     # methods -
     MyOptionTradesEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000) = new(_to_symbol_vector(symbols), start, finish, limit);
+        symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000) = new(_to_symbol_vector(symbols), start, finish, limit);
 end
 
 """
@@ -976,7 +976,7 @@ This endpoint returns the latest option bar of several option contracts.
 - `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
 
 ### Constructors
-- `MyOptionLatestBarEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}})`: returns a new `MyOptionLatestBarEndpointModel` instance.
+- `MyOptionLatestBarEndpointModel(; symbols::Union{AbstractString,AbstractVector})`: returns a new `MyOptionLatestBarEndpointModel` instance.
 """
 mutable struct MyOptionLatestBarEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
@@ -985,7 +985,7 @@ mutable struct MyOptionLatestBarEndpointModel <: AbstractAlpacaOptionDataEndpoin
 
     # methods -
     MyOptionLatestBarEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}) = new(_to_symbol_vector(symbols));
+        symbols::Union{AbstractString,AbstractVector}) = new(_to_symbol_vector(symbols));
 end
 
 """
@@ -998,7 +998,7 @@ This endpoint returns the latest option quote of several option contracts.
 - `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
 
 ### Constructors
-- `MyOptionLatestQuoteEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}})`: returns a new `MyOptionLatestQuoteEndpointModel` instance.
+- `MyOptionLatestQuoteEndpointModel(; symbols::Union{AbstractString,AbstractVector})`: returns a new `MyOptionLatestQuoteEndpointModel` instance.
 """
 mutable struct MyOptionLatestQuoteEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
@@ -1007,7 +1007,7 @@ mutable struct MyOptionLatestQuoteEndpointModel <: AbstractAlpacaOptionDataEndpo
 
     # methods -
     MyOptionLatestQuoteEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}) = new(_to_symbol_vector(symbols));
+        symbols::Union{AbstractString,AbstractVector}) = new(_to_symbol_vector(symbols));
 end
 
 """
@@ -1020,7 +1020,7 @@ This endpoint returns the latest option trade of several option contracts.
 - `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
 
 ### Constructors
-- `MyOptionLatestTradeEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}})`: returns a new `MyOptionLatestTradeEndpointModel` instance.
+- `MyOptionLatestTradeEndpointModel(; symbols::Union{AbstractString,AbstractVector})`: returns a new `MyOptionLatestTradeEndpointModel` instance.
 """
 mutable struct MyOptionLatestTradeEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
@@ -1029,7 +1029,7 @@ mutable struct MyOptionLatestTradeEndpointModel <: AbstractAlpacaOptionDataEndpo
 
     # methods -
     MyOptionLatestTradeEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}) = new(_to_symbol_vector(symbols));
+        symbols::Union{AbstractString,AbstractVector}) = new(_to_symbol_vector(symbols));
 end
 
 """
@@ -1042,7 +1042,7 @@ This endpoint returns the snapshots of several option contracts.
 - `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
 
 ### Constructors
-- `MyOptionSnapshotsEndpointModel(; symbols::Union{String,AbstractVector{<:AbstractString}})`: returns a new `MyOptionSnapshotsEndpointModel` instance.
+- `MyOptionSnapshotsEndpointModel(; symbols::Union{AbstractString,AbstractVector})`: returns a new `MyOptionSnapshotsEndpointModel` instance.
 """
 mutable struct MyOptionSnapshotsEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
@@ -1051,7 +1051,7 @@ mutable struct MyOptionSnapshotsEndpointModel <: AbstractAlpacaOptionDataEndpoin
 
     # methods -
     MyOptionSnapshotsEndpointModel(;
-        symbols::Union{String,AbstractVector{<:AbstractString}}) = new(_to_symbol_vector(symbols));
+        symbols::Union{AbstractString,AbstractVector}) = new(_to_symbol_vector(symbols));
 end
 
 """
