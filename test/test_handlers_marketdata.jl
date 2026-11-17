@@ -58,7 +58,7 @@ end
     @test names(dft) == _N_TRADE_COLUMNS
     @test dft[1, :price] == 200.15
     @test dft[1, :size] == 100
-    @test dft[1, :id] == "777"
+    @test dft[1, :id] == 777
 end
 
 @testset "handler: latest stock bar, quote, and trade" begin
@@ -142,4 +142,51 @@ end
     @test ismissing(df[df.symbol .== "SPY261218C00600000", :implied_volatility][1])
     @test df[df.symbol .== "SPY261218C00600000", :latest_quote_bid_price] == [2.0]
     @test "latest_quote_bid_price" in names(df)
+end
+
+# the column names of the snapshot tables -
+const _N_SNAP_COLUMNS = vcat(["symbol"],
+    "latest_trade_" .* _N_TRADE_COLUMNS[[1; 3:end]], "latest_quote_" .* _N_QUOTE_COLUMNS[[1; 3:end]],
+    "minute_bar_" .* _N_BAR_COLUMNS[[1; 3:end]], "daily_bar_" .* _N_BAR_COLUMNS[[1; 3:end]],
+    "prev_daily_bar_" .* _N_BAR_COLUMNS[[1; 3:end]])
+const _N_SNAP_COLUMNS_GREEKS = vcat(_N_SNAP_COLUMNS, ["implied_volatility", "delta", "gamma", "theta", "vega", "rho"])
+
+@testset "handler: empty and null responses keep every column" begin
+    # bars, quotes, and trades, stock and option -
+    for (model, key, columns) in [
+            (MyStockBarsEndpointModel, "bars", _N_BAR_COLUMNS), (MyOptionBarsEndpointModel, "bars", _N_BAR_COLUMNS),
+            (MyStockQuotesEndpointModel, "quotes", _N_QUOTE_COLUMNS), (MyOptionQuotesEndpointModel, "quotes", _N_QUOTE_COLUMNS),
+            (MyStockTradesEndpointModel, "trades", _N_TRADE_COLUMNS), (MyOptionTradesEndpointModel, "trades", _N_TRADE_COLUMNS),
+            (MyOptionLatestBarEndpointModel, "bars", _N_BAR_COLUMNS), (MyOptionLatestQuoteEndpointModel, "quotes", _N_QUOTE_COLUMNS),
+            (MyOptionLatestTradeEndpointModel, "trades", _N_TRADE_COLUMNS)]
+        for body in ["{\"$key\":{}}", "{\"$key\":null}", "{}"]
+            df = Alpaca._default_handler(model, body)
+            @test size(df, 1) == 0
+            @test names(df) == columns
+        end
+    end
+
+    # latest stock bar, quote, and trade with a null or absent record -
+    for (model, key, columns) in [
+            (MyStockLatestBarEndpointModel, "bar", _N_BAR_COLUMNS), (MyStockLatestQuoteEndpointModel, "quote", _N_QUOTE_COLUMNS),
+            (MyStockLatestTradeEndpointModel, "trade", _N_TRADE_COLUMNS)]
+        for body in ["{\"symbol\":\"AAPL\",\"$key\":null}", "{\"symbol\":\"AAPL\"}"]
+            df = Alpaca._default_handler(model, body)
+            @test size(df, 1) == 0
+            @test names(df) == columns
+        end
+    end
+
+    # snapshots, stock and option -
+    @test length(_N_SNAP_COLUMNS) == 37
+    for body in ["{}", "{\"snapshots\":{}}", "{\"snapshots\":null}"]
+        df = Alpaca._default_handler(MyStockSnapshotsEndpointModel, body)
+        @test size(df, 1) == 0
+        @test names(df) == _N_SNAP_COLUMNS
+        for model in [MyOptionSnapshotsEndpointModel, MyOptionChainEndpointModel]
+            df = Alpaca._default_handler(model, body)
+            @test size(df, 1) == 0
+            @test names(df) == _N_SNAP_COLUMNS_GREEKS
+        end
+    end
 end

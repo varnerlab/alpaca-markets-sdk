@@ -617,7 +617,7 @@ function _latest_stock_records(body::String, key::Symbol)::Tuple{Vector{Union{Mi
     return (symbols, records);
 end
 
-# _option_snapshot_records: the snapshots of an option response, under the `snapshots` key or unwrapped -
+# _option_snapshot_records: the snapshots of a snapshots response (stock or option), under the `snapshots` key or unwrapped -
 function _option_snapshot_records(body::String)::Tuple{Vector{Union{Missing,String}},Vector{Any}}
 
     # the snapshots are under a key, or the response is the object of snapshots itself -
@@ -702,7 +702,7 @@ end
     _trades_table(symbols::Vector{Union{Missing,String}}, records::Vector{Any}) -> DataFrame
 
 Build the trades table, one row for each trade record. The columns are `timestamp`, `symbol`, `price`, `size`,
-`exchange`, and `id`. The `id` is text. A field that Alpaca does not send is `missing`.
+`exchange`, and `id`. The `id` is a whole number. A field that Alpaca does not send is `missing`.
 """
 function _trades_table(symbols::Vector{Union{Missing,String}}, records::Vector{Any})::DataFrame
 
@@ -711,7 +711,7 @@ function _trades_table(symbols::Vector{Union{Missing,String}}, records::Vector{A
     prices = Array{Union{Missing,Float64},1}();
     sizes = Array{Union{Missing,Float64},1}();
     exchanges = Array{Union{Missing,String},1}();
-    ids = Array{Union{Missing,String},1}();
+    ids = Array{Union{Missing,Int},1}();
 
     # visit the records, and select the fields we want -
     for item in records
@@ -720,7 +720,7 @@ function _trades_table(symbols::Vector{Union{Missing,String}}, records::Vector{A
         push!(prices, _float_or_missing(record, :p));
         push!(sizes, _float_or_missing(record, :s));
         push!(exchanges, _text_or_missing(record, :x));
-        push!(ids, _text_or_missing(record, :i));
+        push!(ids, _int_or_missing(record, :i));
     end
 
     # put the columns into a table, and return it -
@@ -933,10 +933,10 @@ end
     _default_handler(model::Type{MyStockSnapshotsEndpointModel}, body::String) -> DataFrame
 
 Process the response of the `/stocks/snapshots` endpoint. The snapshots are the top-level keys of the response, one
-for each symbol. The table has one row for each symbol, with the columns of `_snapshots_table` (without the greeks).
+for each symbol (a `snapshots` wrapper key is also accepted). The table has one row for each symbol, with the columns of `_snapshots_table` (without the greeks).
 """
 function _default_handler(model::Type{MyStockSnapshotsEndpointModel}, body::String)::DataFrame
-    (symbols, snapshots) = _symbol_records(JSON3.read(body));
+    (symbols, snapshots) = _option_snapshot_records(body);
     return _snapshots_table(symbols, snapshots, false);
 end
 
