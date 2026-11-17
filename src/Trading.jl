@@ -574,38 +574,38 @@ and waits until it fills. It then sends the option order, which is one single-le
 - `type::String`: the type of the option order, `"market"` or `"limit"`.
 - `limit_price`: the limit price of the option order, or `nothing`.
 - `time_in_force::String`: the time in force of the option order, e.g., `"day"`.
-- `fill_timeout::Float64`: the number of seconds to wait for the equity order to fill.
-- `poll_interval::Float64`: the number of seconds between two polls of the equity order.
+- `fill_timeout::Real`: the number of seconds to wait for the equity order to fill.
+- `poll_interval::Real`: the number of seconds between two polls of the equity order.
 
 ### Returns
 - `Vector{Order}`: the filled equity order and the option order as Alpaca accepted it. The option order may still be resting.
 
 ### Throws
-- `ArgumentError`: when the shares do not cover a short call, or when either order is invalid. The call sends no request.
+- `ArgumentError`: when the shares do not cover a short call, when `qty < 1`, `poll_interval <= 0`, or `fill_timeout < 0`, or when either order is invalid. The call sends no request.
 - `AlpacaSequenceError`: when the equity order does not fill in time (the method cancels it and sends no option order),
-  or when Alpaca rejects the option order. The error holds the equity order.
+  or when the option order fails, e.g., Alpaca rejects it. The error holds the equity order.
 """
 function submit(client::AlpacaClient, m::MyMixedOrderModel; qty::Int = 1, type::AbstractString = "limit",
-    limit_price::Union{Nothing,Real} = nothing, time_in_force::AbstractString = "day", fill_timeout::Float64 = 30.0,
-    poll_interval::Float64 = 0.5)::Vector{Order}
+    limit_price::Union{Nothing,Real} = nothing, time_in_force::AbstractString = "day", fill_timeout::Real = 30.0,
+    poll_interval::Real = 0.5)::Vector{Order}
 
     # check the coverage and both orders, before any request -
     _check_coverage(m, qty);
-    _check_mixed_orders(m, false, qty, type, limit_price);
+    _check_mixed_orders(m, false, qty, type, limit_price, fill_timeout, poll_interval);
 
     # send the equity order at market, and wait until it fills -
     equity_order = submit(client, m.equity);
-    filled_order = _wait_for_fill(client, equity_order, fill_timeout, poll_interval);
+    filled_order = _wait_for_fill(client, equity_order, Float64(fill_timeout), Float64(poll_interval));
 
     # send the option order. We do not wait on it -
     option_order = nothing;
     try
         option_order = submit(client, m.options; qty = qty, type = type, limit_price = limit_price, time_in_force = time_in_force);
     catch error
-        if (error isa AlpacaError)
-            throw(AlpacaSequenceError("the equity order filled, but Alpaca rejected the option order", [filled_order], error));
+        if (error isa InterruptException)
+            rethrow();
         end
-        rethrow();
+        throw(AlpacaSequenceError("the equity order filled, but the option order failed", [filled_order], error));
     end
     return [filled_order, option_order];
 end
@@ -624,37 +624,37 @@ It then sends the reverse equity order at market. The method does not wait on th
 - `type::String`: the type of the reverse option order, `"market"` or `"limit"`.
 - `limit_price`: the limit price of the reverse option order, or `nothing`.
 - `time_in_force::String`: the time in force of the reverse option order, e.g., `"day"`.
-- `fill_timeout::Float64`: the number of seconds to wait for the option order to fill.
-- `poll_interval::Float64`: the number of seconds between two polls of the option order.
+- `fill_timeout::Real`: the number of seconds to wait for the option order to fill.
+- `poll_interval::Real`: the number of seconds between two polls of the option order.
 
 ### Returns
 - `Vector{Order}`: the filled option order and the equity order as Alpaca accepted it. The equity order may still be resting.
 
 ### Throws
-- `ArgumentError`: when either reverse order is invalid. The call sends no request.
+- `ArgumentError`: when `qty < 1`, `poll_interval <= 0`, or `fill_timeout < 0`, or when either reverse order is invalid. The call sends no request.
 - `AlpacaSequenceError`: when the option order does not fill in time (the method cancels it and sends no equity order),
-  or when Alpaca rejects the equity order. The error holds the option order.
+  or when the equity order fails, e.g., Alpaca rejects it. The error holds the option order.
 """
 function Base.close(client::AlpacaClient, m::MyMixedOrderModel; qty::Int = 1, type::AbstractString = "limit",
-    limit_price::Union{Nothing,Real} = nothing, time_in_force::AbstractString = "day", fill_timeout::Float64 = 30.0,
-    poll_interval::Float64 = 0.5)::Vector{Order}
+    limit_price::Union{Nothing,Real} = nothing, time_in_force::AbstractString = "day", fill_timeout::Real = 30.0,
+    poll_interval::Real = 0.5)::Vector{Order}
 
     # check both orders, before any request -
-    _check_mixed_orders(m, true, qty, type, limit_price);
+    _check_mixed_orders(m, true, qty, type, limit_price, fill_timeout, poll_interval);
 
     # send the reverse option order, and wait until it fills -
     option_order = close(client, m.options; qty = qty, type = type, limit_price = limit_price, time_in_force = time_in_force);
-    filled_order = _wait_for_fill(client, option_order, fill_timeout, poll_interval);
+    filled_order = _wait_for_fill(client, option_order, Float64(fill_timeout), Float64(poll_interval));
 
     # send the reverse equity order at market. We do not wait on it -
     equity_order = nothing;
     try
         equity_order = close(client, m.equity);
     catch error
-        if (error isa AlpacaError)
-            throw(AlpacaSequenceError("the option order filled, but Alpaca rejected the equity order", [filled_order], error));
+        if (error isa InterruptException)
+            rethrow();
         end
-        rethrow();
+        throw(AlpacaSequenceError("the option order filled, but the equity order failed", [filled_order], error));
     end
     return [filled_order, equity_order];
 end
@@ -954,13 +954,24 @@ function _close_all_positions(client::AlpacaClient; cancel_orders::Bool = false)
     return _http_call(client, "DELETE", request_url);
 end
 
-# _check_coverage: shares must cover every short call. A call has the OCC type character C at position length(symbol) - 8 -
+# _check_coverage: shares must cover every short call. A call has the OCC type character C at position length(symbol) - 8,
+# and the OCC root (all characters before the last 15) is the underlying -
 function _check_coverage(m::MyMixedOrderModel, qty::Int)::Nothing
 
     # sum the ratios of the short call legs -
     short_calls = 0;
     for leg in m.options
-        if (leg.side == "sell" && length(leg.symbol) > 8 && leg.symbol[length(leg.symbol) - 8] == 'C')
+
+        # an OCC symbol has a root and 15 more characters -
+        if (length(leg.symbol) < 16)
+            throw(ArgumentError("\"$(leg.symbol)\" is not an OCC option symbol"));
+        end
+        if (leg.side == "sell" && leg.symbol[length(leg.symbol) - 8] == 'C')
+
+            # the short call must be on the shares of the equity part -
+            if (leg.symbol[1:end-15] != m.equity.symbol)
+                throw(ArgumentError("the short call $(leg.symbol) is on $(leg.symbol[1:end-15]), but the equity part trades $(m.equity.symbol)"));
+            end
             short_calls += leg.ratio;
         end
     end
@@ -987,7 +998,19 @@ function _check_coverage(m::MyMixedOrderModel, qty::Int)::Nothing
 end
 
 # _check_mixed_orders: run the checks of both orders, so an invalid order sends nothing. A closing structure reverses both parts -
-function _check_mixed_orders(m::MyMixedOrderModel, closing::Bool, qty::Int, type::AbstractString, limit_price)::Nothing
+function _check_mixed_orders(m::MyMixedOrderModel, closing::Bool, qty::Int, type::AbstractString, limit_price,
+    fill_timeout::Real, poll_interval::Real)::Nothing
+
+    # check the quantity and the wait settings -
+    if (qty < 1)
+        throw(ArgumentError("qty must be at least 1, got $(qty)"));
+    end
+    if (poll_interval <= 0)
+        throw(ArgumentError("poll_interval must be positive, got $(poll_interval)"));
+    end
+    if (fill_timeout < 0)
+        throw(ArgumentError("fill_timeout must not be negative, got $(fill_timeout)"));
+    end
 
     # check the equity order. The equity part trades at market -
     equity_side = m.equity.side;
@@ -1016,41 +1039,69 @@ function _check_mixed_orders(m::MyMixedOrderModel, closing::Bool, qty::Int, type
     return nothing;
 end
 
-# _wait_for_fill: poll the order until it fills. On a timeout or an early stop, cancel the order and throw -
+# _wait_for_fill: poll the order until it fills. On a timeout or an early stop, cancel the order, read it again, and throw unless it filled -
 function _wait_for_fill(client::AlpacaClient, order::Order, fill_timeout::Float64, poll_interval::Float64)::Order
 
-    # poll until the deadline -
+    # poll until the deadline. A failed poll cancels the order, as far as possible, and ends the sequence -
     deadline = time() + fill_timeout;
     last_order = order;
-    while (true)
-        last_order = _get_order(client, order.id);
+    try
+        while (true)
+            last_order = _get_order(client, order.id);
 
-        # a filled order ends the wait -
-        if (last_order.status == "filled")
-            return last_order;
-        end
+            # a filled order ends the wait -
+            if (last_order.status == "filled")
+                return last_order;
+            end
 
-        # a canceled, expired, or rejected order ends the wait early -
-        if (last_order.status in ("canceled", "expired", "rejected"))
-            break;
-        end
+            # a canceled, expired, or rejected order ends the wait early -
+            if (last_order.status in ("canceled", "expired", "rejected"))
+                break;
+            end
 
-        # a late order ends the wait -
-        if (time() >= deadline)
-            break;
+            # a late order ends the wait -
+            if (time() >= deadline)
+                break;
+            end
+            sleep(poll_interval);
         end
-        sleep(poll_interval);
+    catch error
+        if (error isa InterruptException)
+            rethrow();
+        end
+        try
+            _cancel_order(client, order.id);
+        catch cancel_error
+            if (cancel_error isa InterruptException)
+                rethrow();
+            end
+        end
+        throw(AlpacaSequenceError("polling order $(order.id) failed, so the sequence stopped", [last_order], error));
     end
 
-    # cancel the order. Alpaca may refuse, e.g., when the order already ended, and then the order is still reported -
+    # cancel the order. Alpaca may refuse, e.g., when the order filled or ended, so any error from the cancel is ignored -
     try
         _cancel_order(client, order.id);
-    catch error
-        if ((error isa AlpacaError) == false)
+    catch cancel_error
+        if (cancel_error isa InterruptException)
             rethrow();
         end
     end
-    throw(AlpacaSequenceError("order $(order.id) did not fill (status $(last_order.status)), so the sequence stopped", [last_order], nothing));
+
+    # read the order again. The order may have filled before the cancel. If the read fails, keep the last polled order -
+    fresh_order = last_order;
+    try
+        fresh_order = _get_order(client, order.id);
+    catch fresh_error
+        if (fresh_error isa InterruptException)
+            rethrow();
+        end
+    end
+    if (fresh_order.status == "filled")
+        return fresh_order;
+    end
+    throw(AlpacaSequenceError("order $(order.id) did not fill: status $(fresh_order.status), filled_qty $(fresh_order.filled_qty), so the sequence stopped",
+        [fresh_order], nothing));
 end
 
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #

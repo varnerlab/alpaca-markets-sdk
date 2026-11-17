@@ -1217,7 +1217,7 @@ struct AlpacaSequenceError <: Exception
     cause::Union{Nothing,Exception}
 end
 
-function Base.showerror(io::IO, e::AlpacaSequenceError)
+function Base.showerror(io::IO, e::AlpacaSequenceError)::Nothing
 
     # print the message -
     print(io, "AlpacaSequenceError: ", e.message);
@@ -1226,4 +1226,11 @@ function Base.showerror(io::IO, e::AlpacaSequenceError)
     for order in e.orders
         print(io, "\n  order ", order.id, ": ", order.status);
     end
+
+    # print the cause, when there is one -
+    if (e.cause !== nothing)
+        print(io, "\n  cause: ");
+        showerror(io, e.cause);
+    end
+    return nothing;
 end
