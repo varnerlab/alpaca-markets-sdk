@@ -1165,3 +1165,65 @@ mutable struct MyOptionLegModel <: AbstractAlpacaOrderModel
         return new(symbol, side, ratio);
     end
 end
+
+"""
+    mutable struct MyMixedOrderModel <: AbstractAlpacaOrderModel
+
+Order model for shares and options together, e.g., a covered call. Alpaca cannot fill shares and options in one order,
+so `submit` and `close` send two orders in a fixed sequence.
+
+### Fields
+- `equity::MyEquityOrderModel`: the equity part of the structure.
+- `options::Vector{MyOptionLegModel}`: the option legs of the structure.
+
+### Constructors
+- `MyMixedOrderModel(; equity::MyEquityOrderModel, options::Vector{MyOptionLegModel})`: returns a new `MyMixedOrderModel` instance.
+  The constructor throws an `ArgumentError` when `options` has no legs.
+"""
+mutable struct MyMixedOrderModel <: AbstractAlpacaOrderModel
+
+    # data -
+    equity::MyEquityOrderModel
+    options::Vector{MyOptionLegModel}
+
+    # methods -
+    function MyMixedOrderModel(; equity::MyEquityOrderModel, options::Vector{MyOptionLegModel})
+
+        # the structure needs at least one option leg -
+        if (isempty(options))
+            throw(ArgumentError("options must hold at least one leg"));
+        end
+        return new(equity, options);
+    end
+end
+
+"""
+    struct AlpacaSequenceError <: Exception
+
+Raised when the two-order sequence of a `MyMixedOrderModel` stops after the first order. The error holds the orders sent so far,
+so the caller knows which part of the structure filled.
+
+### Fields
+- `message::String`: what went wrong.
+- `orders::Vector{Order}`: the orders sent so far, in sequence order.
+- `cause::Union{Nothing,Exception}`: the error of the second request, or `nothing` when the first order did not fill.
+
+### Constructors
+- `AlpacaSequenceError(message::String, orders::Vector{Order}, cause::Union{Nothing,Exception})`: returns a new `AlpacaSequenceError` instance.
+"""
+struct AlpacaSequenceError <: Exception
+    message::String
+    orders::Vector{Order}
+    cause::Union{Nothing,Exception}
+end
+
+function Base.showerror(io::IO, e::AlpacaSequenceError)
+
+    # print the message -
+    print(io, "AlpacaSequenceError: ", e.message);
+
+    # print the id and the status of each order sent so far -
+    for order in e.orders
+        print(io, "\n  order ", order.id, ": ", order.status);
+    end
+end

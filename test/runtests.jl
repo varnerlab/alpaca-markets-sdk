@@ -47,4 +47,5 @@ global_logger(DropDepwarnLogger(global_logger()))
     include("test_handlers_marketdata.jl")
     include("test_trading_submit.jl")
     include("test_trading_close_roll.jl")
+    include("test_trading_mixed.jl")
 end
