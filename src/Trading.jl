@@ -429,12 +429,14 @@ end
     Base.close(client::AlpacaClient, order::Order; type = "market", limit_price = nothing, time_in_force = "day") -> Order
 
 Close a filled order by submitting the reverse order, using an HTTP POST call to the Alpaca `/orders` endpoint.
-The reverse order uses the filled quantities of the order. The kind of the order comes from the `Order` value:
-an order with `legs` is a multi-leg order, an order with the asset class `"us_option"` is a single option order, and any other order is an equity order.
+The method first reads the current state of the order from Alpaca, using an HTTP GET call to the `/orders/{id}` endpoint,
+so the `Order` that `submit` returned works once that order has filled. The reverse order uses the filled quantities of the order as read.
+The kind of the order comes from the order as read: an order with `legs` is a multi-leg order, an order with the asset class `"us_option"`
+is a single option order, and any other order is an equity order.
 
 ### Arguments
 - `client::AlpacaClient`: the client that holds the credentials and the base URLs.
-- `order::Order`: the filled order to reverse, e.g., an order that `submit` returned.
+- `order::Order`: the order to reverse, e.g., the `Order` that `submit` returned. The method uses the `id` of `order` to read the order again.
 - `type::String`: the type of the reverse order. Use `"market"` or `"limit"`.
 - `limit_price`: the limit price of the reverse order, or `nothing`. For a multi-leg order, this is the net price of one unit of the structure.
 - `time_in_force::String`: the time in force of the reverse order, e.g., `"day"`.
@@ -443,29 +445,33 @@ an order with `legs` is a multi-leg order, an order with the asset class `"us_op
 - `Order`: the reverse order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when the status of `order` is not `"filled"`. Use `cancel` for an order that has not filled, and `close(client, symbol; qty)` for the filled part of a canceled or expired order. The call sends no request.
-- `AlpacaError`: when Alpaca rejects the request.
+- `ArgumentError`: when the status of the order as read is not `"filled"`. Use `cancel` for an order that has not filled, and `close(client, symbol; qty)` for the filled part of a canceled or expired order. The call sends no order.
+- `AlpacaError`: when the read of the order fails, or when Alpaca rejects the reverse order. When the read fails, the call sends no order.
 """
 function Base.close(client::AlpacaClient, order::Order; type::AbstractString = "market", limit_price::Union{Nothing,Real} = nothing,
     time_in_force::AbstractString = "day")::Order
 
+    # read the current state of the order, before any order is sent. Every later step uses the order as read -
+    current_order = _get_order(client, order.id);
+
     # only a filled order can be reversed -
-    _check_filled(order);
+    _check_filled(current_order);
 
     # a multi-leg order is reversed as one unit of every leg, for each filled unit -
-    if (order.legs !== nothing)
-        return close(client, _legs_from_order(order); qty = Int(order.filled_qty), type = type, time_in_force = time_in_force,
-            limit_price = limit_price);
+    if (current_order.legs !== nothing)
+        return close(client, _legs_from_order(current_order); qty = Int(current_order.filled_qty), type = type,
+            time_in_force = time_in_force, limit_price = limit_price);
     end
 
     # a single option order is reversed with the close intent -
-    if (order.asset_class == "us_option")
-        leg = MyOptionLegModel(symbol = order.symbol, side = order.side);
-        return close(client, leg; qty = Int(order.filled_qty), type = type, time_in_force = time_in_force, limit_price = limit_price);
+    if (current_order.asset_class == "us_option")
+        leg = MyOptionLegModel(symbol = current_order.symbol, side = current_order.side);
+        return close(client, leg; qty = Int(current_order.filled_qty), type = type, time_in_force = time_in_force,
+            limit_price = limit_price);
     end
 
     # any other order is an equity order, reversed with the filled quantity -
-    m = MyEquityOrderModel(symbol = order.symbol, side = order.side, qty = _whole_qty(order.filled_qty));
+    m = MyEquityOrderModel(symbol = current_order.symbol, side = current_order.side, qty = _whole_qty(current_order.filled_qty));
     return close(client, m; type = type, time_in_force = time_in_force, limit_price = limit_price);
 end
 
@@ -533,16 +539,18 @@ end
     roll(client::AlpacaClient, from::Order, to; qty = nothing, type = "limit", time_in_force = "day",
         limit_price = nothing, client_order_id = nothing) -> Order
 
-Roll the legs of a filled option order to another set of contracts. The legs of `from` are the legs to close. A single option order is one leg, and a multi-leg order is one leg for each of its legs.
-When `qty` is `nothing`, the call uses the filled quantity of `from`.
+Roll the legs of a filled option order to another set of contracts. The method first reads the current state of `from` from Alpaca,
+using an HTTP GET call to the `/orders/{id}` endpoint, so the `Order` that `submit` returned works once that order has filled.
+The legs of the order as read are the legs to close. A single option order is one leg, and a multi-leg order is one leg for each of its legs.
+When `qty` is `nothing`, the call uses the filled quantity of the order as read.
 The call sends one atomic `mleg` order, as described for `roll(client, from, to)`.
 An iron condor rolls as two `roll` calls, one for each wing, and the two calls are not atomic.
 
 ### Arguments
 - `client::AlpacaClient`: the client that holds the credentials and the base URLs.
-- `from::Order`: the filled option order that holds the legs to close, e.g., an order that `submit` returned.
+- `from::Order`: the option order that holds the legs to close, e.g., the `Order` that `submit` returned. The method uses the `id` of `from` to read the order again.
 - `to::Union{MyOptionLegModel,Vector{MyOptionLegModel}}`: the legs to open.
-- `qty`: the number of units of the structure, or `nothing` to use the filled quantity of `from`.
+- `qty`: the number of units of the structure, or `nothing` to use the filled quantity of the order as read.
 - `type::String`: `"market"` or `"limit"`.
 - `time_in_force::String`: the time in force of the order, e.g., `"day"`.
 - `limit_price`: the limit price, or `nothing`. A limit order requires it.
@@ -552,24 +560,27 @@ An iron condor rolls as two `roll` calls, one for each wing, and the two calls a
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when the status of `from` is not `"filled"`, when `from` is an equity order (use `close` or `submit` for shares), when `qty < 1`, when the legs together are fewer than 2 or more than 4, or when a `"limit"` order has no `limit_price`. The call sends no request.
-- `AlpacaError`: when Alpaca rejects the request.
+- `ArgumentError`: when the status of the order as read is not `"filled"`, when the order is an equity order (use `close` or `submit` for shares), when `qty < 1`, when the legs together are fewer than 2 or more than 4, or when a `"limit"` order has no `limit_price`. The call sends no order.
+- `AlpacaError`: when the read of `from` fails, or when Alpaca rejects the roll order. When the read fails, the call sends no order.
 """
 function roll(client::AlpacaClient, from::Order, to::Union{MyOptionLegModel,Vector{MyOptionLegModel}}; qty::Union{Nothing,Int} = nothing,
     type::AbstractString = "limit", time_in_force::AbstractString = "day", limit_price::Union{Nothing,Real} = nothing,
     client_order_id::Union{Nothing,AbstractString} = nothing)::Order
 
+    # read the current state of the order, before any order is sent. Every later step uses the order as read -
+    current_order = _get_order(client, from.id);
+
     # only a filled order can be rolled -
-    _check_filled(from);
+    _check_filled(current_order);
 
     # the default number of units is the filled quantity -
     units = qty;
     if (units === nothing)
-        units = Int(from.filled_qty);
+        units = Int(current_order.filled_qty);
     end
 
     # convert the filled order to legs, then roll the legs -
-    return roll(client, _legs_from_order(from), to; qty = units, type = type, time_in_force = time_in_force,
+    return roll(client, _legs_from_order(current_order), to; qty = units, type = type, time_in_force = time_in_force,
         limit_price = limit_price, client_order_id = client_order_id);
 end
 

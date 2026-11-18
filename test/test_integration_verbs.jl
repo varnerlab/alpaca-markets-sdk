@@ -167,11 +167,9 @@ if _LIVE
                 _v_wait_filled(client, opening_id);
                 @test _v_status(client, opening_id) == "filled"
 
-                # close the spread through its filled order, so that close(client, ::Order) runs live. The order that
-                # submit returned holds the status at submission, so the filled order is read again first -
-                filled_order = Alpaca._get_order(client, opening_id);
-                @test filled_order.status == "filled"
-                close_order = close(client, filled_order; type = "market");
+                # close the spread through the Order that submit returned, so that close(client, ::Order) runs live.
+                # close reads the order again from Alpaca, so it sees the fill -
+                close_order = close(client, open_order; type = "market");
                 reversing_id = close_order.id;
                 @test close_order isa Order
                 _v_wait_filled(client, reversing_id);
