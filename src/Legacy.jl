@@ -1071,6 +1071,7 @@ function get_option_chain_snapshot(client::AlpacaClient, underlying_symbol::Abst
         expiration_date_lte = _model_value(expiration_date_lte), limit = Int(limit));
     return api(client, model; handler = _legacy_handler);
 end
+
 """
     submit_order(client, symbol, qty, side; type="market", time_in_force="day", limit_price=nothing, stop_price=nothing,
         trail_price=nothing, trail_percent=nothing, client_order_id=nothing, extended_hours=false, notional=nothing) -> Order
@@ -1374,6 +1375,7 @@ end
 function _symbols_desc(symbols::AbstractVector)::String
     return "[" * join(symbols, ",") * "]";
 end
+
 # _parse_body: the legacy value of a response body. An empty body is nothing, and any other body is parsed as JSON -
 function _parse_body(body::String)
     if (isempty(body))

@@ -187,6 +187,9 @@ end
 """
     OrderLeg(symbol, ratio_qty, side, position_intent)
 
+!!! warning "Deprecated"
+    `OrderLeg` is deprecated, use `MyOptionLegModel(...)` instead, together with `submit`, `close`, or `roll`, which supply the position intent.
+
 Input descriptor for one leg of a multi-leg option order. Pass a
 `Vector{OrderLeg}` to [`submit_multileg_order`](@ref).
 
