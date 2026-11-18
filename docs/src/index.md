@@ -1,19 +1,15 @@
 # Alpaca.jl
 
-A thin Julia client for the [Alpaca Markets](https://alpaca.markets) REST API,
-focused on paper-trading US equities and ETFs, plus access to historical and
-latest market data.
+A Julia client for the [Alpaca Markets](https://alpaca.markets) REST API, focused on paper trading US equities, ETFs, and options, plus access to historical and latest market data.
 
 ## Features
 
-- Credentials loaded from a local TOML file (no env vars required)
-- Trading: account, clock/calendar, assets, orders, positions
-- Market data: bars, quotes, trades, snapshots, and latest-* endpoints
-- Real-time streaming: trades, quotes, and bars via WebSocket with auto-reconnect
-- Automatic pagination for historical market data queries
-- Typed return values (`Account`, `Order`, `Position`, `Bar`, `Quote`, ...) plus
-  access to the raw `JSON3` payload when you need fields that aren't surfaced
-- Single exception type `AlpacaError` for non-2xx API responses
+- Credentials loaded from a local TOML file (no environment variables required)
+- Reading: one model for each endpoint, `url` to build the request URL, and `api` to send the request and return a `DataFrame`
+- Trading: `submit`, `cancel`, `close`, and `roll` for equities, option legs, vertical spreads, and covered calls
+- Real-time streaming of trades, quotes, and bars through a WebSocket with automatic reconnection
+- Automatic pagination for market data queries
+- The exceptions `AlpacaError` for a non-2xx API response and `AlpacaSequenceError` for a two-order sequence that stops after the first order
 
 ## Quick example
 
@@ -23,22 +19,17 @@ using Dates
 
 client = load_client()                 # reads conf/apidata.toml
 
-acct = get_account(client)
-@show acct.cash acct.buying_power
+# read the daily bars of two stocks
+model = MyStockBarsEndpointModel(symbols = ["AAPL", "MSFT"], timeframe = "1Day",
+                                 start = today() - Day(30))
+bars = api(client, model)
 
-order = submit_order(client, "SPY", 10, "buy";
-                     type = "market", time_in_force = "day")
-
-bars = get_bars(client, ["AAPL", "MSFT"], "1Day";
-                start = today() - Day(30))
+# buy one share of SPY at market
+order = submit(client, MyEquityOrderModel(symbol = "SPY", side = "buy", qty = 1))
 ```
 
-See [Getting Started](getting_started.md) for installation and credential setup,
-and the API Reference pages in the sidebar for every exported function and
-type.
+See [Getting Started](getting_started.md) for installation and credential setup. The API Reference pages in the sidebar document every exported function and type. The functions of versions before 0.4.0 are deprecated and listed on the [Legacy API](api/legacy.md) page, with the replacement for each function.
 
 ## Disclaimer
 
-This package is independent and not affiliated with Alpaca Securities LLC.
-It is intended for paper-trading, research, and algorithm development. Review
-any strategy carefully before running it against a live account.
+This package is independent and not affiliated with Alpaca Securities LLC. It is intended for paper trading, research, and algorithm development. Review any strategy carefully before running it against a live account.

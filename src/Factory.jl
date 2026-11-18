@@ -10,7 +10,7 @@ Build the URL string for the Alpaca `/account` endpoint.
 An HTTP GET call to this URL returns the account of the client: cash, buying power, and status.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyAccountEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -36,7 +36,7 @@ Build the URL string for the Alpaca `/clock` endpoint.
 An HTTP GET call to this URL returns the market clock: whether the market is open and when it next opens or closes.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyClockEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -62,7 +62,7 @@ Build the URL string for the Alpaca `/positions` endpoint.
 An HTTP GET call to this URL returns every open position of the account.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyPositionsEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -89,7 +89,7 @@ An HTTP GET call to this URL returns the market calendar: the trading days and t
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyCalendarEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -124,7 +124,7 @@ An HTTP GET call to this URL returns the assets that match a status and an asset
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyAssetsEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -158,7 +158,7 @@ Build the URL string for the Alpaca `/assets/{symbol}` endpoint.
 An HTTP GET call to this URL returns one asset, by symbol or asset identifier.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyAssetEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -186,7 +186,7 @@ Build the URL string for the Alpaca `/positions/{symbol}` endpoint.
 An HTTP GET call to this URL returns the open position of one symbol.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyPositionEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -215,7 +215,7 @@ An HTTP GET call to this URL returns the orders of the account that match a stat
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyOrdersEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -253,7 +253,7 @@ Build the URL string for the Alpaca `/orders/{id}` endpoint, or for `/orders:by_
 An HTTP GET call to this URL returns one order, by order identifier or by client order identifier.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyOrderEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -283,7 +283,7 @@ An HTTP GET call to this URL returns the option contracts that match the filters
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyOptionContractsEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -325,7 +325,7 @@ Build the URL string for the Alpaca `/options/contracts/{symbol}` endpoint.
 An HTTP GET call to this URL returns one option contract, by symbol or contract identifier.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
 - `model::MyOptionContractEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -610,7 +610,7 @@ An HTTP GET call to this URL returns historical option bars.
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
 - `model::MyOptionBarsEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -648,7 +648,7 @@ An HTTP GET call to this URL returns historical option quotes.
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
 - `model::MyOptionQuotesEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -685,7 +685,7 @@ An HTTP GET call to this URL returns historical option trades.
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
 - `model::MyOptionTradesEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -722,7 +722,7 @@ An HTTP GET call to this URL returns the latest option bar of several option con
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
 - `model::MyOptionLatestBarEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -756,7 +756,7 @@ An HTTP GET call to this URL returns the latest option quote of several option c
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
 - `model::MyOptionLatestQuoteEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -790,7 +790,7 @@ An HTTP GET call to this URL returns the latest option trade of several option c
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
 - `model::MyOptionLatestTradeEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -824,7 +824,7 @@ An HTTP GET call to this URL returns the snapshots of several option contracts.
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
 - `model::MyOptionSnapshotsEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -858,7 +858,7 @@ An HTTP GET call to this URL returns the option chain snapshots of one underlyin
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
 - `model::MyOptionChainEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns

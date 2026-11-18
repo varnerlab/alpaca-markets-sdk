@@ -41,26 +41,32 @@ using Alpaca
 client = load_client()                 # default path: conf/apidata.toml
 # or: load_client("conf/my_other_creds.toml")
 
-acct = get_account(client)
-println("cash: ", acct.cash, " ", acct.currency)
+account = api(client, MyAccountEndpointModel())
+println("cash: ", account.cash[1], " ", account.currency[1])
 ```
+
+`api` returns a `DataFrame`. An endpoint that returns one record, such as the account, gives a `DataFrame` with one row.
 
 ## Market data feeds
 
-The market-data functions default to `feed = "iex"`, which is free on every
-Alpaca account. If you have a paid data subscription, pass `feed = "sip"` to
-[`get_bars`](@ref), [`get_quotes`](@ref), [`get_trades`](@ref), and the
-`get_latest_*` helpers for consolidated tape data.
+The stock data models have the field `feed`, which defaults to `"iex"`. The `"iex"` feed is free on every Alpaca account. If you have a paid data subscription, set `feed = "sip"` in the model for consolidated tape data:
+
+```julia
+model = MyStockQuotesEndpointModel(symbols = "AAPL", start = "2025-01-02", feed = "sip")
+```
 
 ## Error handling
 
-Any non-2xx REST response raises an [`AlpacaError`](@ref):
+A non-2xx REST response raises an [`AlpacaError`](@ref):
 
 ```julia
 try
-    submit_order(client, "NOPE", 1, "buy")
+    submit(client, MyEquityOrderModel(symbol = "NOPE", side = "buy", qty = 1))
 catch e
-    e isa AlpacaError || rethrow()
-    @warn "order rejected" status=e.status code=e.code message=e.message
+    if e isa AlpacaError
+        @warn "order rejected" status=e.status code=e.code message=e.message
+    else
+        rethrow()
+    end
 end
 ```

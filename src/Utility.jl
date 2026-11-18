@@ -41,6 +41,7 @@ client = load_client("credentials.toml"; section = "paper_research")
 
 ### Throws
 - `ArgumentError`: when the credentials file does not exist, or when it has no table named `section`.
+- `KeyError`: when the table has no `endpoint`, `key`, or `secret` entry.
 """
 function load_client(path::AbstractString = joinpath("conf", "apidata.toml");
     section::AbstractString = "Credentials",

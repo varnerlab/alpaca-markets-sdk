@@ -19,14 +19,16 @@ include("Legacy.jl")
 # Client
 export AlpacaClient, load_client
 
+# Verbs (`close` is a method of `Base.close`, so it is not exported)
+export url, api, submit, cancel, roll
+
 # Abstract types
 export AbstractAlpacaEndpointModel, AbstractAlpacaTradingEndpointModel,
        AbstractAlpacaStockDataEndpointModel, AbstractAlpacaOptionDataEndpointModel,
        AbstractAlpacaOrderModel
 
-# Read endpoint models and url
-export api, url,
-       MyAccountEndpointModel, MyClockEndpointModel,
+# Read models
+export MyAccountEndpointModel, MyClockEndpointModel,
        MyPositionsEndpointModel, MyCalendarEndpointModel,
        MyAssetsEndpointModel, MyAssetEndpointModel,
        MyPositionEndpointModel, MyOrdersEndpointModel,
@@ -40,35 +42,11 @@ export api, url,
        MyOptionLatestQuoteEndpointModel, MyOptionLatestTradeEndpointModel,
        MyOptionSnapshotsEndpointModel, MyOptionChainEndpointModel
 
-# Account / clock
-export get_account, get_clock, get_calendar
+# Order models
+export MyEquityOrderModel, MyOptionLegModel, MyMixedOrderModel
 
-# Assets
-export list_assets, get_asset
-
-# Order models and trading verbs
-export submit, cancel, roll, MyEquityOrderModel, MyOptionLegModel,
-    MyMixedOrderModel, AlpacaSequenceError
-
-# Orders
-export submit_order, submit_multileg_order,
-       list_orders, get_order, cancel_order, cancel_all_orders
-
-# Positions
-export list_positions, get_position, close_position, close_all_positions
-
-# Market data
-export get_bars, get_quotes, get_trades, get_snapshot, get_latest_bar,
-       get_latest_quote, get_latest_trade
-
-# Historical download helpers
-export download_bars, write_bars_csv, read_bars_csv
-
-# Options
-export list_option_contracts, get_option_contract,
-       get_option_bars, get_option_trades, get_option_quotes,
-       get_latest_option_bar, get_latest_option_quote, get_latest_option_trade,
-       get_option_snapshots, get_option_chain_snapshot
+# Errors and the order returned by the trading verbs
+export AlpacaError, AlpacaSequenceError, Order
 
 # Streaming
 export AlpacaStream, connect_market_stream,
@@ -76,9 +54,22 @@ export AlpacaStream, connect_market_stream,
        on_trade, on_quote, on_bar,
        start!, stop!, isrunning
 
-# Types
-export Account, Order, OrderLeg, Position, Asset, Bar, Quote, Trade, MarketClock,
-       CalendarDay, AlpacaError,
-       OptionContract, OptionGreeks, OptionSnapshot
+# Legacy functions (deprecated, see the Legacy API page)
+export get_account, get_clock, get_calendar,
+       list_assets, get_asset,
+       submit_order, submit_multileg_order,
+       list_orders, get_order, cancel_order, cancel_all_orders,
+       list_positions, get_position, close_position, close_all_positions,
+       get_bars, get_quotes, get_trades, get_snapshot, get_latest_bar,
+       get_latest_quote, get_latest_trade,
+       download_bars, write_bars_csv, read_bars_csv,
+       list_option_contracts, get_option_contract,
+       get_option_bars, get_option_trades, get_option_quotes,
+       get_latest_option_bar, get_latest_option_quote, get_latest_option_trade,
+       get_option_snapshots, get_option_chain_snapshot
+
+# Legacy types
+export Account, OrderLeg, Position, Asset, Bar, Quote, Trade, MarketClock,
+       CalendarDay, OptionContract, OptionGreeks, OptionSnapshot
 
 end # module

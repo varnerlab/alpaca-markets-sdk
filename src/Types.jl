@@ -59,11 +59,15 @@ struct AlpacaClient
 end
 
 # Four-arg convenience constructor (backwards compatible).
-AlpacaClient(trading_url::AbstractString, data_url::AbstractString,
-             key_id::AbstractString, secret_key::AbstractString) =
-    AlpacaClient(trading_url, data_url,
-                 _derive_options_url(data_url),
-                 key_id, secret_key)
+function AlpacaClient(trading_url::AbstractString, data_url::AbstractString,
+                      key_id::AbstractString, secret_key::AbstractString)::AlpacaClient
+
+    # derive the options data base URL from the stock data base URL -
+    options_data_url = _derive_options_url(data_url);
+
+    # build the client with the derived options data base URL -
+    return AlpacaClient(trading_url, data_url, options_data_url, key_id, secret_key);
+end
 
 """
     AlpacaError(status, code, message, body)
@@ -80,11 +84,17 @@ struct AlpacaError <: Exception
     body::String
 end
 
-Base.showerror(io::IO, e::AlpacaError) =
-    print(io, "AlpacaError(status=$(e.status), code=$(e.code)): $(e.message)")
+function Base.showerror(io::IO, e::AlpacaError)::Nothing
+
+    # print the status, the code, and the message -
+    print(io, "AlpacaError(status=$(e.status), code=$(e.code)): $(e.message)");
+    return nothing;
+end
 
 """
     Account
+
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
 
 Summary of the authenticated trading account. Returned by [`get_account`](@ref).
 
@@ -115,6 +125,8 @@ end
 """
     Asset
 
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
+
 A tradable (or historically tradable) instrument on Alpaca. Returned by
 [`list_assets`](@ref) and [`get_asset`](@ref).
 
@@ -142,7 +154,8 @@ end
 """
     Order
 
-A trading order. Returned by [`submit_order`](@ref), [`submit_multileg_order`](@ref),
+A trading order. Returned by [`submit`](@ref), `close`, and [`roll`](@ref),
+and by the deprecated functions [`submit_order`](@ref), [`submit_multileg_order`](@ref),
 [`get_order`](@ref), and [`list_orders`](@ref).
 
 Selected fields:
@@ -190,6 +203,8 @@ end
 !!! warning "Deprecated"
     `OrderLeg` is deprecated, use `MyOptionLegModel(...)` instead, together with `submit`, `close`, or `roll`, which supply the position intent.
 
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
+
 Input descriptor for one leg of a multi-leg option order. Pass a
 `Vector{OrderLeg}` to [`submit_multileg_order`](@ref).
 
@@ -216,6 +231,8 @@ end
 
 """
     Position
+
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
 
 An open position in the account. Returned by [`list_positions`](@ref) and
 [`get_position`](@ref).
@@ -248,6 +265,8 @@ end
 """
     Bar
 
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
+
 An OHLCV bar for a single symbol at a given timestamp. Returned by
 [`get_bars`](@ref) and [`get_latest_bar`](@ref).
 
@@ -275,6 +294,8 @@ end
 """
     Quote
 
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
+
 A level-1 NBBO quote. Returned by [`get_quotes`](@ref) and
 [`get_latest_quote`](@ref).
 
@@ -295,6 +316,8 @@ end
 """
     Trade
 
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
+
 A last-sale print. Returned by [`get_trades`](@ref) and [`get_latest_trade`](@ref).
 
 Fields: `symbol`, `t`, `price`, `size`, `exchange`, `id` (exchange trade id,
@@ -312,6 +335,8 @@ end
 """
     MarketClock
 
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
+
 Server-side market clock snapshot returned by [`get_clock`](@ref).
 
 Fields: `timestamp`, `is_open`, `next_open`, `next_close` (all `DateTime` UTC
@@ -326,6 +351,8 @@ end
 
 """
     CalendarDay
+
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
 
 A single trading session in the market calendar. Returned by
 [`get_calendar`](@ref).
@@ -343,6 +370,8 @@ end
 
 """
     OptionContract
+
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
 
 Metadata for a single listed options contract. Returned by
 [`list_option_contracts`](@ref) and [`get_option_contract`](@ref).
@@ -384,6 +413,8 @@ end
 """
     OptionGreeks
 
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
+
 The standard option greeks returned alongside a snapshot. Any field may be
 `nothing` when Alpaca is unable to compute it (e.g. deep ITM / OTM with no
 quote activity).
@@ -400,6 +431,8 @@ end
 
 """
     OptionSnapshot
+
+Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
 
 Snapshot of a single option contract: latest trade/quote, minute bar,
 implied volatility, and greeks. Returned by [`get_option_snapshots`](@ref)
@@ -513,7 +546,7 @@ Endpoint model for the Alpaca `/assets` endpoint.
 This endpoint returns the assets that match a status and an asset class.
 
 ### Fields
-- `status::String`: the status filter, e.g., `"open"`.
+- `status::String`: the status filter, e.g., `"active"`.
 - `asset_class::String`: the asset class filter, e.g., `"us_equity"`.
 
 ### Constructors
@@ -1215,7 +1248,7 @@ so the caller knows which part of the structure filled.
 ### Fields
 - `message::String`: what went wrong.
 - `orders::Vector{Order}`: the orders sent so far, in sequence order.
-- `cause::Union{Nothing,Exception}`: the error of the second request, or `nothing` when the first order did not fill.
+- `cause::Union{Nothing,Exception}`: the error that stopped the sequence: the `AlpacaError` of the second request, or the error raised while polling the first order. It is `nothing` when the first order did not fill in time.
 
 ### Constructors
 - `AlpacaSequenceError(message::String, orders::Vector{Order}, cause::Union{Nothing,Exception})`: returns a new `AlpacaSequenceError` instance.
@@ -1226,6 +1259,11 @@ struct AlpacaSequenceError <: Exception
     cause::Union{Nothing,Exception}
 end
 
+"""
+    Base.showerror(io::IO, e::AlpacaSequenceError)
+
+Print the message of an `AlpacaSequenceError`, the id and the status of each order sent so far, and the cause when there is one.
+"""
 function Base.showerror(io::IO, e::AlpacaSequenceError)::Nothing
 
     # print the message -

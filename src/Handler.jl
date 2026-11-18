@@ -279,7 +279,8 @@ end
 """
     _default_handler(model::Type{MyAssetsEndpointModel}, body::String) -> DataFrame
 
-Process the response of the `/assets` endpoint. The table has one row for each asset, with the columns of `_assets_table`.
+Process the response of the `/assets` endpoint.
+The table has one row for each asset, with the columns of `_assets_table`.
 """
 function _default_handler(model::Type{MyAssetsEndpointModel}, body::String)::DataFrame
     return _assets_table(_json_records(body, String[]));
@@ -288,7 +289,8 @@ end
 """
     _default_handler(model::Type{MyAssetEndpointModel}, body::String) -> DataFrame
 
-Process the response of the `/assets/{symbol_or_id}` endpoint. The table has one row, with the columns of `_assets_table`.
+Process the response of the `/assets/{symbol_or_id}` endpoint.
+The table has one row, with the columns of `_assets_table`.
 """
 function _default_handler(model::Type{MyAssetEndpointModel}, body::String)::DataFrame
     return _assets_table(_json_records(body, String[]));
@@ -347,7 +349,8 @@ end
 """
     _default_handler(model::Type{MyPositionsEndpointModel}, body::String) -> DataFrame
 
-Process the response of the `/positions` endpoint. The table has one row for each position, with the columns of `_positions_table`.
+Process the response of the `/positions` endpoint.
+The table has one row for each position, with the columns of `_positions_table`.
 """
 function _default_handler(model::Type{MyPositionsEndpointModel}, body::String)::DataFrame
     return _positions_table(_json_records(body, String[]));
@@ -356,7 +359,8 @@ end
 """
     _default_handler(model::Type{MyPositionEndpointModel}, body::String) -> DataFrame
 
-Process the response of the `/positions/{symbol_or_asset_id}` endpoint. The table has one row, with the columns of `_positions_table`.
+Process the response of the `/positions/{symbol_or_asset_id}` endpoint.
+The table has one row, with the columns of `_positions_table`.
 """
 function _default_handler(model::Type{MyPositionEndpointModel}, body::String)::DataFrame
     return _positions_table(_json_records(body, String[]));
@@ -805,8 +809,9 @@ end
 """
     _default_handler(model::Type{MyStockBarsEndpointModel}, body::String) -> DataFrame
 
-Process one page of the `/stocks/bars` endpoint. The records are under the `bars` key, grouped by symbol. The table has one
-row for each record, with the columns of `_bars_table`. A `null` or empty `bars` object gives a table with no rows.
+Process one page of the `/stocks/bars` endpoint. The records are under the `bars` key, grouped by symbol.
+The table has one row for each record, with the columns of `_bars_table`.
+A `null` or empty `bars` object gives a table with no rows.
 """
 function _default_handler(model::Type{MyStockBarsEndpointModel}, body::String)::DataFrame
     (symbols, records) = _symbol_records_under(body, :bars);
@@ -816,8 +821,9 @@ end
 """
     _default_handler(model::Type{MyStockQuotesEndpointModel}, body::String) -> DataFrame
 
-Process one page of the `/stocks/quotes` endpoint. The records are under the `quotes` key, grouped by symbol. The table has one
-row for each record, with the columns of `_quotes_table`. A `null` or empty `quotes` object gives a table with no rows.
+Process one page of the `/stocks/quotes` endpoint. The records are under the `quotes` key, grouped by symbol.
+The table has one row for each record, with the columns of `_quotes_table`.
+A `null` or empty `quotes` object gives a table with no rows.
 """
 function _default_handler(model::Type{MyStockQuotesEndpointModel}, body::String)::DataFrame
     (symbols, records) = _symbol_records_under(body, :quotes);
@@ -827,8 +833,9 @@ end
 """
     _default_handler(model::Type{MyStockTradesEndpointModel}, body::String) -> DataFrame
 
-Process one page of the `/stocks/trades` endpoint. The records are under the `trades` key, grouped by symbol. The table has one
-row for each record, with the columns of `_trades_table`. A `null` or empty `trades` object gives a table with no rows.
+Process one page of the `/stocks/trades` endpoint. The records are under the `trades` key, grouped by symbol.
+The table has one row for each record, with the columns of `_trades_table`.
+A `null` or empty `trades` object gives a table with no rows.
 """
 function _default_handler(model::Type{MyStockTradesEndpointModel}, body::String)::DataFrame
     (symbols, records) = _symbol_records_under(body, :trades);
@@ -838,8 +845,9 @@ end
 """
     _default_handler(model::Type{MyOptionBarsEndpointModel}, body::String) -> DataFrame
 
-Process one page of the `/options/bars` endpoint. The records are under the `bars` key, grouped by symbol. The table has one
-row for each record, with the columns of `_bars_table`. A `null` or empty `bars` object gives a table with no rows.
+Process one page of the `/options/bars` endpoint. The records are under the `bars` key, grouped by symbol.
+The table has one row for each record, with the columns of `_bars_table`.
+A `null` or empty `bars` object gives a table with no rows.
 """
 function _default_handler(model::Type{MyOptionBarsEndpointModel}, body::String)::DataFrame
     (symbols, records) = _symbol_records_under(body, :bars);
@@ -849,8 +857,9 @@ end
 """
     _default_handler(model::Type{MyOptionQuotesEndpointModel}, body::String) -> DataFrame
 
-Process one page of the `/options/quotes` endpoint. The records are under the `quotes` key, grouped by symbol. The table has one
-row for each record, with the columns of `_quotes_table`. A `null` or empty `quotes` object gives a table with no rows.
+Process one page of the `/options/quotes` endpoint. The records are under the `quotes` key, grouped by symbol.
+The table has one row for each record, with the columns of `_quotes_table`.
+A `null` or empty `quotes` object gives a table with no rows.
 """
 function _default_handler(model::Type{MyOptionQuotesEndpointModel}, body::String)::DataFrame
     (symbols, records) = _symbol_records_under(body, :quotes);
@@ -860,8 +869,9 @@ end
 """
     _default_handler(model::Type{MyOptionTradesEndpointModel}, body::String) -> DataFrame
 
-Process one page of the `/options/trades` endpoint. The records are under the `trades` key, grouped by symbol. The table has one
-row for each record, with the columns of `_trades_table`. A `null` or empty `trades` object gives a table with no rows.
+Process one page of the `/options/trades` endpoint. The records are under the `trades` key, grouped by symbol.
+The table has one row for each record, with the columns of `_trades_table`.
+A `null` or empty `trades` object gives a table with no rows.
 """
 function _default_handler(model::Type{MyOptionTradesEndpointModel}, body::String)::DataFrame
     (symbols, records) = _symbol_records_under(body, :trades);
@@ -938,7 +948,8 @@ end
     _default_handler(model::Type{MyStockSnapshotsEndpointModel}, body::String) -> DataFrame
 
 Process the response of the `/stocks/snapshots` endpoint. The snapshots are the top-level keys of the response, one
-for each symbol (a `snapshots` wrapper key is also accepted). The table has one row for each symbol, with the columns of `_snapshots_table` (without the greeks).
+for each symbol (a `snapshots` wrapper key is also accepted).
+The table has one row for each symbol, with the columns of `_snapshots_table` (without the greeks).
 """
 function _default_handler(model::Type{MyStockSnapshotsEndpointModel}, body::String)::DataFrame
     (symbols, snapshots) = _option_snapshot_records(body);

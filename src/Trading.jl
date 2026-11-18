@@ -582,8 +582,10 @@ and waits until it fills. It then sends the option order, which is one single-le
 
 ### Throws
 - `ArgumentError`: when the shares do not cover a short call, when `qty < 1`, `poll_interval <= 0`, or `fill_timeout < 0`, or when either order is invalid. The call sends no request.
+- `AlpacaError`: when Alpaca rejects the equity order. The method sends no option order.
 - `AlpacaSequenceError`: when the equity order does not fill in time (the method cancels it and sends no option order),
-  or when the option order fails, e.g., Alpaca rejects it. The error holds the equity order.
+  when polling the equity order fails (the method tries to cancel it and sends no option order, and `cause` holds the polling error),
+  or when the option order fails, e.g., Alpaca rejects it (`cause` holds that error). The error holds the equity order.
 """
 function submit(client::AlpacaClient, m::MyMixedOrderModel; qty::Int = 1, type::AbstractString = "limit",
     limit_price::Union{Nothing,Real} = nothing, time_in_force::AbstractString = "day", fill_timeout::Real = 30.0,
@@ -621,6 +623,7 @@ It then sends the reverse equity order at market. The method does not wait on th
 - `client::AlpacaClient`: the client that holds the credentials and the base URLs.
 - `m::MyMixedOrderModel`: the structure to reverse.
 - `qty::Int`: the number of units of the option legs. The share quantity is the `qty` of the equity model.
+  Use the same `qty` as in the `submit` call. The method buys back `qty` units of the option legs, and then sells all `m.equity.qty` shares, so a smaller `qty` leaves a short call uncovered.
 - `type::String`: the type of the reverse option order, `"market"` or `"limit"`.
 - `limit_price`: the limit price of the reverse option order, or `nothing`.
 - `time_in_force::String`: the time in force of the reverse option order, e.g., `"day"`.
@@ -632,8 +635,10 @@ It then sends the reverse equity order at market. The method does not wait on th
 
 ### Throws
 - `ArgumentError`: when `qty < 1`, `poll_interval <= 0`, or `fill_timeout < 0`, or when either reverse order is invalid. The call sends no request.
+- `AlpacaError`: when Alpaca rejects the reverse option order. The method sends no equity order.
 - `AlpacaSequenceError`: when the option order does not fill in time (the method cancels it and sends no equity order),
-  or when the equity order fails, e.g., Alpaca rejects it. The error holds the option order.
+  when polling the option order fails (the method tries to cancel it and sends no equity order, and `cause` holds the polling error),
+  or when the equity order fails, e.g., Alpaca rejects it (`cause` holds that error). The error holds the option order.
 """
 function Base.close(client::AlpacaClient, m::MyMixedOrderModel; qty::Int = 1, type::AbstractString = "limit",
     limit_price::Union{Nothing,Real} = nothing, time_in_force::AbstractString = "day", fill_timeout::Real = 30.0,
