@@ -117,6 +117,19 @@ end
     @test_throws ArgumentError Alpaca._opposite_side("Buy")
 end
 
+@testset "close: a canceled order with a partial fill names the close by symbol" begin
+    payload = merge(_N_EQUITY_ORDER, Dict("status" => "canceled", "filled_qty" => "3"))
+    order = Alpaca._parse_order(JSON3.read(JSON3.write(payload)))
+    handler, log = recording_handler() do _req
+        return json_response(200, _N_EQUITY_ORDER)
+    end
+    with_mock(handler) do client
+        err = try close(client, order); nothing catch e; e end
+        @test err isa ArgumentError
+        @test occursin("close(client, symbol; qty)", err.msg)
+    end
+    @test length(log) == 0
+end
 
 @testset "close: equity and single option models reverse the side" begin
     handler, log = recording_handler() do _req

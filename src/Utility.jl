@@ -15,12 +15,12 @@ holds several named credential tables, e.g., one for paper research and one for 
 
 ```toml
 [paper_research]
-endpoint = "https://paper-api.alpaca.markets"
+endpoint = "https://paper-api.alpaca.markets/v2"
 key = "..."
 secret = "..."
 
 [paper_production]
-endpoint = "https://paper-api.alpaca.markets"
+endpoint = "https://paper-api.alpaca.markets/v2"
 key = "..."
 secret = "..."
 ```

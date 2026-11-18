@@ -49,6 +49,14 @@ on_quote
 on_bar
 ```
 
+## Callback values
+
+```@docs
+Trade
+Quote
+Bar
+```
+
 ## Reconnection behavior
 
 The stream automatically reconnects on network failures with exponential

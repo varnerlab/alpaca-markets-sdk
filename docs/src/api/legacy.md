@@ -103,15 +103,14 @@ get_option_chain_snapshot
 
 ## Legacy types
 
+The deprecated market data functions also return [`Bar`](@ref), [`Quote`](@ref), and [`Trade`](@ref), which the Streaming page documents.
+
 ```@docs
 Account
 Asset
 Position
 MarketClock
 CalendarDay
-Bar
-Quote
-Trade
 OptionContract
 OptionGreeks
 OptionSnapshot

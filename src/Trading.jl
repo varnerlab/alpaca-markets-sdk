@@ -443,7 +443,7 @@ an order with `legs` is a multi-leg order, an order with the asset class `"us_op
 - `Order`: the reverse order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when the status of `order` is not `"filled"`. Use `cancel` for an order that has not filled. The call sends no request.
+- `ArgumentError`: when the status of `order` is not `"filled"`. Use `cancel` for an order that has not filled, and `close(client, symbol; qty)` for the filled part of a canceled or expired order. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function Base.close(client::AlpacaClient, order::Order; type::AbstractString = "market", limit_price::Union{Nothing,Real} = nothing,
@@ -591,7 +591,7 @@ and waits until it fills. It then sends the option order, which is one single-le
 - `poll_interval::Real`: the number of seconds between two polls of the equity order.
 
 ### Returns
-- `Vector{Order}`: the filled equity order and the option order as Alpaca accepted it. The option order may still be resting.
+- `Vector{Order}`: the filled equity order and the option order as Alpaca accepted it. The method does not wait for the option order to fill.
 
 ### Throws
 - `ArgumentError`: when the shares do not cover a short call, when `qty < 1`, when `poll_interval` is not a finite number greater than 0,
@@ -648,7 +648,7 @@ It then sends the reverse equity order at market. The method does not wait on th
 - `poll_interval::Real`: the number of seconds between two polls of the option order.
 
 ### Returns
-- `Vector{Order}`: the filled option order and the equity order as Alpaca accepted it. The equity order may still be resting.
+- `Vector{Order}`: the filled option order and the equity order as Alpaca accepted it. The method does not wait for the equity order to fill.
 
 ### Throws
 - `ArgumentError`: when the shares cover more than `qty` units of the short calls, when `qty < 1`, when `poll_interval` is not a finite number greater than 0,
@@ -906,10 +906,20 @@ end
 
 # _check_filled: only a filled order can be closed or rolled -
 function _check_filled(order::Order)::Nothing
-    if (order.status != "filled")
-        throw(ArgumentError("order $(order.id) has status $(order.status); use `cancel` for an order that has not filled"));
+
+    # a filled order passes -
+    if (order.status == "filled")
+        return nothing;
     end
-    return nothing;
+
+    # a canceled or expired order with a partial fill left a position, which closes by symbol -
+    if (order.filled_qty > 0 && (order.status == "canceled" || order.status == "expired"))
+        throw(ArgumentError("order $(order.id) has status $(order.status) with filled_qty $(order.filled_qty); " *
+            "use `close(client, symbol; qty)` to close the filled part"));
+    end
+
+    # any other order has not filled -
+    throw(ArgumentError("order $(order.id) has status $(order.status); use `cancel` for an order that has not filled"));
 end
 
 # _as_legs: a single leg is a vector of one leg, and a vector of legs stays as it is -

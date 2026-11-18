@@ -88,7 +88,7 @@ orders = submit(client, covered_call; limit_price = 0.35)   # the equity order, 
 orders = close(client, covered_call; limit_price = 0.10)    # the option order, then the equity order
 ```
 
-The functions of earlier versions, such as `get_account` and `submit_order`, still work and are deprecated. The Legacy API page of the documentation lists the replacement for each function.
+The deprecated functions of earlier versions, such as `get_account` and `submit_order`, still work, and the Legacy API page of the documentation lists the replacement for each function.
 
 ## Features
 

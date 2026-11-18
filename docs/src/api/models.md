@@ -1,6 +1,6 @@
 # Models
 
-An endpoint model holds the fields of one request. A read model describes a request that [`api`](@ref) sends, and an order model describes what [`submit`](@ref), `close`, and [`roll`](@ref) trade. Every model has a keyword constructor, and each keyword that has a default matches the query parameter that Alpaca uses.
+An endpoint model holds the fields of one request. A read model describes a request that [`api`](@ref) sends, and an order model describes what [`submit`](@ref), `close`, and [`roll`](@ref) trade. Every model has a keyword constructor. Each keyword that sets a query parameter has the name of that Alpaca query parameter, except `finish`, which sets `end` because `end` is a reserved word in Julia.
 
 The abstract type of a read model selects the base URL that [`url`](@ref) uses: trading, stock data, or options data.
 

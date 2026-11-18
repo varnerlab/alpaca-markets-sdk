@@ -265,10 +265,8 @@ end
 """
     Bar
 
-Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
-
-An OHLCV bar for a single symbol at a given timestamp. Returned by
-[`get_bars`](@ref) and [`get_latest_bar`](@ref).
+The bar that the `on_bar` streaming callback receives. The deprecated read functions, such as [`get_bars`](@ref) and
+[`get_latest_bar`](@ref), also return a `Bar`, and new read code uses the `DataFrame` that `api` returns.
 
 Fields:
 
@@ -276,8 +274,8 @@ Fields:
 - `t` — bar start time (`DateTime`, UTC)
 - `o`, `h`, `l`, `c` — open / high / low / close
 - `v` — volume
-- `n` — trade count (may be `nothing` depending on feed)
-- `vw` — volume-weighted average price (may be `nothing` depending on feed)
+- `n` — trade count, or `nothing` when the feed does not send it
+- `vw` — volume-weighted average price, or `nothing` when the feed does not send it
 """
 struct Bar
     symbol::String
@@ -294,10 +292,8 @@ end
 """
     Quote
 
-Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
-
-A level-1 NBBO quote. Returned by [`get_quotes`](@ref) and
-[`get_latest_quote`](@ref).
+The quote that the `on_quote` streaming callback receives. The deprecated read functions, such as [`get_quotes`](@ref) and
+[`get_latest_quote`](@ref), also return a `Quote`, and new read code uses the `DataFrame` that `api` returns.
 
 Fields: `symbol`, `t`, `bid_price`, `bid_size`, `ask_price`, `ask_size`,
 `bid_exchange`, `ask_exchange`.
@@ -316,12 +312,11 @@ end
 """
     Trade
 
-Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
+The trade that the `on_trade` streaming callback receives. The deprecated read functions, such as [`get_trades`](@ref) and
+[`get_latest_trade`](@ref), also return a `Trade`, and new read code uses the `DataFrame` that `api` returns.
 
-A last-sale print. Returned by [`get_trades`](@ref) and [`get_latest_trade`](@ref).
-
-Fields: `symbol`, `t`, `price`, `size`, `exchange`, `id` (exchange trade id,
-may be `nothing`).
+Fields: `symbol`, `t`, `price`, `size`, `exchange`, `id` (the trade id of the exchange, or `nothing` when the message
+has none).
 """
 struct Trade
     symbol::String

@@ -14,7 +14,7 @@ An order model says what to trade, and the verb says what to do with the order. 
 | `cancel(client; all = true)` | a cancel of every open order | the cancel status of each order |
 | `close(client, symbol::String)` | a liquidation of one holding at market | `Order` |
 | `close(client; all = true)` | a liquidation of every position | the status of each position |
-| `close(client, ::MyEquityOrderModel)` | one equity order on the opposite side | `Order` |
+| `close(client, ::MyEquityOrderModel)` | one equity order on the side opposite the model's side | `Order` |
 | `close(client, ::MyOptionLegModel)` | one option order that closes the leg | `Order` |
 | `close(client, ::Vector{MyOptionLegModel})` | one multi-leg order that reverses every leg | `Order` |
 | `close(client, ::Order)` | the reverse of a filled order | `Order` |
@@ -27,11 +27,11 @@ Alpaca cannot fill shares and options in one order, so `submit` and `close` send
 
 - `submit` sends the equity order and polls the equity order until it fills. It then sends the option order.
 - `close` sends the reverse option order and polls the option order until it fills. It then sends the reverse equity order.
-- The keyword `fill_timeout` is the number of seconds to wait for the first order. If the first order does not fill in time, the method cancels the first order, sends nothing else, and throws an [`AlpacaSequenceError`](@ref) that holds the first order.
+- The keyword `fill_timeout` is the number of seconds to wait for the first order. If the first order does not fill in time, or polling the first order fails, the method cancels the first order and reads the first order again. When the first order filled before the cancel took effect, the sequence continues. Otherwise the method sends nothing else and throws an [`AlpacaSequenceError`](@ref) that holds the first order.
 - The method does not wait on the second order. The returned vector holds the filled first order and the second order as Alpaca accepted it.
 - If Alpaca rejects the second order, the method throws an [`AlpacaSequenceError`](@ref) that holds the filled first order. The account then holds the shares without the short call, or the shares without the call that was bought back.
 
-Before `submit` sends anything, the method checks that the shares cover every short call in the model. When any option leg sells a call, the equity side must be `"buy"`, the equity model must set `qty` and not `notional`, and the share quantity must be at least `100 * qty` times the sum of the `ratio` values of the short call legs. A model that fails the check raises an `ArgumentError`, and the method sends no request.
+Before `submit` sends anything, the method checks that the shares cover every short call in the model. When any option leg sells a call, the equity side must be `"buy"`, the equity model must set `qty` and not `notional`, and the share quantity must be at least `100 * qty` times the sum of the `ratio` values of the short call legs. A model that fails the check raises an `ArgumentError`, and the method sends no request. `close` sells all the shares of the model, so `close` raises an `ArgumentError` before any request when the shares cover more than `qty` units of the short calls. Pass `close` the same `qty` as the `submit` call.
 
 ## Orders from an earlier session
 
