@@ -203,7 +203,7 @@ end
 !!! warning "Deprecated"
     `OrderLeg` is deprecated, use `MyOptionLegModel(...)` instead, together with `submit`, `close`, or `roll`, which supply the position intent.
 
-Legacy type, returned by the deprecated functions. New code uses the `DataFrame` that `api` returns.
+Legacy type, passed to the deprecated `submit_multileg_order`. New code uses `MyOptionLegModel`.
 
 Input descriptor for one leg of a multi-leg option order. Pass a
 `Vector{OrderLeg}` to [`submit_multileg_order`](@ref).
