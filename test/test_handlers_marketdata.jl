@@ -190,3 +190,22 @@ const _N_SNAP_COLUMNS_GREEKS = vcat(_N_SNAP_COLUMNS, ["implied_volatility", "del
         end
     end
 end
+
+@testset "api: three pages of bars are stacked once, in page order" begin
+    handler, log = recording_handler() do req
+        if occursin("page_token=p3", req.target)
+            return json_response(200, Dict("bars" => Dict("AAPL" => [merge(_N_BAR_B, Dict("c" => 3.0))]), "next_page_token" => nothing))
+        end
+        if occursin("page_token=p2", req.target)
+            return json_response(200, Dict("bars" => Dict(), "next_page_token" => "p3"))
+        end
+        return json_response(200, Dict("bars" => Dict("AAPL" => [_N_BAR_A, _N_BAR_B]), "next_page_token" => "p2"))
+    end
+    with_mock(handler) do client
+        df = api(client, MyStockBarsEndpointModel(symbols = "AAPL", timeframe = "1Min", start = "2026-11-17"))
+        @test names(df) == _N_BAR_COLUMNS
+        @test df.close == [200.75, 201.25, 3.0]
+        @test eltype(df.close) == Union{Missing,Float64}
+    end
+    @test length(log) == 3
+end
