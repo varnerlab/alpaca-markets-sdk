@@ -56,7 +56,8 @@ if _LIVE
     end
 
     # _v_settle: cancel the order when it is not final, wait for a final status, and return the filled quantity.
-    # An empty id is an order that was never sent, so the filled quantity is 0 -
+    # An empty id is an order that was never sent, so the filled quantity is 0. An order that is still not final after
+    # the wait throws, because its filled quantity can still change -
     function _v_settle(client::AlpacaClient, id::String)::Float64
         if (id == "")
             return 0.0;
@@ -67,7 +68,10 @@ if _LIVE
                 cancel(client, id);
             catch
             end
-            _v_wait_final(client, id);
+            final_status = _v_wait_final(client, id);
+            if (!(final_status in ("filled", "canceled", "expired", "rejected", "done_for_day")))
+                error("order $id still has status $final_status after the cancel, so its filled quantity is not final");
+            end
             (status, filled) = _v_read(client, id);
         end
         return filled;
@@ -163,7 +167,11 @@ if _LIVE
                 _v_wait_filled(client, opening_id);
                 @test _v_status(client, opening_id) == "filled"
 
-                close_order = close(client, legs; type = "market");
+                # close the spread through its filled order, so that close(client, ::Order) runs live. The order that
+                # submit returned holds the status at submission, so the filled order is read again first -
+                filled_order = Alpaca._get_order(client, opening_id);
+                @test filled_order.status == "filled"
+                close_order = close(client, filled_order; type = "market");
                 reversing_id = close_order.id;
                 @test close_order isa Order
                 _v_wait_filled(client, reversing_id);

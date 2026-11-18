@@ -10,7 +10,8 @@ include("mock_server.jl")
 
 # The legacy names call Base.depwarn, and Pkg.test runs with --depwarn=yes. The unchanged legacy test files call
 # those names many times. This logger wraps the global logger and drops the records of the :depwarn group.
-# @test_deprecated installs its own task-local logger through @test_logs, so it still sees the warning.
+# @test_deprecated installs its own task-local logger through @test_logs, so it still sees the warning. For the same
+# reason, the @test_logs check in test_deprecations.jl fails when the new API raises a depwarn.
 struct DropDepwarnLogger <: Logging.AbstractLogger
     inner::Logging.AbstractLogger
 end

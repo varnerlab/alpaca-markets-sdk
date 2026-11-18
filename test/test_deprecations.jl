@@ -80,3 +80,14 @@ end
     @test targets["any"] == targets["string"]
     @test occursin("symbols=AAPL%2CMSFT", targets["any"])
 end
+
+@testset "deprecations: the new API logs no deprecation warning" begin
+    # @test_logs with no pattern expects no log record. It installs its own logger for its scope, so the global
+    # logger of runtests.jl, which drops :depwarn records, does not hide a depwarn raised here -
+    with_mock(golden_handler) do c
+        @test_logs begin
+            submit(c, MyEquityOrderModel(symbol = "AAPL", side = "buy", qty = 10))
+            api(c, MyAccountEndpointModel())
+        end
+    end
+end
