@@ -184,15 +184,6 @@ function _parse_rfc3339(x::AbstractString)::Union{Nothing,DateTime}
     return DateTime(s);
 end
 
-# _symbols_param: a symbol or a vector of symbols as one comma-separated string -
-function _symbols_param(s::AbstractString)
-    return s;
-end
-
-function _symbols_param(s::AbstractVector)::String
-    return join(s, ",");
-end
-
 # _fmt_ts: a timestamp argument as the string that Alpaca expects in a query -
 function _fmt_ts(x::AbstractString)::String
     return String(x);

@@ -1071,6 +1071,217 @@ function get_option_chain_snapshot(client::AlpacaClient, underlying_symbol::Abst
         expiration_date_lte = _model_value(expiration_date_lte), limit = Int(limit));
     return api(client, model; handler = _legacy_handler);
 end
+"""
+    submit_order(client, symbol, qty, side; type="market", time_in_force="day", limit_price=nothing, stop_price=nothing,
+        trail_price=nothing, trail_percent=nothing, client_order_id=nothing, extended_hours=false, notional=nothing) -> Order
+
+!!! warning "Deprecated"
+    `submit_order` is deprecated, use `submit(client, MyEquityOrderModel(...); ...)` instead, or `submit(client, MyOptionLegModel(...); ...)` for an option symbol.
+
+Submit an equity or ETF order. Exactly one of `qty` (shares, can be fractional) or `notional` (dollar amount) is given. Pass `qty = nothing` when using `notional`.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `symbol::AbstractString`: the symbol of the asset.
+- `qty::Union{Real,Nothing}`: the number of shares.
+- `side::AbstractString`: `"buy"` or `"sell"`.
+- `type::AbstractString`: `"market"`, `"limit"`, `"stop"`, `"stop_limit"`, or `"trailing_stop"`.
+- `time_in_force::AbstractString`: `"day"`, `"gtc"`, `"opg"`, `"cls"`, `"ioc"`, or `"fok"`.
+- `limit_price`, `stop_price`, `trail_price`, `trail_percent`: the prices of the order, when the type needs them.
+- `client_order_id`: the identifier of the order that the caller chooses.
+- `extended_hours::Bool`: `true` allows the order to fill outside regular hours.
+- `notional::Union{Real,Nothing}`: the dollar amount of the order.
+
+### Returns
+- The submitted `Order`.
+
+### Throws
+- `ArgumentError`: when both or neither of `qty` and `notional` are given.
+- `AlpacaError`: when the response status is not in the range 200 to 299.
+"""
+function submit_order(client::AlpacaClient,
+                      symbol::AbstractString,
+                      qty::Union{Real,Nothing},
+                      side::AbstractString;
+                      type::AbstractString = "market",
+                      time_in_force::AbstractString = "day",
+                      limit_price::Union{Real,Nothing} = nothing,
+                      stop_price::Union{Real,Nothing} = nothing,
+                      trail_price::Union{Real,Nothing} = nothing,
+                      trail_percent::Union{Real,Nothing} = nothing,
+                      client_order_id::Union{AbstractString,Nothing} = nothing,
+                      extended_hours::Bool = false,
+                      notional::Union{Real,Nothing} = nothing)::Order
+
+    # warn that the function is deprecated -
+    Base.depwarn("`submit_order` is deprecated, use `submit(client, MyEquityOrderModel(...))` instead, or `submit(client, MyOptionLegModel(...))` for an option symbol", :submit_order);
+
+    # build the body without a position_intent, so that an option symbol still sends none, and post it -
+    body = _single_order_body(symbol, qty, side; type = type, time_in_force = time_in_force, limit_price = limit_price,
+        stop_price = stop_price, trail_price = trail_price, trail_percent = trail_percent, client_order_id = client_order_id,
+        extended_hours = extended_hours, notional = notional);
+    return _post_order(client, body);
+end
+
+"""
+    submit_multileg_order(client, legs; type="limit", time_in_force="day", limit_price=nothing, qty=1,
+        client_order_id=nothing, extended_hours=false) -> Order
+
+!!! warning "Deprecated"
+    `submit_multileg_order` is deprecated, use `submit`, `close`, or `roll` with `MyOptionLegModel` legs instead.
+
+Submit a multi-leg options order (Alpaca `order_class = "mleg"`). Each leg submits `qty * leg.ratio_qty` contracts. For `type = "limit"`, `limit_price` is the net price of one spread unit, positive for a debit and negative for a credit.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `legs::Vector{OrderLeg}`: 2 to 4 option legs on the same underlying.
+- `type::AbstractString`: `"market"` or `"limit"`.
+- `time_in_force::AbstractString`: `"day"` is the only value that Alpaca accepts for a multi-leg order.
+- `limit_price::Union{Real,Nothing}`: the net price of one spread unit.
+- `qty::Integer`: the number of spread units.
+- `client_order_id`: the identifier of the order that the caller chooses.
+- `extended_hours::Bool`: `true` allows the order to fill outside regular hours.
+
+### Returns
+- The parent `Order`, with its `legs` filled from the response.
+
+### Throws
+- `ArgumentError`: when the legs, the type, or the limit price are not valid.
+- `AlpacaError`: when the response status is not in the range 200 to 299.
+"""
+function submit_multileg_order(client::AlpacaClient,
+                               legs::Vector{OrderLeg};
+                               type::AbstractString = "limit",
+                               time_in_force::AbstractString = "day",
+                               limit_price::Union{Real,Nothing} = nothing,
+                               qty::Integer = 1,
+                               client_order_id::Union{AbstractString,Nothing} = nothing,
+                               extended_hours::Bool = false)::Order
+
+    # warn that the function is deprecated -
+    Base.depwarn("`submit_multileg_order` is deprecated, use `submit`, `close`, or `roll` with `MyOptionLegModel` legs instead", :submit_multileg_order);
+
+    # split the legs into one vector for each field -
+    symbols, sides, intents, ratios = _split_legs(legs);
+
+    # build the body, which checks the legs first, and post it -
+    body = _mleg_body(symbols, sides, intents, ratios; qty = qty, type = type, time_in_force = time_in_force,
+        limit_price = limit_price, client_order_id = client_order_id, extended_hours = extended_hours);
+    return _post_order(client, body);
+end
+
+"""
+    cancel_order(client, order_id) -> Nothing
+
+!!! warning "Deprecated"
+    `cancel_order` is deprecated, use `cancel(client, id)` instead.
+
+Cancel one open order.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `order_id::AbstractString`: the id of the order.
+
+### Returns
+- `nothing`.
+
+### Throws
+- `AlpacaError`: when the response status is not in the range 200 to 299.
+"""
+function cancel_order(client::AlpacaClient, order_id::AbstractString)
+
+    # warn that the function is deprecated -
+    Base.depwarn("`cancel_order` is deprecated, use `cancel(client, id)` instead", :cancel_order);
+
+    # send the request, and discard the response body -
+    _cancel_order(client, String(order_id));
+    return nothing;
+end
+
+"""
+    cancel_all_orders(client)
+
+!!! warning "Deprecated"
+    `cancel_all_orders` is deprecated, use `cancel(client; all = true)` instead.
+
+Attempt to cancel every open order.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+
+### Returns
+- The response payload (the cancel status of each order) as a `JSON3` value, or `nothing` for an empty body.
+
+### Throws
+- `AlpacaError`: when the response status is not in the range 200 to 299.
+"""
+function cancel_all_orders(client::AlpacaClient)
+
+    # warn that the function is deprecated -
+    Base.depwarn("`cancel_all_orders` is deprecated, use `cancel(client; all = true)` instead", :cancel_all_orders);
+
+    # send the request, and parse the response body -
+    return _parse_body(_cancel_all_orders(client));
+end
+
+"""
+    close_position(client, symbol; qty=nothing, percentage=nothing)
+
+!!! warning "Deprecated"
+    `close_position` is deprecated, use `close(client, symbol; qty, percentage)` instead.
+
+Liquidate a position. Pass `qty` (shares) or `percentage` (0 to 100) to close part of the position. Omit both to close the full position.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `symbol::AbstractString`: the symbol of the position.
+- `qty::Union{Real,Nothing}`: the number of shares to close.
+- `percentage::Union{Real,Nothing}`: the percentage of the position to close.
+
+### Returns
+- The response payload as a `JSON3` value, or `nothing` for an empty body.
+
+### Throws
+- `AlpacaError`: when the response status is not in the range 200 to 299.
+"""
+function close_position(client::AlpacaClient, symbol::AbstractString;
+                        qty::Union{Real,Nothing} = nothing,
+                        percentage::Union{Real,Nothing} = nothing)
+
+    # warn that the function is deprecated -
+    Base.depwarn("`close_position` is deprecated, use `close(client, symbol; qty, percentage)` instead", :close_position);
+
+    # send the request, and parse the response body -
+    return _parse_body(_close_position(client, symbol; qty = qty, percentage = percentage));
+end
+
+"""
+    close_all_positions(client; cancel_orders=false)
+
+!!! warning "Deprecated"
+    `close_all_positions` is deprecated, use `close(client; all = true, cancel_orders)` instead.
+
+Liquidate every open position. With `cancel_orders = true`, Alpaca cancels the open orders first.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `cancel_orders::Bool`: `true` cancels the open orders before the positions are closed.
+
+### Returns
+- The response payload as a `JSON3` value, or `nothing` for an empty body.
+
+### Throws
+- `AlpacaError`: when the response status is not in the range 200 to 299.
+"""
+function close_all_positions(client::AlpacaClient; cancel_orders::Bool = false)
+
+    # warn that the function is deprecated -
+    Base.depwarn("`close_all_positions` is deprecated, use `close(client; all = true, cancel_orders)` instead", :close_all_positions);
+
+    # send the request, and parse the response body -
+    return _parse_body(_close_all_positions(client; cancel_orders = cancel_orders));
+end
+
 # --- PUBLIC METHODS ABOVE HERE -------------------------------------------------------------------------------- #
 
 # --- PRIVATE METHODS BELOW HERE ------------------------------------------------------------------------------- #
@@ -1163,4 +1374,33 @@ end
 function _symbols_desc(symbols::AbstractVector)::String
     return "[" * join(symbols, ",") * "]";
 end
+# _parse_body: the legacy value of a response body. An empty body is nothing, and any other body is parsed as JSON -
+function _parse_body(body::String)
+    if (isempty(body))
+        return nothing;
+    end
+    return JSON3.read(body);
+end
+
+# _split_legs: split the OrderLeg values into one vector for each field -
+function _split_legs(legs::Vector{OrderLeg})::Tuple{Vector{String},Vector{String},Vector{String},Vector{Int}}
+    symbols = String[];
+    sides = String[];
+    intents = String[];
+    ratios = Int[];
+    for leg in legs
+        push!(symbols, leg.symbol);
+        push!(sides, leg.side);
+        push!(intents, leg.position_intent);
+        push!(ratios, leg.ratio_qty);
+    end
+    return (symbols, sides, intents, ratios);
+end
+
+# _validate_mleg: check OrderLeg values with the checks of the Trading.jl method. The legacy tests call this form -
+function _validate_mleg(legs::Vector{OrderLeg}, type::AbstractString, limit_price::Union{Real,Nothing})::Nothing
+    symbols, sides, intents, ratios = _split_legs(legs);
+    return _validate_mleg(symbols, sides, intents, ratios, type, limit_price);
+end
+
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #

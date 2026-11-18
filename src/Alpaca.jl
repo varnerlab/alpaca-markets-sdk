@@ -13,8 +13,6 @@ include("Network.jl")
 include("Factory.jl")
 include("Handler.jl")
 include("Trading.jl")
-include("orders.jl")
-include("positions.jl")
 include("streaming.jl")
 include("Legacy.jl")
 

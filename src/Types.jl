@@ -203,6 +203,12 @@ struct OrderLeg
     ratio_qty::Int
     side::String
     position_intent::String
+
+    # the constructor warns that OrderLeg is deprecated, and converts the arguments to the field types -
+    function OrderLeg(symbol::AbstractString, ratio_qty::Integer, side::AbstractString, position_intent::AbstractString)
+        Base.depwarn("`OrderLeg` is deprecated, use `MyOptionLegModel(...)` instead", :OrderLeg);
+        return new(String(symbol), Int(ratio_qty), String(side), String(position_intent));
+    end
 end
 
 """

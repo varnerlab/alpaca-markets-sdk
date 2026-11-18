@@ -7,76 +7,37 @@ function _auth_headers(client::AlpacaClient)
     ]
 end
 
-_join_url(base::AbstractString, path::AbstractString) =
-    startswith(path, "/") ? base * path : base * "/" * path
-
-function _build_url(base::AbstractString, path::AbstractString,
-                    query::Union{Nothing,AbstractDict} = nothing)
-    url = _join_url(base, path)
-    if query !== nothing && !isempty(query)
-        parts = String[]
-        for (k, v) in query
-            v === nothing && continue
-            push!(parts, string(URIs.escapeuri(string(k)), "=",
-                                URIs.escapeuri(string(v))))
-        end
-        isempty(parts) || (url = url * "?" * join(parts, "&"))
+# _join_url: join a base URL and a path with exactly one slash between them -
+function _join_url(base::AbstractString, path::AbstractString)::String
+    if (startswith(path, "/"))
+        return base * path;
     end
-    return url
+    return base * "/" * path;
 end
 
-function _handle_response(resp::HTTP.Response)
-    body = String(resp.body)
-    if 200 <= resp.status < 300
-        return isempty(body) ? nothing : JSON3.read(body)
+# _build_url: join a base URL and a path, and append the query. A query value that is nothing is left out -
+function _build_url(base::AbstractString, path::AbstractString, query::Union{Nothing,AbstractDict} = nothing)::String
+    request_url = _join_url(base, path);
+    if (query === nothing || isempty(query))
+        return request_url;
     end
-    code, msg = nothing, body
-    try
-        parsed = JSON3.read(body)
-        if parsed isa JSON3.Object
-            code = haskey(parsed, :code) ? Int(parsed.code) : nothing
-            msg = haskey(parsed, :message) ? String(parsed.message) : body
+
+    # escape each key and value, and skip a value that is nothing -
+    parts = String[];
+    for (k, v) in query
+        if (v === nothing)
+            continue;
         end
-    catch
+        push!(parts, string(URIs.escapeuri(string(k)), "=", URIs.escapeuri(string(v))));
     end
-    throw(AlpacaError(resp.status, code, msg, body))
+    if (isempty(parts) == false)
+        request_url = request_url * "?" * join(parts, "&");
+    end
+    return request_url;
 end
 
 const _MAX_RETRIES    = 5
 const _INITIAL_BACKOFF = 2.0   # seconds
-
-# Legacy request function. It builds the URL and sends the request through _http_call,
-# then parses the JSON body. An empty body returns nothing.
-function _request(client::AlpacaClient, method::AbstractString,
-                  base::AbstractString, path::AbstractString;
-                  query::Union{Nothing,AbstractDict} = nothing,
-                  body::Any = nothing)
-
-    # build the URL from the base, the path, and the query -
-    request_url = _build_url(base, path, query)
-
-    # send the request, and read the response body as a String -
-    response_string = _http_call(client, String(method), request_url; body = body)
-
-    # an empty body has nothing to parse -
-    if isempty(response_string)
-        return nothing
-    end
-
-    # parse the JSON text and return the result -
-    return JSON3.read(response_string)
-end
-
-_trading_get(c, path; query = nothing) =
-    _request(c, "GET", c.trading_url, path; query = query)
-_trading_post(c, path; body = nothing) =
-    _request(c, "POST", c.trading_url, path; body = body)
-_trading_delete(c, path; query = nothing) =
-    _request(c, "DELETE", c.trading_url, path; query = query)
-_data_get(c, path; query = nothing) =
-    _request(c, "GET", c.data_url, path; query = query)
-_options_data_get(c, path; query = nothing) =
-    _request(c, "GET", c.options_data_url, path; query = query)
 
 # The handler of api when the caller does not pass one. This generic function has no methods here.
 # The handler methods are added in Handler.jl.

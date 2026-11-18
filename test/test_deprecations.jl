@@ -1,3 +1,17 @@
+@testset "deprecations: trading writes" begin
+    with_mock(golden_handler) do c
+        @test_deprecated submit_order(c, "AAPL", 10, "buy"; type = "limit", limit_price = 150.25, client_order_id = "cid-9")
+        @test_deprecated submit_multileg_order(c,
+            [OrderLeg("SPY261218P00540000", 1, "sell", "sell_to_open"),
+             OrderLeg("SPY261218P00530000", 1, "buy", "buy_to_open")]; limit_price = 1.5)
+        @test_deprecated cancel_order(c, "ord-1")
+        @test_deprecated cancel_all_orders(c)
+        @test_deprecated close_position(c, "AAPL"; qty = 5)
+        @test_deprecated close_all_positions(c; cancel_orders = true)
+    end
+    @test_deprecated OrderLeg("X", 1, "buy", "buy_to_open")
+end
+
 @testset "deprecations: trading reads" begin
     with_mock(golden_handler) do c
         @test_deprecated get_account(c)
