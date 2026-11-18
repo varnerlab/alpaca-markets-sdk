@@ -6,31 +6,71 @@ using DataFrames
 
 if _LIVE
 
-    # _v_status: the status of the order with this id, read from the first row of the orders table -
-    function _v_status(client::AlpacaClient, id::String)::String
+    # _v_read: the status and the filled quantity of the order with this id, from the first row of the orders table -
+    function _v_read(client::AlpacaClient, id::String)::Tuple{String,Float64}
         orders = api(client, MyOrderEndpointModel(id = id));
-        return String(orders[1, :status]);
+        return (String(orders[1, :status]), Float64(coalesce(orders[1, :filled_qty], 0.0)));
     end
 
-    # _v_wait_filled: poll the order until it fills. On a terminal non-fill status or a timeout, the order is
-    # cancelled (when still open) and the function throws -
+    # _v_status: the status of the order with this id -
+    function _v_status(client::AlpacaClient, id::String)::String
+        return _v_read(client, id)[1];
+    end
+
+    # _v_wait_final: poll the order until it has a final status, or until the timeout. It returns the last status read -
+    function _v_wait_final(client::AlpacaClient, id::String; timeout_s::Real = 30, poll_s::Real = 1)::String
+        deadline = time() + timeout_s;
+        status = _v_status(client, id);
+        while (!(status in ("filled", "canceled", "expired", "rejected", "done_for_day")) && time() < deadline)
+            sleep(poll_s);
+            status = _v_status(client, id);
+        end
+        return status;
+    end
+
+    # _v_wait_filled: poll the order until it fills. On a timeout the order is cancelled, and the status is read again,
+    # because the order may have filled while the cancel was sent. The function returns when the order is filled,
+    # and it throws otherwise -
     function _v_wait_filled(client::AlpacaClient, id::String; timeout_s::Real = 60, poll_s::Real = 1)::Nothing
         deadline = time() + timeout_s;
-        while (time() < deadline)
-            status = _v_status(client, id);
-            if (status == "filled")
-                return nothing;
-            end
+        status = _v_status(client, id);
+        while (status != "filled" && time() < deadline)
             if (status in ("canceled", "rejected", "expired"))
                 error("order $id ended with status $status");
             end
             sleep(poll_s);
+            status = _v_status(client, id);
+        end
+        if (status == "filled")
+            return nothing;
         end
         try
             cancel(client, id);
         catch
         end
-        error("order $id did not fill within $(timeout_s) seconds");
+        status = _v_wait_final(client, id; timeout_s = 20);
+        if (status == "filled")
+            return nothing;
+        end
+        error("order $id did not fill within $(timeout_s) seconds, and ended with status $status");
+    end
+
+    # _v_settle: cancel the order when it is not final, wait for a final status, and return the filled quantity.
+    # An empty id is an order that was never sent, so the filled quantity is 0 -
+    function _v_settle(client::AlpacaClient, id::String)::Float64
+        if (id == "")
+            return 0.0;
+        end
+        (status, filled) = _v_read(client, id);
+        if (!(status in ("filled", "canceled", "expired", "rejected", "done_for_day")))
+            try
+                cancel(client, id);
+            catch
+            end
+            _v_wait_final(client, id);
+            (status, filled) = _v_read(client, id);
+        end
+        return filled;
     end
 
     # _v_occ_strike: the strike of an OCC symbol, from its last 8 digits -
@@ -85,11 +125,16 @@ if _LIVE
         return [MyOptionLegModel(symbol = short_symbol, side = "sell"), MyOptionLegModel(symbol = long_symbol, side = "buy")];
     end
 
-    # _v_close_spread: close a spread with a market order, with a loud warning when the close fails -
-    function _v_close_spread(client::AlpacaClient, legs::Vector{MyOptionLegModel})::Nothing
+    # _v_cleanup_spread: close the part of a spread that this testset still holds. The held quantity is the filled
+    # quantity of the opening order minus the filled quantity of the reversing order, after both orders are final.
+    # A failure is a loud warning that names the symbols -
+    function _v_cleanup_spread(client::AlpacaClient, legs::Vector{MyOptionLegModel}, opening_id::String, reversing_id::String)::Nothing
         try
-            order = close(client, legs; type = "market", qty = 1);
-            _v_wait_filled(client, order.id);
+            held = _v_settle(client, opening_id) - _v_settle(client, reversing_id);
+            if (held > 0)
+                order = close(client, legs; type = "market", qty = Int(round(held)));
+                _v_wait_filled(client, order.id);
+            end
         catch e
             @warn "spread cleanup failed; check the paper account for these symbols by hand" symbols = [l.symbol for l in legs] exception = e
         end
@@ -107,24 +152,24 @@ if _LIVE
             legs = _v_pick_put_spread(client, today + Day(30), today + Day(45));
             @info "vertical spread selections" short = legs[1].symbol long = legs[2].symbol
 
-            # opened: the spread is held and has not been closed -
-            opened = false;
+            # opening_id and reversing_id: the orders this testset sent. The cleanup reads their filled quantities
+            # from Alpaca, so a partial fill or a fill after a timeout is counted -
+            opening_id = "";
+            reversing_id = "";
             try
                 open_order = submit(client, legs; type = "market");
+                opening_id = open_order.id;
                 @test open_order isa Order
-                _v_wait_filled(client, open_order.id);
-                opened = true;
-                @test _v_status(client, open_order.id) == "filled"
+                _v_wait_filled(client, opening_id);
+                @test _v_status(client, opening_id) == "filled"
 
                 close_order = close(client, legs; type = "market");
+                reversing_id = close_order.id;
                 @test close_order isa Order
-                _v_wait_filled(client, close_order.id);
-                @test _v_status(client, close_order.id) == "filled"
-                opened = false;
+                _v_wait_filled(client, reversing_id);
+                @test _v_status(client, reversing_id) == "filled"
             finally
-                if (opened)
-                    _v_close_spread(client, legs);
-                end
+                _v_cleanup_spread(client, legs, opening_id, reversing_id);
             end
         end
     end
@@ -136,34 +181,43 @@ if _LIVE
         else
             today = Date(api(client, MyClockEndpointModel())[1, :timestamp]);
             near = _v_pick_put_spread(client, today + Day(30), today + Day(45));
-            far = _v_pick_put_spread(client, today + Day(60), today + Day(80));
+
+            # the far spread: the first listed SPY expiration 25 to 35 days after the near expiration -
+            near_expiry = _v_occ_expiry(near[1].symbol, "SPY");
+            far = _v_pick_put_spread(client, near_expiry + Day(25), near_expiry + Day(35));
             @info "roll selections" near = [l.symbol for l in near] far = [l.symbol for l in far]
 
-            # held: the legs the testset holds now. It starts as the near spread and becomes the far spread if the
-            # roll order fills -
-            opened = false;
-            held = near;
+            # opening_id and roll_id: the orders this testset sent. A filled roll order closed that quantity of the
+            # near spread and opened it in the far spread -
+            opening_id = "";
+            roll_id = "";
             try
                 open_order = submit(client, near; type = "market");
-                _v_wait_filled(client, open_order.id);
-                opened = true;
+                opening_id = open_order.id;
+                _v_wait_filled(client, opening_id);
 
                 roll_order = roll(client, near, far; limit_price = -0.01);
+                roll_id = roll_order.id;
                 @test roll_order isa Order
-                @test _v_status(client, roll_order.id) != "rejected"
+                @test _v_status(client, roll_id) != "rejected"
 
-                # cancel the roll order after 5 seconds. A roll order that filled instead moved the position to
-                # the far spread -
+                # cancel the roll order after 5 seconds. A cancel that fails is not an error, because the roll
+                # order may have filled, and the cleanup reads the final status -
                 sleep(5);
-                if (_v_status(client, roll_order.id) == "filled")
-                    held = far;
-                else
+                try
                     cancel(client, roll_order);
+                catch
                 end
             finally
-                if (opened)
-                    _v_close_spread(client, held);
+                # wait until the roll order is final, so that it no longer reserves the near legs. Then close what
+                # is held: the near spread less the rolled quantity, and the far spread, as the roll order filled -
+                try
+                    _v_settle(client, roll_id);
+                catch e
+                    @warn "roll order could not be settled; check the paper account and open orders for these symbols by hand" symbols = [l.symbol for l in vcat(near, far)] exception = e
                 end
+                _v_cleanup_spread(client, near, opening_id, roll_id);
+                _v_cleanup_spread(client, far, roll_id, "");
             end
         end
     end
@@ -195,55 +249,60 @@ if _LIVE
             @test call_symbol != "";
             @info "covered call selection" call = call_symbol price = price
 
-            model = MyMixedOrderModel(equity = MyEquityOrderModel(symbol = "F", side = "buy", qty = 100),
-                options = [MyOptionLegModel(symbol = call_symbol, side = "sell")]);
+            leg = MyOptionLegModel(symbol = call_symbol, side = "sell");
+            model = MyMixedOrderModel(equity = MyEquityOrderModel(symbol = "F", side = "buy", qty = 100), options = [leg]);
 
-            # shares_open and call_open: what this testset holds now -
-            shares_open = false;
-            call_open = false;
+            # the ids of the four orders this testset can send: buy shares, sell the call, buy back the call, and
+            # sell shares. An empty id is an order that was not sent -
+            buy_id = "";
+            sell_call_id = "";
+            buy_call_id = "";
+            sell_id = "";
             try
                 orders = Order[];
                 try
                     orders = submit(client, model; type = "market");
                 catch e
-                    if (e isa AlpacaSequenceError && length(e.orders) > 0 && e.orders[1].status == "filled")
-                        shares_open = true;
+                    if (e isa AlpacaSequenceError && length(e.orders) > 0)
+                        buy_id = e.orders[1].id;
                     end
                     rethrow();
                 end
-                shares_open = true;
+                buy_id = orders[1].id;
+                sell_call_id = orders[2].id;
                 @test length(orders) == 2
                 @test orders[1].status == "filled"
-
-                # the call is held once the option order fills -
-                _v_wait_filled(client, orders[2].id);
-                call_open = true;
+                _v_wait_filled(client, sell_call_id);
 
                 closed = Order[];
                 try
                     closed = close(client, model; type = "market");
                 catch e
-                    if (e isa AlpacaSequenceError && length(e.orders) > 0 && e.orders[1].status == "filled")
-                        call_open = false;
+                    if (e isa AlpacaSequenceError && length(e.orders) > 0)
+                        buy_call_id = e.orders[1].id;
                     end
                     rethrow();
                 end
-                call_open = false;
-                shares_open = false;
+                buy_call_id = closed[1].id;
+                sell_id = closed[2].id;
                 @test closed[1].status == "filled"
             finally
-                if (call_open)
-                    try
-                        close(client, model; type = "market");
-                    catch e
-                        @warn "covered call cleanup failed; check the paper account for these symbols by hand" symbols = [call_symbol, "F"] exception = e
+                # the shares and calls still held are the filled quantities of the opening orders less the filled
+                # quantities of the reversing orders. The calls are bought back before the shares are sold, so that
+                # no call is left uncovered -
+                try
+                    calls_held = _v_settle(client, sell_call_id) - _v_settle(client, buy_call_id);
+                    shares_held = _v_settle(client, buy_id) - _v_settle(client, sell_id);
+                    if (calls_held > 0)
+                        order = close(client, leg; type = "market", qty = Int(round(calls_held)));
+                        _v_wait_filled(client, order.id);
                     end
-                elseif (shares_open)
-                    try
-                        close(client, "F"; qty = 100);
-                    catch e
-                        @warn "share cleanup failed; check the paper account for these symbols by hand" symbols = ["F"] exception = e
+                    if (shares_held > 0)
+                        order = close(client, "F"; qty = shares_held);
+                        _v_wait_filled(client, order.id);
                     end
+                catch e
+                    @warn "covered call cleanup failed; check the paper account for these symbols by hand" symbols = [call_symbol, "F"] exception = e
                 end
             end
         end
