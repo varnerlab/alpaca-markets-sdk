@@ -104,6 +104,18 @@ end
 
         # an equity limit order without a limit price -
         @test_throws ArgumentError submit(client, MyEquityOrderModel(symbol = "AAPL", side = "buy", qty = 1); type = "limit")
+
+        # an equity model whose side changed after construction -
+        changed = MyEquityOrderModel(symbol = "AAPL", side = "buy", qty = 1)
+        changed.side = "Buy"
+        @test_throws ArgumentError submit(client, changed)
+
+        # zero units of a leg, of a 1-leg vector, and of a 2-leg structure -
+        leg = MyOptionLegModel(symbol = "SPY261218C00600000", side = "buy")
+        @test_throws ArgumentError submit(client, leg; qty = 0)
+        @test_throws ArgumentError submit(client, [leg]; qty = 0, limit_price = 1.0)
+        spread = [MyOptionLegModel(symbol = "A", side = "sell"), MyOptionLegModel(symbol = "B", side = "buy")]
+        @test_throws ArgumentError submit(client, spread; qty = 0, limit_price = 1.0)
     end
     @test length(log) == 0
 end

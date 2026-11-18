@@ -23,12 +23,15 @@ Submit one equity or ETF order, using an HTTP POST call to the Alpaca `/orders` 
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when the `type` requires a price that is `nothing`, e.g., `"limit"` without `limit_price`. The call sends no request.
+- `ArgumentError`: when `m.side` is not `"buy"` or `"sell"`, or when the `type` requires a price that is `nothing`, e.g., `"limit"` without `limit_price`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function submit(client::AlpacaClient, m::MyEquityOrderModel; type::AbstractString = "market", time_in_force::AbstractString = "day",
     limit_price::Union{Nothing,Real} = nothing, stop_price::Union{Nothing,Real} = nothing, trail_price::Union{Nothing,Real} = nothing,
     trail_percent::Union{Nothing,Real} = nothing, client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false)::Order
+
+    # the model is mutable, so check the side again, before any request -
+    _check_side(m.side);
 
     # check the prices that the order type requires, before any request -
     _check_order_prices(type, limit_price, stop_price, trail_price, trail_percent, true);
@@ -63,12 +66,15 @@ The order sends `qty * leg.ratio` contracts with the position intent `buy_to_ope
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when `leg.side` is not `"buy"` or `"sell"`, when `leg.ratio < 1`, or when the `type` requires a price that is `nothing`. The call sends no request.
+- `ArgumentError`: when `qty < 1`, when `leg.side` is not `"buy"` or `"sell"`, when `leg.ratio < 1`, or when the `type` requires a price that is `nothing`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function submit(client::AlpacaClient, leg::MyOptionLegModel; qty::Int = 1, type::AbstractString = "market", time_in_force::AbstractString = "day",
     limit_price::Union{Nothing,Real} = nothing, stop_price::Union{Nothing,Real} = nothing,
     client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false)::Order
+
+    # check the number of units, before any request -
+    _check_units(qty);
 
     # the model is mutable, so check the side and the ratio of the leg again -
     _check_leg_fields(leg.side, leg.ratio);
@@ -110,7 +116,7 @@ For an `mleg` order, `limit_price` is the net price of one unit of the structure
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when there are no legs, more than 4 legs, or a leg is invalid. For one leg, the single-leg checks apply, e.g., `"limit"` requires `limit_price`. For 2 to 4 legs, a `"limit"` order requires `limit_price`. The call sends no request.
+- `ArgumentError`: when `qty < 1`, when there are no legs, more than 4 legs, or a leg is invalid. For one leg, the single-leg checks apply, e.g., `"limit"` requires `limit_price`. For 2 to 4 legs, a `"limit"` order requires `limit_price`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function submit(client::AlpacaClient, legs::Vector{MyOptionLegModel}; qty::Int = 1, type::AbstractString = "limit", time_in_force::AbstractString = "day",
@@ -121,6 +127,9 @@ function submit(client::AlpacaClient, legs::Vector{MyOptionLegModel}; qty::Int =
         return submit(client, legs[1]; qty = qty, type = type, time_in_force = time_in_force, limit_price = limit_price,
             client_order_id = client_order_id, extended_hours = extended_hours);
     end
+
+    # check the number of units, before any request -
+    _check_units(qty);
 
     # collect the symbols, sides, intents, and ratios of the legs -
     symbols = String[];
@@ -296,7 +305,7 @@ The reverse order has the opposite side and the same `qty` or `notional` as the 
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when the `type` requires a price that is `nothing`. The call sends no request.
+- `ArgumentError`: when `m.side` is not `"buy"` or `"sell"`, or when the `type` requires a price that is `nothing`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function Base.close(client::AlpacaClient, m::MyEquityOrderModel; type::AbstractString = "market", time_in_force::AbstractString = "day",
@@ -304,6 +313,7 @@ function Base.close(client::AlpacaClient, m::MyEquityOrderModel; type::AbstractS
     trail_percent::Union{Nothing,Real} = nothing, client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false)::Order
 
     # run the same checks as submit, before any request -
+    _check_side(m.side);
     _check_order_prices(type, limit_price, stop_price, trail_price, trail_percent, true);
 
     # build the body of the reverse order -
@@ -336,7 +346,7 @@ The reverse order has the opposite side of the leg, sends `qty * leg.ratio` cont
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when `leg.side` is not `"buy"` or `"sell"`, when `leg.ratio < 1`, or when the `type` requires a price that is `nothing`. The call sends no request.
+- `ArgumentError`: when `qty < 1`, when `leg.side` is not `"buy"` or `"sell"`, when `leg.ratio < 1`, or when the `type` requires a price that is `nothing`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function Base.close(client::AlpacaClient, leg::MyOptionLegModel; qty::Int = 1, type::AbstractString = "market", time_in_force::AbstractString = "day",
@@ -344,6 +354,7 @@ function Base.close(client::AlpacaClient, leg::MyOptionLegModel; qty::Int = 1, t
     client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false)::Order
 
     # run the same checks as submit, before any request -
+    _check_units(qty);
     _check_leg_fields(leg.side, leg.ratio);
     _check_order_prices(type, limit_price, stop_price, nothing, nothing, false);
 
@@ -383,7 +394,7 @@ For an `mleg` order, `limit_price` is the net price of one unit of the structure
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when there are no legs, more than 4 legs, or a leg is invalid. A `"limit"` order requires `limit_price`. The call sends no request.
+- `ArgumentError`: when `qty < 1`, when there are no legs, more than 4 legs, or a leg is invalid. A `"limit"` order requires `limit_price`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function Base.close(client::AlpacaClient, legs::Vector{MyOptionLegModel}; qty::Int = 1, type::AbstractString = "limit", time_in_force::AbstractString = "day",
@@ -395,7 +406,8 @@ function Base.close(client::AlpacaClient, legs::Vector{MyOptionLegModel}; qty::I
             client_order_id = client_order_id, extended_hours = extended_hours);
     end
 
-    # check the fields of each leg -
+    # check the number of units and the fields of each leg -
+    _check_units(qty);
     for leg in legs
         _check_leg_fields(leg.side, leg.ratio);
     end
@@ -483,7 +495,7 @@ The two calls are not atomic: the first order can fill while the second order do
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when the `from` and `to` legs together are fewer than 2 or more than 4, when a leg is invalid, or when a `"limit"` order has no `limit_price`. The call sends no request.
+- `ArgumentError`: when `qty < 1`, when the `from` and `to` legs together are fewer than 2 or more than 4, when a leg is invalid, or when a `"limit"` order has no `limit_price`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function roll(client::AlpacaClient, from::Union{MyOptionLegModel,Vector{MyOptionLegModel}}, to::Union{MyOptionLegModel,Vector{MyOptionLegModel}};
@@ -494,7 +506,8 @@ function roll(client::AlpacaClient, from::Union{MyOptionLegModel,Vector{MyOption
     from_legs = _as_legs(from);
     to_legs = _as_legs(to);
 
-    # check the fields of each leg -
+    # check the number of units and the fields of each leg -
+    _check_units(qty);
     for leg in from_legs
         _check_leg_fields(leg.side, leg.ratio);
     end
@@ -539,7 +552,7 @@ An iron condor rolls as two `roll` calls, one for each wing, and the two calls a
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when the status of `from` is not `"filled"`, when `from` is an equity order (use `close` or `submit` for shares), when the legs together are fewer than 2 or more than 4, or when a `"limit"` order has no `limit_price`. The call sends no request.
+- `ArgumentError`: when the status of `from` is not `"filled"`, when `from` is an equity order (use `close` or `submit` for shares), when `qty < 1`, when the legs together are fewer than 2 or more than 4, or when a `"limit"` order has no `limit_price`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function roll(client::AlpacaClient, from::Order, to::Union{MyOptionLegModel,Vector{MyOptionLegModel}}; qty::Union{Nothing,Int} = nothing,
@@ -581,11 +594,13 @@ and waits until it fills. It then sends the option order, which is one single-le
 - `Vector{Order}`: the filled equity order and the option order as Alpaca accepted it. The option order may still be resting.
 
 ### Throws
-- `ArgumentError`: when the shares do not cover a short call, when `qty < 1`, `poll_interval <= 0`, or `fill_timeout < 0`, or when either order is invalid. The call sends no request.
+- `ArgumentError`: when the shares do not cover a short call, when `qty < 1`, when `poll_interval` is not a finite number greater than 0,
+  when `fill_timeout` is not a finite number of 0 or more, or when either order is invalid. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the equity order. The method sends no option order.
-- `AlpacaSequenceError`: when the equity order does not fill in time (the method cancels it and sends no option order),
-  when polling the equity order fails (the method tries to cancel it and sends no option order, and `cause` holds the polling error),
-  or when the option order fails, e.g., Alpaca rejects it (`cause` holds that error). The error holds the equity order.
+- `AlpacaSequenceError`: when the equity order does not fill, or when the option order fails. The error holds the equity order.
+  When the equity order does not fill in time, or polling the equity order fails, the method cancels the equity order and reads the equity order again.
+  An equity order that filled before the cancel took effect continues the sequence. Any other equity order stops the sequence before the option order,
+  and `cause` holds the polling error when polling failed. When the option order fails, e.g., Alpaca rejects it, `cause` holds that error.
 """
 function submit(client::AlpacaClient, m::MyMixedOrderModel; qty::Int = 1, type::AbstractString = "limit",
     limit_price::Union{Nothing,Real} = nothing, time_in_force::AbstractString = "day", fill_timeout::Real = 30.0,
@@ -623,7 +638,9 @@ It then sends the reverse equity order at market. The method does not wait on th
 - `client::AlpacaClient`: the client that holds the credentials and the base URLs.
 - `m::MyMixedOrderModel`: the structure to reverse.
 - `qty::Int`: the number of units of the option legs. The share quantity is the `qty` of the equity model.
-  Use the same `qty` as in the `submit` call. The method buys back `qty` units of the option legs, and then sells all `m.equity.qty` shares, so a smaller `qty` leaves a short call uncovered.
+  Pass the same `qty` as the `submit` call. The method buys back `qty` units of the option legs and then sells all `m.equity.qty` shares.
+  Let `s` be the summed `ratio` of the short call legs. When `s > 0` and `m.equity.qty >= 100 * (qty + 1) * s`, the shares cover more than `qty` units
+  of the short calls, and the method throws an `ArgumentError`, because selling all the shares would leave a short call uncovered.
 - `type::String`: the type of the reverse option order, `"market"` or `"limit"`.
 - `limit_price`: the limit price of the reverse option order, or `nothing`.
 - `time_in_force::String`: the time in force of the reverse option order, e.g., `"day"`.
@@ -634,11 +651,14 @@ It then sends the reverse equity order at market. The method does not wait on th
 - `Vector{Order}`: the filled option order and the equity order as Alpaca accepted it. The equity order may still be resting.
 
 ### Throws
-- `ArgumentError`: when `qty < 1`, `poll_interval <= 0`, or `fill_timeout < 0`, or when either reverse order is invalid. The call sends no request.
+- `ArgumentError`: when the shares cover more than `qty` units of the short calls, when `qty < 1`, when `poll_interval` is not a finite number greater than 0,
+  when `fill_timeout` is not a finite number of 0 or more, or when either reverse order is invalid. The call sends no request.
+  A model that holds more shares than its short calls need is closed by closing the option legs and the shares separately.
 - `AlpacaError`: when Alpaca rejects the reverse option order. The method sends no equity order.
-- `AlpacaSequenceError`: when the option order does not fill in time (the method cancels it and sends no equity order),
-  when polling the option order fails (the method tries to cancel it and sends no equity order, and `cause` holds the polling error),
-  or when the equity order fails, e.g., Alpaca rejects it (`cause` holds that error). The error holds the option order.
+- `AlpacaSequenceError`: when the option order does not fill, or when the equity order fails. The error holds the option order.
+  When the option order does not fill in time, or polling the option order fails, the method cancels the option order and reads the option order again.
+  An option order that filled before the cancel took effect continues the sequence. Any other option order stops the sequence before the equity order,
+  and `cause` holds the polling error when polling failed. When the equity order fails, e.g., Alpaca rejects it, `cause` holds that error.
 """
 function Base.close(client::AlpacaClient, m::MyMixedOrderModel; qty::Int = 1, type::AbstractString = "limit",
     limit_price::Union{Nothing,Real} = nothing, time_in_force::AbstractString = "day", fill_timeout::Real = 30.0,
@@ -646,6 +666,9 @@ function Base.close(client::AlpacaClient, m::MyMixedOrderModel; qty::Int = 1, ty
 
     # check both orders, before any request -
     _check_mixed_orders(m, true, qty, type, limit_price, fill_timeout, poll_interval);
+
+    # the shares must not cover more than qty units of the short calls, before any request -
+    _check_close_coverage(m, qty);
 
     # send the reverse option order, and wait until it fills -
     option_order = close(client, m.options; qty = qty, type = type, limit_price = limit_price, time_in_force = time_in_force);
@@ -691,13 +714,27 @@ function _check_order_prices(type::AbstractString, limit_price, stop_price, trai
     return nothing;
 end
 
+# _check_side: the side of an order is buy or sell. The order models are mutable, so the side can change after construction -
+function _check_side(side::AbstractString)::Nothing
+    if ((side in _LEG_SIDES) == false)
+        throw(ArgumentError("side must be \"buy\" or \"sell\", got \"$(side)\""));
+    end
+    return nothing;
+end
+
+# _check_units: the number of units of a leg or a structure is at least 1 -
+function _check_units(qty::Integer)::Nothing
+    if (qty < 1)
+        throw(ArgumentError("qty must be at least 1, got $(qty)"));
+    end
+    return nothing;
+end
+
 # _check_leg_fields: check the side and the ratio of an option leg. The leg model is mutable, so its fields can change after construction -
 function _check_leg_fields(side::AbstractString, ratio::Integer)::Nothing
 
     # the side is buy or sell -
-    if ((side in _LEG_SIDES) == false)
-        throw(ArgumentError("side must be \"buy\" or \"sell\", got \"$(side)\""));
-    end
+    _check_side(side);
 
     # the ratio is at least 1 -
     if (ratio < 1)
@@ -848,12 +885,15 @@ function _cancel_order(client::AlpacaClient, id::String)::String
     return _http_call(client, "DELETE", "$(client.trading_url)/orders/$(id)");
 end
 
-# _opposite_side: the side that reverses a leg or an order -
+# _opposite_side: the side that reverses a leg or an order. Any side other than buy or sell is refused -
 function _opposite_side(side::AbstractString)::String
     if (side == "buy")
         return "sell";
     end
-    return "buy";
+    if (side == "sell")
+        return "buy";
+    end
+    throw(ArgumentError("side must be \"buy\" or \"sell\", got \"$(side)\""));
 end
 
 # _whole_qty: a whole-number quantity becomes an Int, so it is sent as "7" and not "7.0" -
@@ -959,9 +999,16 @@ function _close_all_positions(client::AlpacaClient; cancel_orders::Bool = false)
     return _http_call(client, "DELETE", request_url);
 end
 
-# _check_coverage: shares must cover every short call. A call has the OCC type character C at position length(symbol) - 8,
-# and the OCC root (all characters before the last 15) is the underlying -
-function _check_coverage(m::MyMixedOrderModel, qty::Int)::Nothing
+# _is_short_call: true when the leg sells a call. A call has the OCC type character C at position length(symbol) - 8 -
+function _is_short_call(leg::MyOptionLegModel)::Bool
+    if (leg.side == "sell" && leg.symbol[length(leg.symbol) - 8] == 'C')
+        return true;
+    end
+    return false;
+end
+
+# _short_call_ratio: the summed ratio of the short call legs of a mixed model. Every option leg must have an OCC symbol -
+function _short_call_ratio(m::MyMixedOrderModel)::Int
 
     # sum the ratios of the short call legs -
     short_calls = 0;
@@ -971,19 +1018,27 @@ function _check_coverage(m::MyMixedOrderModel, qty::Int)::Nothing
         if (length(leg.symbol) < 16)
             throw(ArgumentError("\"$(leg.symbol)\" is not an OCC option symbol"));
         end
-        if (leg.side == "sell" && leg.symbol[length(leg.symbol) - 8] == 'C')
-
-            # the short call must be on the shares of the equity part -
-            if (leg.symbol[1:end-15] != m.equity.symbol)
-                throw(ArgumentError("the short call $(leg.symbol) is on $(leg.symbol[1:end-15]), but the equity part trades $(m.equity.symbol)"));
-            end
+        if (_is_short_call(leg) == true)
             short_calls += leg.ratio;
         end
     end
+    return short_calls;
+end
 
-    # a model without a short call needs no cover -
+# _check_coverage: shares must cover every short call. The OCC root (all characters before the last 15) is the underlying -
+function _check_coverage(m::MyMixedOrderModel, qty::Int)::Nothing
+
+    # sum the ratios of the short call legs. A model without a short call needs no cover -
+    short_calls = _short_call_ratio(m);
     if (short_calls == 0)
         return nothing;
+    end
+
+    # each short call must be on the shares of the equity part -
+    for leg in m.options
+        if (_is_short_call(leg) == true && leg.symbol[1:end-15] != m.equity.symbol)
+            throw(ArgumentError("the short call $(leg.symbol) is on $(leg.symbol[1:end-15]), but the equity part trades $(m.equity.symbol)"));
+        end
     end
 
     # the equity part must buy shares, set by qty -
@@ -1002,22 +1057,47 @@ function _check_coverage(m::MyMixedOrderModel, qty::Int)::Nothing
     return nothing;
 end
 
+# _check_close_coverage: close(mixed) buys back qty units of the option legs and then sells all the shares. Shares that cover
+# more than qty units of the short calls would leave a short call uncovered after the sale, so that close is refused -
+function _check_close_coverage(m::MyMixedOrderModel, qty::Int)::Nothing
+
+    # sum the ratios of the short call legs. A model without a short call leaves no call uncovered -
+    short_calls = _short_call_ratio(m);
+    if (short_calls == 0)
+        return nothing;
+    end
+
+    # a covered call sets the share quantity with qty, as submit requires -
+    if (m.equity.qty === nothing)
+        throw(ArgumentError("a short call needs the equity model to set `qty`, not `notional`"));
+    end
+
+    # shares that cover qty + 1 units of the short calls cover a call that this close does not buy back -
+    if (m.equity.qty >= 100 * (qty + 1) * short_calls)
+        throw(ArgumentError("the model sells all $(m.equity.qty) shares, which cover more than qty = $(qty) units of the short calls; " *
+            "pass the same `qty` as the `submit` call. A model that holds more shares than its short calls need is closed by " *
+            "closing the option legs and the shares separately"));
+    end
+    return nothing;
+end
+
 # _check_mixed_orders: run the checks of both orders, so an invalid order sends nothing. A closing structure reverses both parts -
 function _check_mixed_orders(m::MyMixedOrderModel, closing::Bool, qty::Int, type::AbstractString, limit_price,
     fill_timeout::Real, poll_interval::Real)::Nothing
 
-    # check the quantity and the wait settings -
-    if (qty < 1)
-        throw(ArgumentError("qty must be at least 1, got $(qty)"));
+    # check the quantity -
+    _check_units(qty);
+
+    # check the wait settings. A NaN poll interval fails only after the first order is sent, and a NaN or Inf timeout never ends the wait -
+    if (isfinite(poll_interval) == false || poll_interval <= 0)
+        throw(ArgumentError("poll_interval must be a finite number of seconds greater than 0, got $(poll_interval)"));
     end
-    if (poll_interval <= 0)
-        throw(ArgumentError("poll_interval must be positive, got $(poll_interval)"));
-    end
-    if (fill_timeout < 0)
-        throw(ArgumentError("fill_timeout must not be negative, got $(fill_timeout)"));
+    if (isfinite(fill_timeout) == false || fill_timeout < 0)
+        throw(ArgumentError("fill_timeout must be a finite number of seconds, 0 or more, got $(fill_timeout)"));
     end
 
-    # check the equity order. The equity part trades at market -
+    # check the equity order. The equity part trades at market, and the model is mutable, so its side is checked again -
+    _check_side(m.equity.side);
     equity_side = m.equity.side;
     if (closing == true)
         equity_side = _opposite_side(m.equity.side);
@@ -1044,12 +1124,14 @@ function _check_mixed_orders(m::MyMixedOrderModel, closing::Bool, qty::Int, type
     return nothing;
 end
 
-# _wait_for_fill: poll the order until it fills. On a timeout or an early stop, cancel the order, read it again, and throw unless it filled -
+# _wait_for_fill: poll the order until it fills. On a timeout, an early stop, or a failed poll, cancel the order, read it again,
+# and throw unless it filled -
 function _wait_for_fill(client::AlpacaClient, order::Order, fill_timeout::Float64, poll_interval::Float64)::Order
 
-    # poll until the deadline. A failed poll cancels the order, as far as possible, and ends the sequence -
+    # poll until the deadline. A failed poll ends the wait, and the polling error becomes the cause of the sequence error -
     deadline = time() + fill_timeout;
     last_order = order;
+    poll_error = nothing;
     try
         while (true)
             last_order = _get_order(client, order.id);
@@ -1074,17 +1156,10 @@ function _wait_for_fill(client::AlpacaClient, order::Order, fill_timeout::Float6
         if (error isa InterruptException)
             rethrow();
         end
-        try
-            _cancel_order(client, order.id);
-        catch cancel_error
-            if (cancel_error isa InterruptException)
-                rethrow();
-            end
-        end
-        throw(AlpacaSequenceError("polling order $(order.id) failed, so the sequence stopped", [last_order], error));
+        poll_error = error;
     end
 
-    # cancel the order. Alpaca may refuse, e.g., when the order filled or ended, so any error from the cancel is ignored -
+    # cancel the order. Alpaca refuses the cancel of an order that filled or ended, so any error from the cancel is ignored -
     try
         _cancel_order(client, order.id);
     catch cancel_error
@@ -1093,20 +1168,30 @@ function _wait_for_fill(client::AlpacaClient, order::Order, fill_timeout::Float6
         end
     end
 
-    # read the order again. The order may have filled before the cancel. If the read fails, keep the last polled order -
+    # read the order again, because the order can fill before the cancel takes effect. If the read fails, keep the last order read -
     fresh_order = last_order;
+    read_failed = false;
     try
         fresh_order = _get_order(client, order.id);
     catch fresh_error
         if (fresh_error isa InterruptException)
             rethrow();
         end
+        read_failed = true;
     end
+
+    # an order that filled before the cancel took effect continues the sequence -
     if (fresh_order.status == "filled")
         return fresh_order;
     end
-    throw(AlpacaSequenceError("order $(order.id) did not fill: status $(fresh_order.status), filled_qty $(fresh_order.filled_qty), so the sequence stopped",
-        [fresh_order], nothing));
+
+    # any other order stops the sequence. When the read failed, the message says that the status after the cancel is unknown -
+    message = "order $(order.id) did not fill: status $(fresh_order.status), filled_qty $(fresh_order.filled_qty), so the sequence stopped";
+    if (read_failed == true)
+        message = "the status of order $(order.id) could not be read after the cancel, so the sequence stopped; " *
+            "the last status read was $(fresh_order.status), filled_qty $(fresh_order.filled_qty)";
+    end
+    throw(AlpacaSequenceError(message, [fresh_order], poll_error));
 end
 
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #

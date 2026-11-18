@@ -100,9 +100,23 @@ end
         bad.side = "long"
         @test_throws ArgumentError close(client, bad)
         @test_throws ArgumentError close(client, [bad, bad]; limit_price = 1.0)
+
+        # an equity model whose side changed after construction -
+        changed = MyEquityOrderModel(symbol = "AAPL", side = "buy", qty = 1)
+        changed.side = "Buy"
+        @test_throws ArgumentError close(client, changed)
+
+        # zero units of a leg, of a structure, and of a roll -
+        @test_throws ArgumentError close(client, one_leg[1]; qty = 0)
+        @test_throws ArgumentError close(client, _N_SPREAD; qty = 0, limit_price = 1.0)
+        far = [MyOptionLegModel(symbol = "SPY270115P00540000", side = "sell"),
+               MyOptionLegModel(symbol = "SPY270115P00530000", side = "buy")]
+        @test_throws ArgumentError roll(client, _N_SPREAD, far; qty = 0, limit_price = -0.10)
     end
     @test length(log) == 0
+    @test_throws ArgumentError Alpaca._opposite_side("Buy")
 end
+
 
 @testset "close: equity and single option models reverse the side" begin
     handler, log = recording_handler() do _req

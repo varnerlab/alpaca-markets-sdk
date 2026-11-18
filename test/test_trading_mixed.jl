@@ -1,7 +1,9 @@
 # the mock for the mixed sequence: POST /orders routes on the body, GET /orders/<id> reports `status` for the order named in the path -
+# `poll_fails` fails every GET; `poll_fails_until_cancel` fails each GET before the DELETE, so the read after the cancel succeeds -
 function run_mixed(f::Function; status::String, reject_options::Bool = false, poll_fails::Bool = false,
-    after_cancel::Union{Nothing,String} = nothing, after_cancel_qty::String = "0")::RequestLog
-    equity = merge(_N_EQUITY_ORDER, Dict("id" => "eq-1", "symbol" => "F", "qty" => "100"))
+    poll_fails_until_cancel::Bool = false, after_cancel::Union{Nothing,String} = nothing, after_cancel_qty::String = "0",
+    shares::String = "100")::RequestLog
+    equity = merge(_N_EQUITY_ORDER, Dict("id" => "eq-1", "symbol" => "F", "qty" => shares))
     option = merge(_N_MLEG_ORDER, Dict("id" => "op-1"))
     log = RequestLog()
     canceled = Ref(false)
@@ -21,7 +23,7 @@ function run_mixed(f::Function; status::String, reject_options::Bool = false, po
             return json_response(200, option)
         end
         if (req.method == "GET")
-            if (poll_fails)
+            if (poll_fails || (poll_fails_until_cancel && !canceled[]))
                 return json_response(500, Dict("message" => "server error"))
             end
             payload = equity
@@ -120,6 +122,8 @@ end
         err = try submit(client, _N_COVERED_CALL; limit_price = 0.35, fill_timeout = 1.0, poll_interval = 0.01); nothing catch e; e end
         @test err isa AlpacaSequenceError
         @test err.orders[1].id == "eq-1"
+        @test err.orders[1].status == "accepted"
+        @test occursin("could not be read", err.message)
         @test err.cause !== nothing
         @test occursin("server error", sprint(showerror, err))
     end
@@ -172,4 +176,70 @@ end
     end
     wrapped = AlpacaSequenceError("stopped", Order[], ErrorException("boom"))
     @test occursin("boom", sprint(showerror, wrapped))
+end
+
+@testset "mixed: a failed poll, then shares that filled before the cancel, let the sequence continue" begin
+    log = run_mixed(status = "new", poll_fails_until_cancel = true, after_cancel = "filled", after_cancel_qty = "100") do client
+        orders = submit(client, _N_COVERED_CALL; limit_price = 0.35, fill_timeout = 1.0, poll_interval = 0.01)
+        @test [o.id for o in orders] == ["eq-1", "op-1"]
+        @test orders[1].status == "filled"
+    end
+    @test count(r -> r.method == "POST", log.entries) == 2
+    @test any(r -> r.method == "DELETE" && r.path == "/orders/eq-1", log.entries)
+end
+
+@testset "mixed: a failed poll, then a canceled read, reports the canceled order" begin
+    log = run_mixed(status = "new", poll_fails_until_cancel = true, after_cancel = "canceled") do client
+        err = try submit(client, _N_COVERED_CALL; limit_price = 0.35, fill_timeout = 1.0, poll_interval = 0.01); nothing catch e; e end
+        @test err isa AlpacaSequenceError
+        @test err.orders[1].id == "eq-1"
+        @test err.orders[1].status == "canceled"
+        @test err.cause isa AlpacaError
+    end
+    @test count(r -> r.method == "POST", log.entries) == 1
+end
+
+@testset "mixed: NaN and Inf wait settings send nothing" begin
+    log = run_mixed(status = "filled") do client
+        for bad in (NaN, Inf, -Inf)
+            @test_throws ArgumentError submit(client, _N_COVERED_CALL; limit_price = 0.35, poll_interval = bad)
+            @test_throws ArgumentError submit(client, _N_COVERED_CALL; limit_price = 0.35, fill_timeout = bad)
+            @test_throws ArgumentError close(client, _N_COVERED_CALL; limit_price = 0.10, poll_interval = bad)
+            @test_throws ArgumentError close(client, _N_COVERED_CALL; limit_price = 0.10, fill_timeout = bad)
+        end
+    end
+    @test isempty(log.entries)
+end
+
+@testset "mixed: close refuses a qty smaller than the shares cover" begin
+    two_units = MyMixedOrderModel(equity = MyEquityOrderModel(symbol = "F", side = "buy", qty = 200),
+                                  options = [MyOptionLegModel(symbol = "F261218C00012000", side = "sell")])
+    log = run_mixed(status = "filled", shares = "200") do client
+        err = try close(client, two_units; qty = 1, limit_price = 0.10, fill_timeout = 1.0, poll_interval = 0.01); nothing catch e; e end
+        @test err isa ArgumentError
+        @test occursin("same `qty`", err.msg)
+    end
+    @test isempty(log.entries)
+
+    log = run_mixed(status = "filled", shares = "200") do client
+        orders = close(client, two_units; qty = 2, limit_price = 0.10, fill_timeout = 1.0, poll_interval = 0.01)
+        @test length(orders) == 2
+    end
+    posts = [r for r in log.entries if r.method == "POST"]
+    @test length(posts) == 2
+    @test JSON3.read(posts[1].body).position_intent == "buy_to_close"
+    @test JSON3.read(posts[1].body).qty == "2"
+    @test JSON3.read(posts[2].body).side == "sell"
+    @test JSON3.read(posts[2].body).qty == "200"
+end
+
+@testset "mixed: a changed equity side sends nothing" begin
+    changed = MyMixedOrderModel(equity = MyEquityOrderModel(symbol = "F", side = "buy", qty = 100),
+                                options = [MyOptionLegModel(symbol = "F261218P00010000", side = "buy")])
+    changed.equity.side = "Buy"
+    log = run_mixed(status = "filled") do client
+        @test_throws ArgumentError submit(client, changed; limit_price = 0.35)
+        @test_throws ArgumentError close(client, changed; limit_price = 0.10)
+    end
+    @test isempty(log.entries)
 end
