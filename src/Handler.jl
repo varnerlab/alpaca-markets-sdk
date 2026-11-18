@@ -50,17 +50,6 @@ function _json_records(body::String, list_keys::Vector{String})::Vector{Any}
     return records;
 end
 
-# _string_field: a required text field, or the default when the field is missing or null -
-function _string_field(record, key::Symbol, default::String)::String
-
-    # look up the field, and fall back to the default when it has no value -
-    value = get(record, key, nothing);
-    if (value === nothing)
-        return default;
-    end
-    return String(value);
-end
-
 # _string_or_missing: an optional text field; missing when the field is missing or null -
 function _string_or_missing(record, key::Symbol)::Union{Missing,String}
 
@@ -72,18 +61,7 @@ function _string_or_missing(record, key::Symbol)::Union{Missing,String}
     return String(value);
 end
 
-# _float_field: a number that Alpaca sends as text or as a number; the default when there is no value -
-function _float_field(record, key::Symbol, default::Float64)::Float64
-
-    # parse the field, and fall back to the default when it has no value -
-    value = _parse_float(get(record, key, nothing));
-    if (value === nothing)
-        return default;
-    end
-    return value;
-end
-
-# _float_or_missing: an optional number; missing when there is no value -
+# _float_or_missing: a number that Alpaca sends as text or as a number; missing when there is no value -
 function _float_or_missing(record, key::Symbol)::Union{Missing,Float64}
 
     # parse the field -
@@ -94,13 +72,13 @@ function _float_or_missing(record, key::Symbol)::Union{Missing,Float64}
     return value;
 end
 
-# _bool_field: a true or false flag; the default when the field is missing or null -
-function _bool_field(record, key::Symbol, default::Bool)::Bool
+# _bool_or_missing: a true or false flag; missing when the field is missing or null -
+function _bool_or_missing(record, key::Symbol)::Union{Missing,Bool}
 
-    # look up the field, and fall back to the default when it has no value -
+    # look up the field -
     value = get(record, key, nothing);
     if (value === nothing)
-        return default;
+        return missing;
     end
     return Bool(value);
 end
@@ -135,7 +113,8 @@ end
 
 Process the response of the `/account` endpoint. The table has one row. The columns are `id`, `account_number`,
 `status`, `currency`, `cash`, `buying_power`, `portfolio_value`, `equity`, `last_equity`, `pattern_day_trader`,
-`trading_blocked`, `transfers_blocked`, and `account_blocked`. The money columns are `Float64`.
+`trading_blocked`, `transfers_blocked`, and `account_blocked`. The money columns are `Float64`. A field that Alpaca
+does not send is `missing`.
 """
 function _default_handler(model::Type{MyAccountEndpointModel}, body::String)::DataFrame
 
@@ -144,15 +123,15 @@ function _default_handler(model::Type{MyAccountEndpointModel}, body::String)::Da
     account_numbers = Array{String,1}();
     statuses = Array{String,1}();
     currencies = Array{String,1}();
-    cashes = Array{Float64,1}();
-    buying_powers = Array{Float64,1}();
-    portfolio_values = Array{Float64,1}();
-    equities = Array{Float64,1}();
-    last_equities = Array{Float64,1}();
-    pattern_day_traders = Array{Bool,1}();
-    trading_blockeds = Array{Bool,1}();
-    transfers_blockeds = Array{Bool,1}();
-    account_blockeds = Array{Bool,1}();
+    cashes = Array{Union{Missing,Float64},1}();
+    buying_powers = Array{Union{Missing,Float64},1}();
+    portfolio_values = Array{Union{Missing,Float64},1}();
+    equities = Array{Union{Missing,Float64},1}();
+    last_equities = Array{Union{Missing,Float64},1}();
+    pattern_day_traders = Array{Union{Missing,Bool},1}();
+    trading_blockeds = Array{Union{Missing,Bool},1}();
+    transfers_blockeds = Array{Union{Missing,Bool},1}();
+    account_blockeds = Array{Union{Missing,Bool},1}();
 
     # visit the records, and select the fields we want -
     for record in _json_records(body, String[])
@@ -160,15 +139,15 @@ function _default_handler(model::Type{MyAccountEndpointModel}, body::String)::Da
         push!(account_numbers, String(record.account_number));
         push!(statuses, String(record.status));
         push!(currencies, String(record.currency));
-        push!(cashes, _float_field(record, :cash, 0.0));
-        push!(buying_powers, _float_field(record, :buying_power, 0.0));
-        push!(portfolio_values, _float_field(record, :portfolio_value, 0.0));
-        push!(equities, _float_field(record, :equity, 0.0));
-        push!(last_equities, _float_field(record, :last_equity, 0.0));
-        push!(pattern_day_traders, _bool_field(record, :pattern_day_trader, false));
-        push!(trading_blockeds, _bool_field(record, :trading_blocked, false));
-        push!(transfers_blockeds, _bool_field(record, :transfers_blocked, false));
-        push!(account_blockeds, _bool_field(record, :account_blocked, false));
+        push!(cashes, _float_or_missing(record, :cash));
+        push!(buying_powers, _float_or_missing(record, :buying_power));
+        push!(portfolio_values, _float_or_missing(record, :portfolio_value));
+        push!(equities, _float_or_missing(record, :equity));
+        push!(last_equities, _float_or_missing(record, :last_equity));
+        push!(pattern_day_traders, _bool_or_missing(record, :pattern_day_trader));
+        push!(trading_blockeds, _bool_or_missing(record, :trading_blocked));
+        push!(transfers_blockeds, _bool_or_missing(record, :transfers_blocked));
+        push!(account_blockeds, _bool_or_missing(record, :account_blocked));
     end
 
     # put the columns into a table, and return it -
@@ -182,20 +161,20 @@ end
     _default_handler(model::Type{MyClockEndpointModel}, body::String) -> DataFrame
 
 Process the response of the `/clock` endpoint. The table has one row. The columns are `timestamp`, `is_open`,
-`next_open`, and `next_close`. The three times are `DateTime` values in UTC.
+`next_open`, and `next_close`. The three times are `DateTime` values in UTC. A field that Alpaca does not send is `missing`.
 """
 function _default_handler(model::Type{MyClockEndpointModel}, body::String)::DataFrame
 
     # initialize: one array for each column of the table -
     timestamps = Array{Union{Missing,DateTime},1}();
-    is_opens = Array{Bool,1}();
+    is_opens = Array{Union{Missing,Bool},1}();
     next_opens = Array{Union{Missing,DateTime},1}();
     next_closes = Array{Union{Missing,DateTime},1}();
 
     # visit the records, and convert the times to UTC -
     for record in _json_records(body, String[])
         push!(timestamps, _parse_utc(get(record, :timestamp, nothing)));
-        push!(is_opens, _bool_field(record, :is_open, false));
+        push!(is_opens, _bool_or_missing(record, :is_open));
         push!(next_opens, _parse_utc(get(record, :next_open, nothing)));
         push!(next_closes, _parse_utc(get(record, :next_close, nothing)));
     end
@@ -239,6 +218,7 @@ end
 
 Build the assets table from a vector of asset records. The columns are `id`, `class`, `exchange`, `symbol`, `name`,
 `status`, `tradable`, `marginable`, `shortable`, `easy_to_borrow`, and `fractionable`. No asset is filtered out.
+A field that Alpaca does not send is `missing`.
 """
 function _assets_table(records::Vector{Any})::DataFrame
 
@@ -247,13 +227,13 @@ function _assets_table(records::Vector{Any})::DataFrame
     classes = Array{String,1}();
     exchanges = Array{String,1}();
     symbols = Array{String,1}();
-    asset_names = Array{String,1}();
+    asset_names = Array{Union{Missing,String},1}();
     statuses = Array{String,1}();
-    tradables = Array{Bool,1}();
-    marginables = Array{Bool,1}();
-    shortables = Array{Bool,1}();
-    easy_to_borrows = Array{Bool,1}();
-    fractionables = Array{Bool,1}();
+    tradables = Array{Union{Missing,Bool},1}();
+    marginables = Array{Union{Missing,Bool},1}();
+    shortables = Array{Union{Missing,Bool},1}();
+    easy_to_borrows = Array{Union{Missing,Bool},1}();
+    fractionables = Array{Union{Missing,Bool},1}();
 
     # visit the records, and select the fields we want -
     for record in records
@@ -261,13 +241,13 @@ function _assets_table(records::Vector{Any})::DataFrame
         push!(classes, String(record.class));
         push!(exchanges, String(record.exchange));
         push!(symbols, String(record.symbol));
-        push!(asset_names, _string_field(record, :name, ""));
+        push!(asset_names, _string_or_missing(record, :name));
         push!(statuses, String(record.status));
-        push!(tradables, _bool_field(record, :tradable, false));
-        push!(marginables, _bool_field(record, :marginable, false));
-        push!(shortables, _bool_field(record, :shortable, false));
-        push!(easy_to_borrows, _bool_field(record, :easy_to_borrow, false));
-        push!(fractionables, _bool_field(record, :fractionable, false));
+        push!(tradables, _bool_or_missing(record, :tradable));
+        push!(marginables, _bool_or_missing(record, :marginable));
+        push!(shortables, _bool_or_missing(record, :shortable));
+        push!(easy_to_borrows, _bool_or_missing(record, :easy_to_borrow));
+        push!(fractionables, _bool_or_missing(record, :fractionable));
     end
 
     # put the columns into a table, and return it -
@@ -301,42 +281,43 @@ end
 
 Build the positions table from a vector of position records. The columns are `asset_id`, `symbol`, `exchange`,
 `asset_class`, `qty`, `side`, `avg_entry_price`, `market_value`, `cost_basis`, `unrealized_pl`, `unrealized_plpc`,
-`current_price`, `lastday_price`, and `change_today`. The quantities and prices are `Float64`.
+`current_price`, `lastday_price`, and `change_today`. The quantities and prices are `Float64`. A field that Alpaca does
+not send is `missing`.
 """
 function _positions_table(records::Vector{Any})::DataFrame
 
     # initialize: one array for each column of the table -
     asset_ids = Array{String,1}();
     symbols = Array{String,1}();
-    exchanges = Array{String,1}();
-    asset_classes = Array{String,1}();
-    qtys = Array{Float64,1}();
-    sides = Array{String,1}();
-    avg_entry_prices = Array{Float64,1}();
-    market_values = Array{Float64,1}();
-    cost_bases = Array{Float64,1}();
-    unrealized_pls = Array{Float64,1}();
-    unrealized_plpcs = Array{Float64,1}();
-    current_prices = Array{Float64,1}();
-    lastday_prices = Array{Float64,1}();
-    change_todays = Array{Float64,1}();
+    exchanges = Array{Union{Missing,String},1}();
+    asset_classes = Array{Union{Missing,String},1}();
+    qtys = Array{Union{Missing,Float64},1}();
+    sides = Array{Union{Missing,String},1}();
+    avg_entry_prices = Array{Union{Missing,Float64},1}();
+    market_values = Array{Union{Missing,Float64},1}();
+    cost_bases = Array{Union{Missing,Float64},1}();
+    unrealized_pls = Array{Union{Missing,Float64},1}();
+    unrealized_plpcs = Array{Union{Missing,Float64},1}();
+    current_prices = Array{Union{Missing,Float64},1}();
+    lastday_prices = Array{Union{Missing,Float64},1}();
+    change_todays = Array{Union{Missing,Float64},1}();
 
     # visit the records, and select the fields we want -
     for record in records
         push!(asset_ids, String(record.asset_id));
         push!(symbols, String(record.symbol));
-        push!(exchanges, _string_field(record, :exchange, ""));
-        push!(asset_classes, _string_field(record, :asset_class, "us_equity"));
-        push!(qtys, _float_field(record, :qty, 0.0));
-        push!(sides, _string_field(record, :side, "long"));
-        push!(avg_entry_prices, _float_field(record, :avg_entry_price, 0.0));
-        push!(market_values, _float_field(record, :market_value, 0.0));
-        push!(cost_bases, _float_field(record, :cost_basis, 0.0));
-        push!(unrealized_pls, _float_field(record, :unrealized_pl, 0.0));
-        push!(unrealized_plpcs, _float_field(record, :unrealized_plpc, 0.0));
-        push!(current_prices, _float_field(record, :current_price, 0.0));
-        push!(lastday_prices, _float_field(record, :lastday_price, 0.0));
-        push!(change_todays, _float_field(record, :change_today, 0.0));
+        push!(exchanges, _string_or_missing(record, :exchange));
+        push!(asset_classes, _string_or_missing(record, :asset_class));
+        push!(qtys, _float_or_missing(record, :qty));
+        push!(sides, _string_or_missing(record, :side));
+        push!(avg_entry_prices, _float_or_missing(record, :avg_entry_price));
+        push!(market_values, _float_or_missing(record, :market_value));
+        push!(cost_bases, _float_or_missing(record, :cost_basis));
+        push!(unrealized_pls, _float_or_missing(record, :unrealized_pl));
+        push!(unrealized_plpcs, _float_or_missing(record, :unrealized_plpc));
+        push!(current_prices, _float_or_missing(record, :current_price));
+        push!(lastday_prices, _float_or_missing(record, :lastday_price));
+        push!(change_todays, _float_or_missing(record, :change_today));
     end
 
     # put the columns into a table, and return it -
@@ -373,7 +354,8 @@ Build the orders table from a vector of order records. A multi-leg parent order 
 its legs. The `parent_id` of a leg is the `id` of its parent, and it is `missing` on a top-level row. The columns are
 `id`, `parent_id`, `client_order_id`, `symbol`, `asset_class`, `side`, `type`, `time_in_force`, `order_class`,
 `position_intent`, `qty`, `filled_qty`, `limit_price`, `stop_price`, `filled_avg_price`, `status`, `created_at`,
-`submitted_at`, and `filled_at`. The three times are `DateTime` values in UTC.
+`submitted_at`, and `filled_at`. The three times are `DateTime` values in UTC. A field that Alpaca does not send is
+`missing`.
 """
 function _orders_table(records::Vector{Any})::DataFrame
 
@@ -395,16 +377,16 @@ function _orders_table(records::Vector{Any})::DataFrame
     # initialize: one array for each column of the table -
     ids = Array{String,1}();
     parent_ids = Array{Union{Missing,String},1}();
-    client_order_ids = Array{String,1}();
+    client_order_ids = Array{Union{Missing,String},1}();
     symbols = Array{Union{Missing,String},1}();
-    asset_classes = Array{String,1}();
+    asset_classes = Array{Union{Missing,String},1}();
     sides = Array{Union{Missing,String},1}();
     types = Array{String,1}();
     time_in_forces = Array{String,1}();
-    order_classes = Array{String,1}();
+    order_classes = Array{Union{Missing,String},1}();
     position_intents = Array{Union{Missing,String},1}();
     qtys = Array{Union{Missing,Float64},1}();
-    filled_qtys = Array{Float64,1}();
+    filled_qtys = Array{Union{Missing,Float64},1}();
     limit_prices = Array{Union{Missing,Float64},1}();
     stop_prices = Array{Union{Missing,Float64},1}();
     filled_avg_prices = Array{Union{Missing,Float64},1}();
@@ -418,16 +400,16 @@ function _orders_table(records::Vector{Any})::DataFrame
         row = rows[i];
         push!(ids, String(row.id));
         push!(parent_ids, parent_of_row[i]);
-        push!(client_order_ids, _string_field(row, :client_order_id, ""));
+        push!(client_order_ids, _string_or_missing(row, :client_order_id));
         push!(symbols, _string_or_missing(row, :symbol));
-        push!(asset_classes, _string_field(row, :asset_class, "us_equity"));
+        push!(asset_classes, _string_or_missing(row, :asset_class));
         push!(sides, _string_or_missing(row, :side));
         push!(types, String(row.type));
         push!(time_in_forces, String(row.time_in_force));
-        push!(order_classes, _string_field(row, :order_class, ""));
+        push!(order_classes, _string_or_missing(row, :order_class));
         push!(position_intents, _string_or_missing(row, :position_intent));
         push!(qtys, _float_or_missing(row, :qty));
-        push!(filled_qtys, _float_field(row, :filled_qty, 0.0));
+        push!(filled_qtys, _float_or_missing(row, :filled_qty));
         push!(limit_prices, _float_or_missing(row, :limit_price));
         push!(stop_prices, _float_or_missing(row, :stop_price));
         push!(filled_avg_prices, _float_or_missing(row, :filled_avg_price));
@@ -471,25 +453,25 @@ end
 Build the option contracts table from a vector of contract records. The columns are `id`, `symbol`, `name`, `status`,
 `tradable`, `expiration_date`, `root_symbol`, `underlying_symbol`, `underlying_asset_id`, `type`, `style`,
 `strike_price`, `multiplier`, `size`, `open_interest`, `open_interest_date`, `close_price`, and `close_price_date`.
-The open interest and close price columns, and their dates, are `missing` when Alpaca sends no value.
+A field that Alpaca does not send is `missing`.
 """
 function _option_contracts_table(records::Vector{Any})::DataFrame
 
     # initialize: one array for each column of the table -
     ids = Array{String,1}();
     symbols = Array{String,1}();
-    contract_names = Array{String,1}();
-    statuses = Array{String,1}();
-    tradables = Array{Bool,1}();
+    contract_names = Array{Union{Missing,String},1}();
+    statuses = Array{Union{Missing,String},1}();
+    tradables = Array{Union{Missing,Bool},1}();
     expiration_dates = Array{Date,1}();
-    root_symbols = Array{String,1}();
+    root_symbols = Array{Union{Missing,String},1}();
     underlying_symbols = Array{String,1}();
-    underlying_asset_ids = Array{String,1}();
+    underlying_asset_ids = Array{Union{Missing,String},1}();
     types = Array{String,1}();
-    styles = Array{String,1}();
-    strike_prices = Array{Float64,1}();
-    multipliers = Array{Float64,1}();
-    sizes = Array{Float64,1}();
+    styles = Array{Union{Missing,String},1}();
+    strike_prices = Array{Union{Missing,Float64},1}();
+    multipliers = Array{Union{Missing,Float64},1}();
+    sizes = Array{Union{Missing,Float64},1}();
     open_interests = Array{Union{Missing,Float64},1}();
     open_interest_dates = Array{Union{Missing,Date},1}();
     close_prices = Array{Union{Missing,Float64},1}();
@@ -497,21 +479,20 @@ function _option_contracts_table(records::Vector{Any})::DataFrame
 
     # visit the records, and select the fields we want -
     for record in records
-        underlying_symbol = String(record.underlying_symbol);
         push!(ids, String(record.id));
         push!(symbols, String(record.symbol));
-        push!(contract_names, _string_field(record, :name, ""));
-        push!(statuses, _string_field(record, :status, ""));
-        push!(tradables, _bool_field(record, :tradable, false));
+        push!(contract_names, _string_or_missing(record, :name));
+        push!(statuses, _string_or_missing(record, :status));
+        push!(tradables, _bool_or_missing(record, :tradable));
         push!(expiration_dates, Date(String(record.expiration_date)));
-        push!(root_symbols, _string_field(record, :root_symbol, underlying_symbol));
-        push!(underlying_symbols, underlying_symbol);
-        push!(underlying_asset_ids, _string_field(record, :underlying_asset_id, ""));
+        push!(root_symbols, _string_or_missing(record, :root_symbol));
+        push!(underlying_symbols, String(record.underlying_symbol));
+        push!(underlying_asset_ids, _string_or_missing(record, :underlying_asset_id));
         push!(types, String(record.type));
-        push!(styles, _string_field(record, :style, "american"));
-        push!(strike_prices, _float_field(record, :strike_price, 0.0));
-        push!(multipliers, _float_field(record, :multiplier, 100.0));
-        push!(sizes, _float_field(record, :size, 100.0));
+        push!(styles, _string_or_missing(record, :style));
+        push!(strike_prices, _float_or_missing(record, :strike_price));
+        push!(multipliers, _float_or_missing(record, :multiplier));
+        push!(sizes, _float_or_missing(record, :size));
         push!(open_interests, _float_or_missing(record, :open_interest));
         push!(open_interest_dates, _date_or_missing(record, :open_interest_date));
         push!(close_prices, _float_or_missing(record, :close_price));

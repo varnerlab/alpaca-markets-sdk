@@ -191,3 +191,40 @@ end
     @test size(null_list, 1) == 0
     @test names(null_list) == cols
 end
+
+@testset "handler: a field that Alpaca does not send is missing, not a default" begin
+    position = Alpaca._default_handler(MyPositionEndpointModel, JSON3.write(Dict("asset_id" => "a-1", "symbol" => "AAPL")))
+    for name in ("exchange", "asset_class", "qty", "side", "avg_entry_price", "market_value", "cost_basis", "unrealized_pl",
+                 "unrealized_plpc", "current_price", "lastday_price", "change_today")
+        @test ismissing(position[1, name])
+    end
+
+    contract = Alpaca._default_handler(MyOptionContractEndpointModel, JSON3.write(Dict("id" => "c-1",
+        "symbol" => "AAPL261218C00200000", "expiration_date" => "2026-12-18", "underlying_symbol" => "AAPL", "type" => "call")))
+    for name in ("name", "status", "tradable", "root_symbol", "underlying_asset_id", "style", "strike_price", "multiplier", "size")
+        @test ismissing(contract[1, name])
+    end
+    @test contract[1, :underlying_symbol] == "AAPL"
+
+    account = Alpaca._default_handler(MyAccountEndpointModel, JSON3.write(Dict("id" => "acct-1", "account_number" => "PA123",
+        "status" => "ACTIVE", "currency" => "USD")))
+    for name in ("cash", "buying_power", "portfolio_value", "equity", "last_equity", "pattern_day_trader", "trading_blocked",
+                 "transfers_blocked", "account_blocked")
+        @test ismissing(account[1, name])
+    end
+
+    clock = Alpaca._default_handler(MyClockEndpointModel, JSON3.write(Dict("timestamp" => "2026-11-17T10:00:00-05:00")))
+    @test ismissing(clock[1, :is_open])
+
+    asset = Alpaca._default_handler(MyAssetEndpointModel, JSON3.write(Dict("id" => "x", "class" => "us_equity",
+        "exchange" => "NASDAQ", "symbol" => "AAPL", "status" => "active")))
+    for name in ("name", "tradable", "marginable", "shortable", "easy_to_borrow", "fractionable")
+        @test ismissing(asset[1, name])
+    end
+
+    order = Alpaca._default_handler(MyOrderEndpointModel, JSON3.write(Dict("id" => "o-1", "type" => "market",
+        "time_in_force" => "day", "status" => "new")))
+    for name in ("client_order_id", "asset_class", "order_class", "filled_qty")
+        @test ismissing(order[1, name])
+    end
+end
