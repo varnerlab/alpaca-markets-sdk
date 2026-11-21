@@ -2210,12 +2210,12 @@ function _default_handler(model::Type{MyNewsEndpointModel}, body::String)::DataF
         push!(ids, Int(article[:id]));
         push!(created_at, _parse_utc(get(article, :created_at, nothing)));
         push!(updated_at, _parse_utc(get(article, :updated_at, nothing)));
-        push!(headlines, _text_or_missing(get(article, :headline, nothing)));
-        push!(authors, _text_or_missing(get(article, :author, nothing)));
-        push!(sources, _text_or_missing(get(article, :source, nothing)));
-        push!(summaries, _text_or_missing(get(article, :summary, nothing)));
-        push!(urls, _text_or_missing(get(article, :url, nothing)));
-        push!(contents, _text_or_missing(get(article, :content, nothing)));
+        push!(headlines, _string_value_or_missing(get(article, :headline, nothing)));
+        push!(authors, _string_value_or_missing(get(article, :author, nothing)));
+        push!(sources, _string_value_or_missing(get(article, :source, nothing)));
+        push!(summaries, _string_value_or_missing(get(article, :summary, nothing)));
+        push!(urls, _string_value_or_missing(get(article, :url, nothing)));
+        push!(contents, _string_value_or_missing(get(article, :content, nothing)));
 
         # the symbols of the article, joined with commas -
         article_symbols = String[];
@@ -2232,8 +2232,8 @@ function _default_handler(model::Type{MyNewsEndpointModel}, body::String)::DataF
         source = sources, summary = summaries, url = urls, symbols = symbol_lists, content = contents);
 end
 
-# _text_or_missing: a JSON text value as a String, and anything else (null, or a field that is not sent) as missing -
-function _text_or_missing(x)::Union{Missing,String}
+# _string_value_or_missing: a JSON text value as a String, and anything else (null, or a field that is not sent) as missing -
+function _string_value_or_missing(x)::Union{Missing,String}
     if (x isa AbstractString)
         return String(x);
     end
