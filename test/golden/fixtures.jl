@@ -140,16 +140,10 @@ function golden_handler(req::HTTP.Request)::HTTP.Response
         return _g_paged(query, "bars",
             """{"SPY261218P00500000":[$(_G_OPT_BAR_1)]}""",
             """{"SPY261218P00500000":[$(_G_OPT_BAR_2)]}""")
-    elseif path == "/options/quotes"
-        return _g_paged(query, "quotes",
-            """{"SPY261218P00500000":[$(_G_OPT_QUOTE_1)]}""",
-            """{"SPY261218P00500000":[$(_G_OPT_QUOTE_2)]}""")
     elseif path == "/options/trades"
         return _g_paged(query, "trades",
             """{"SPY261218P00500000":[$(_G_OPT_TRADE_1)]}""",
             """{"SPY261218P00500000":[$(_G_OPT_TRADE_2)]}""")
-    elseif path == "/options/bars/latest"
-        return _g_json(200, """{"bars":{"SPY261218P00500000":$(_G_OPT_BAR_1),"SPY261218C00600000":$(_G_OPT_BAR_2)}}""")
     elseif path == "/options/quotes/latest"
         return _g_json(200, """{"quotes":{"SPY261218P00500000":$(_G_OPT_QUOTE_1),"SPY261218C00600000":$(_G_OPT_QUOTE_2)}}""")
     elseif path == "/options/trades/latest"

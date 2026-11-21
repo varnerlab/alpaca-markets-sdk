@@ -46,9 +46,7 @@ MyStockSnapshotsEndpointModel
 
 ```@docs
 MyOptionBarsEndpointModel
-MyOptionQuotesEndpointModel
 MyOptionTradesEndpointModel
-MyOptionLatestBarEndpointModel
 MyOptionLatestQuoteEndpointModel
 MyOptionLatestTradeEndpointModel
 MyOptionSnapshotsEndpointModel

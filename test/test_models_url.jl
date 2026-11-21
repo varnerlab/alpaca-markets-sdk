@@ -66,11 +66,8 @@ end
 @testset "url: remaining option models" begin
     @test url("http://h", MyOptionBarsEndpointModel(symbols = "X", timeframe = "1Day", start = "2025-01-01")) ==
           "http://h/options/bars?symbols=X&timeframe=1Day&start=2025-01-01&limit=1000"
-    @test url("http://h", MyOptionQuotesEndpointModel(symbols = "X", start = "2025-01-01", limit = 5)) ==
-          "http://h/options/quotes?symbols=X&start=2025-01-01&limit=5"
     @test url("http://h", MyOptionTradesEndpointModel(symbols = ["X", "Y"], start = Date(2025, 1, 1), finish = Date(2025, 1, 2))) ==
           "http://h/options/trades?symbols=X%2CY&start=2025-01-01&end=2025-01-02&limit=1000"
-    @test url("http://h", MyOptionLatestBarEndpointModel(symbols = "X")) == "http://h/options/bars/latest?symbols=X"
     @test url("http://h", MyOptionLatestTradeEndpointModel(symbols = "X")) == "http://h/options/trades/latest?symbols=X"
     @test url("http://h", MyOptionSnapshotsEndpointModel(symbols = ["X", "Y"])) == "http://h/options/snapshots?symbols=X%2CY"
 end
@@ -92,7 +89,6 @@ end
           MyStockQuotesEndpointModel(symbols = "A", start = "2025-01-01"),
           MyStockTradesEndpointModel(symbols = "A", start = "2025-01-01"),
           MyOptionBarsEndpointModel(symbols = "A", timeframe = "1Day", start = "2025-01-01"),
-          MyOptionQuotesEndpointModel(symbols = "A", start = "2025-01-01"),
           MyOptionTradesEndpointModel(symbols = "A", start = "2025-01-01"),
           MyOptionContractsEndpointModel(underlying_symbols = "A"),
           MyOptionChainEndpointModel(underlying = "A")]

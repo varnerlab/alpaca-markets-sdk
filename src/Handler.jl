@@ -928,18 +928,6 @@ function _default_handler(model::Type{MyOptionBarsEndpointModel}, body::String):
 end
 
 """
-    _default_handler(model::Type{MyOptionQuotesEndpointModel}, body::String) -> DataFrame
-
-Process one page of the `/options/quotes` endpoint. The records are under the `quotes` key, grouped by symbol.
-The table has one row for each record, with the columns of `_quotes_table`.
-A `null` or empty `quotes` object gives a table with no rows.
-"""
-function _default_handler(model::Type{MyOptionQuotesEndpointModel}, body::String)::DataFrame
-    (symbols, records) = _symbol_records_under(body, :quotes);
-    return _quotes_table(symbols, records);
-end
-
-"""
     _default_handler(model::Type{MyOptionTradesEndpointModel}, body::String) -> DataFrame
 
 Process one page of the `/options/trades` endpoint. The records are under the `trades` key, grouped by symbol.
@@ -982,17 +970,6 @@ Process the response of the latest trade endpoint for one stock. The table has o
 function _default_handler(model::Type{MyStockLatestTradeEndpointModel}, body::String)::DataFrame
     (symbols, records) = _latest_stock_records(body, :trade);
     return _trades_table(symbols, records);
-end
-
-"""
-    _default_handler(model::Type{MyOptionLatestBarEndpointModel}, body::String) -> DataFrame
-
-Process the response of the latest bar endpoint for option contracts. The records are under the `bars` key,
-one for each symbol. The table has one row for each symbol, with the columns of `_bars_table`.
-"""
-function _default_handler(model::Type{MyOptionLatestBarEndpointModel}, body::String)::DataFrame
-    (symbols, records) = _symbol_records_under(body, :bars);
-    return _bars_table(symbols, records);
 end
 
 """
@@ -1555,11 +1532,6 @@ function _legacy_handler(model::Type{MyStockQuotesEndpointModel}, body::String):
     return _legacy_by_symbol(body, :quotes, Quote, _parse_quote);
 end
 
-# _legacy_handler: /options/quotes returns the quotes of each option symbol -
-function _legacy_handler(model::Type{MyOptionQuotesEndpointModel}, body::String)::Dict{String,Vector{Quote}}
-    return _legacy_by_symbol(body, :quotes, Quote, _parse_quote);
-end
-
 # _legacy_handler: /stocks/trades returns the trades of each symbol -
 function _legacy_handler(model::Type{MyStockTradesEndpointModel}, body::String)::Dict{String,Vector{Trade}}
     return _legacy_by_symbol(body, :trades, Trade, _parse_trade);
@@ -1588,11 +1560,6 @@ end
 # _legacy_handler: /stocks/snapshots returns the parsed JSON value, keyed by symbol -
 function _legacy_handler(model::Type{MyStockSnapshotsEndpointModel}, body::String)
     return JSON3.read(body);
-end
-
-# _legacy_handler: /options/bars/latest returns the latest Bar of each option symbol -
-function _legacy_handler(model::Type{MyOptionLatestBarEndpointModel}, body::String)::Dict{String,Bar}
-    return _legacy_latest_by_symbol(body, :bars, Bar, _parse_bar);
 end
 
 # _legacy_handler: /options/quotes/latest returns the latest Quote of each option symbol -

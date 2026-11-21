@@ -641,43 +641,6 @@ function url(base::String, model::MyOptionBarsEndpointModel)::String
 end
 
 """
-    url(base::String, model::MyOptionQuotesEndpointModel) -> String
-
-Build the URL string for the Alpaca `/options/quotes` endpoint.
-An HTTP GET call to this URL returns historical option quotes.
-The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
-
-### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
-- `model::MyOptionQuotesEndpointModel`: the endpoint model that holds the fields of the request.
-
-### Returns
-- `String`: the complete URL string.
-
-### Throws
-- None: this method builds a string and does not call the network.
-"""
-function url(base::String, model::MyOptionQuotesEndpointModel)::String
-
-    # get data from the model -
-    symbols = model.symbols;
-    start = model.start;
-    finish = model.finish;
-    limit = model.limit;
-
-    # build the query keys and values, in the order of the model; a nothing value is left out -
-    query_keys = String["symbols", "start", "end", "limit"];
-    query_values = Any[_symbols_value(symbols), _time_value(start), _time_value(finish), _query_value(limit)];
-    query_string = _query_string(query_keys, query_values);
-
-    # build the URL string: base + path + query string -
-    url_string = "$(base)/options/quotes" * query_string;
-
-    # return the URL string -
-    return url_string;
-end
-
-"""
     url(base::String, model::MyOptionTradesEndpointModel) -> String
 
 Build the URL string for the Alpaca `/options/trades` endpoint.
@@ -709,40 +672,6 @@ function url(base::String, model::MyOptionTradesEndpointModel)::String
 
     # build the URL string: base + path + query string -
     url_string = "$(base)/options/trades" * query_string;
-
-    # return the URL string -
-    return url_string;
-end
-
-"""
-    url(base::String, model::MyOptionLatestBarEndpointModel) -> String
-
-Build the URL string for the Alpaca `/options/bars/latest` endpoint.
-An HTTP GET call to this URL returns the latest option bar of several option contracts.
-The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
-
-### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
-- `model::MyOptionLatestBarEndpointModel`: the endpoint model that holds the fields of the request.
-
-### Returns
-- `String`: the complete URL string.
-
-### Throws
-- None: this method builds a string and does not call the network.
-"""
-function url(base::String, model::MyOptionLatestBarEndpointModel)::String
-
-    # get data from the model -
-    symbols = model.symbols;
-
-    # build the query keys and values, in the order of the model; a nothing value is left out -
-    query_keys = String["symbols"];
-    query_values = Any[_symbols_value(symbols)];
-    query_string = _query_string(query_keys, query_values);
-
-    # build the URL string: base + path + query string -
-    url_string = "$(base)/options/bars/latest" * query_string;
 
     # return the URL string -
     return url_string;
@@ -967,10 +896,6 @@ function _is_paginated(model::MyOptionChainEndpointModel)::Bool
 end
 
 function _is_paginated(model::MyOptionContractsEndpointModel)::Bool
-    return true;
-end
-
-function _is_paginated(model::MyOptionQuotesEndpointModel)::Bool
     return true;
 end
 

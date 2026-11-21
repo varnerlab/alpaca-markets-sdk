@@ -38,8 +38,8 @@ export MyAccountEndpointModel, MyClockEndpointModel,
        MyStockQuotesEndpointModel, MyStockTradesEndpointModel,
        MyStockLatestBarEndpointModel, MyStockLatestQuoteEndpointModel,
        MyStockLatestTradeEndpointModel, MyStockSnapshotsEndpointModel,
-       MyOptionBarsEndpointModel, MyOptionQuotesEndpointModel,
-       MyOptionTradesEndpointModel, MyOptionLatestBarEndpointModel,
+       MyOptionBarsEndpointModel,
+       MyOptionTradesEndpointModel,
        MyOptionLatestQuoteEndpointModel, MyOptionLatestTradeEndpointModel,
        MyOptionSnapshotsEndpointModel, MyOptionChainEndpointModel
 
@@ -65,8 +65,8 @@ export get_account, get_clock, get_calendar,
        get_latest_quote, get_latest_trade,
        download_bars, write_bars_csv, read_bars_csv,
        list_option_contracts, get_option_contract,
-       get_option_bars, get_option_trades, get_option_quotes,
-       get_latest_option_bar, get_latest_option_quote, get_latest_option_trade,
+       get_option_bars, get_option_trades,
+       get_latest_option_quote, get_latest_option_trade,
        get_option_snapshots, get_option_chain_snapshot
 
 # Legacy types

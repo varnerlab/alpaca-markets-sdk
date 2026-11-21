@@ -25,8 +25,8 @@ These functions and types come from versions before 0.4.0. Every legacy function
 | `download_bars` | `api(client, MyStockBarsEndpointModel(...))`, which follows every page |
 | `write_bars_csv`, `read_bars_csv` | No replacement. Write the bars `DataFrame` with a CSV package |
 | `list_option_contracts`, `get_option_contract` | `api` with `MyOptionContractsEndpointModel`, `MyOptionContractEndpointModel` |
-| `get_option_bars`, `get_option_quotes`, `get_option_trades` | `api` with `MyOptionBarsEndpointModel`, `MyOptionQuotesEndpointModel`, `MyOptionTradesEndpointModel` |
-| `get_latest_option_bar`, `get_latest_option_quote`, `get_latest_option_trade` | `api` with the `MyOptionLatest*EndpointModel` types |
+| `get_option_bars`, `get_option_trades` | `api` with `MyOptionBarsEndpointModel`, `MyOptionTradesEndpointModel` |
+| `get_latest_option_quote`, `get_latest_option_trade` | `api` with the `MyOptionLatestQuoteEndpointModel` and `MyOptionLatestTradeEndpointModel` types |
 | `get_option_snapshots` | `api(client, MyOptionSnapshotsEndpointModel(...))` |
 | `get_option_chain_snapshot` | `api(client, MyOptionChainEndpointModel(...))` |
 | `OrderLeg(...)` | `MyOptionLegModel(...)` |
@@ -92,9 +92,7 @@ read_bars_csv
 list_option_contracts
 get_option_contract
 get_option_bars
-get_option_quotes
 get_option_trades
-get_latest_option_bar
 get_latest_option_quote
 get_latest_option_trade
 get_option_snapshots

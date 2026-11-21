@@ -99,20 +99,12 @@ end
     dfb = Alpaca._default_handler(MyOptionBarsEndpointModel, JSON3.write(Dict("bars" => Dict(sym => [_N_BAR_A, _N_BAR_B]))))
     @test names(dfb) == _N_BAR_COLUMNS
     @test dfb.symbol == [sym, sym]
-    dfq = Alpaca._default_handler(MyOptionQuotesEndpointModel, JSON3.write(Dict("quotes" => Dict(sym => [_N_QUOTE]))))
-    @test names(dfq) == _N_QUOTE_COLUMNS
-    @test dfq[1, :bid_price] == 200.1
     dft = Alpaca._default_handler(MyOptionTradesEndpointModel, JSON3.write(Dict("trades" => Dict(sym => [_N_TRADE]))))
     @test names(dft) == _N_TRADE_COLUMNS
     @test dft[1, :symbol] == sym
 end
 
-@testset "handler: latest option bar, quote, and trade" begin
-    body = """{"bars":{"SPY261218P00500000":{"t":"2026-11-17T14:30:00Z","c":4.5},"SPY261218C00600000":{"t":"2026-11-17T14:30:00Z","c":1.5}}}"""
-    dfb = Alpaca._default_handler(MyOptionLatestBarEndpointModel, body)
-    @test names(dfb) == _N_BAR_COLUMNS
-    @test dfb.symbol == ["SPY261218P00500000", "SPY261218C00600000"]
-    @test dfb.close == [4.5, 1.5]
+@testset "handler: latest option quote and trade" begin
     dfq = Alpaca._default_handler(MyOptionLatestQuoteEndpointModel, JSON3.write(Dict("quotes" => Dict("SPY261218P00500000" => _N_QUOTE))))
     @test names(dfq) == _N_QUOTE_COLUMNS
     @test dfq[1, :symbol] == "SPY261218P00500000"
@@ -155,9 +147,9 @@ const _N_SNAP_COLUMNS_GREEKS = vcat(_N_SNAP_COLUMNS, ["implied_volatility", "del
     # bars, quotes, and trades, stock and option -
     for (model, key, columns) in [
             (MyStockBarsEndpointModel, "bars", _N_BAR_COLUMNS), (MyOptionBarsEndpointModel, "bars", _N_BAR_COLUMNS),
-            (MyStockQuotesEndpointModel, "quotes", _N_QUOTE_COLUMNS), (MyOptionQuotesEndpointModel, "quotes", _N_QUOTE_COLUMNS),
+            (MyStockQuotesEndpointModel, "quotes", _N_QUOTE_COLUMNS),
             (MyStockTradesEndpointModel, "trades", _N_TRADE_COLUMNS), (MyOptionTradesEndpointModel, "trades", _N_TRADE_COLUMNS),
-            (MyOptionLatestBarEndpointModel, "bars", _N_BAR_COLUMNS), (MyOptionLatestQuoteEndpointModel, "quotes", _N_QUOTE_COLUMNS),
+            (MyOptionLatestQuoteEndpointModel, "quotes", _N_QUOTE_COLUMNS),
             (MyOptionLatestTradeEndpointModel, "trades", _N_TRADE_COLUMNS)]
         for body in ["{\"$key\":{}}", "{\"$key\":null}", "{}"]
             df = Alpaca._default_handler(model, body)

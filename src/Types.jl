@@ -969,34 +969,6 @@ mutable struct MyOptionBarsEndpointModel <: AbstractAlpacaOptionDataEndpointMode
 end
 
 """
-    mutable struct MyOptionQuotesEndpointModel <: AbstractAlpacaOptionDataEndpointModel
-
-Endpoint model for the Alpaca `/options/quotes` endpoint.
-This endpoint returns historical option quotes.
-
-### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `limit::Int`: the largest number of rows to return per page.
-
-### Constructors
-- `MyOptionQuotesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000)`: returns a new `MyOptionQuotesEndpointModel` instance.
-"""
-mutable struct MyOptionQuotesEndpointModel <: AbstractAlpacaOptionDataEndpointModel
-
-    # data -
-    symbols::Vector{String}
-    start::Union{String,Date,DateTime}
-    finish::Union{Nothing,String,Date,DateTime}
-    limit::Int
-
-    # methods -
-    MyOptionQuotesEndpointModel(;
-        symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000) = new(_to_symbol_vector(symbols), start, finish, limit);
-end
-
-"""
     mutable struct MyOptionTradesEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
 Endpoint model for the Alpaca `/options/trades` endpoint.
@@ -1022,28 +994,6 @@ mutable struct MyOptionTradesEndpointModel <: AbstractAlpacaOptionDataEndpointMo
     # methods -
     MyOptionTradesEndpointModel(;
         symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000) = new(_to_symbol_vector(symbols), start, finish, limit);
-end
-
-"""
-    mutable struct MyOptionLatestBarEndpointModel <: AbstractAlpacaOptionDataEndpointModel
-
-Endpoint model for the Alpaca `/options/bars/latest` endpoint.
-This endpoint returns the latest option bar of several option contracts.
-
-### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-
-### Constructors
-- `MyOptionLatestBarEndpointModel(; symbols::Union{AbstractString,AbstractVector})`: returns a new `MyOptionLatestBarEndpointModel` instance.
-"""
-mutable struct MyOptionLatestBarEndpointModel <: AbstractAlpacaOptionDataEndpointModel
-
-    # data -
-    symbols::Vector{String}
-
-    # methods -
-    MyOptionLatestBarEndpointModel(;
-        symbols::Union{AbstractString,AbstractVector}) = new(_to_symbol_vector(symbols));
 end
 
 """

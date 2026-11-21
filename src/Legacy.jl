@@ -877,69 +877,6 @@ function get_option_trades(client::AlpacaClient, symbols::Union{AbstractString,A
 end
 
 """
-    get_option_quotes(client::AlpacaClient, symbols; start, finish = nothing, limit = 1000) -> Dict{String,Vector{Quote}}
-
-!!! warning "Deprecated"
-    `get_option_quotes` is deprecated, use `api(client, MyOptionQuotesEndpointModel(...))` instead.
-
-Historical quotes of one or more option contracts. The request follows `next_page_token` and returns the quotes of every page.
-
-### Arguments
-- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
-- `symbols::Union{AbstractString,AbstractVector}`: an OCC option symbol or a vector of OCC option symbols.
-- `start::Union{AbstractString,DateTime,Date}`: the first time of the request.
-- `finish::Union{AbstractString,DateTime,Date,Nothing}`: the last time of the request, or `nothing` to leave it open.
-- `limit::Integer`: the largest number of quotes to return per page.
-
-### Returns
-- A `Dict{String,Vector{Quote}}` keyed by option symbol.
-
-### Throws
-- `AlpacaError`: when the response status is not in the range 200 to 299.
-"""
-function get_option_quotes(client::AlpacaClient, symbols::Union{AbstractString,AbstractVector};
-    start::Union{AbstractString,DateTime,Date},
-    finish::Union{AbstractString,DateTime,Date,Nothing} = nothing,
-    limit::Integer = 1_000)::Dict{String,Vector{Quote}}
-
-    # warn that the function is deprecated -
-    Base.depwarn("`get_option_quotes` is deprecated, use `api(client, MyOptionQuotesEndpointModel(...))` instead", :get_option_quotes);
-
-    # build the model, and call api with the legacy handler -
-    model = MyOptionQuotesEndpointModel(symbols = _model_value(symbols), start = _model_value(start),
-        finish = _model_value(finish), limit = Int(limit));
-    return api(client, model; handler = _legacy_handler);
-end
-
-"""
-    get_latest_option_bar(client::AlpacaClient, symbols) -> Dict{String,Bar}
-
-!!! warning "Deprecated"
-    `get_latest_option_bar` is deprecated, use `api(client, MyOptionLatestBarEndpointModel(...))` instead.
-
-Fetch the latest bar of one or more option contracts.
-
-### Arguments
-- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
-- `symbols::Union{AbstractString,AbstractVector}`: an OCC option symbol or a vector of OCC option symbols.
-
-### Returns
-- A `Dict{String,Bar}` keyed by option symbol.
-
-### Throws
-- `AlpacaError`: when the response status is not in the range 200 to 299.
-"""
-function get_latest_option_bar(client::AlpacaClient, symbols::Union{AbstractString,AbstractVector})::Dict{String,Bar}
-
-    # warn that the function is deprecated -
-    Base.depwarn("`get_latest_option_bar` is deprecated, use `api(client, MyOptionLatestBarEndpointModel(...))` instead", :get_latest_option_bar);
-
-    # build the model, and call api with the legacy handler -
-    model = MyOptionLatestBarEndpointModel(symbols = _model_value(symbols));
-    return api(client, model; handler = _legacy_handler);
-end
-
-"""
     get_latest_option_quote(client::AlpacaClient, symbols) -> Dict{String,Quote}
 
 !!! warning "Deprecated"

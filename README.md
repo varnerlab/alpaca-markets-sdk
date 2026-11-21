@@ -100,7 +100,7 @@ The deprecated functions of earlier versions, such as `get_account` and `submit_
 | **Order models** | `MyEquityOrderModel`, `MyOptionLegModel`, `MyMixedOrderModel` |
 | **Trading read models** | `MyAccountEndpointModel`, `MyClockEndpointModel`, `MyCalendarEndpointModel`, `MyAssetsEndpointModel`, `MyAssetEndpointModel`, `MyPositionsEndpointModel`, `MyPositionEndpointModel`, `MyOrdersEndpointModel`, `MyOrderEndpointModel` |
 | **Stock data read models** | `MyStockBarsEndpointModel`, `MyStockQuotesEndpointModel`, `MyStockTradesEndpointModel`, `MyStockLatestBarEndpointModel`, `MyStockLatestQuoteEndpointModel`, `MyStockLatestTradeEndpointModel`, `MyStockSnapshotsEndpointModel` |
-| **Option read models** | `MyOptionContractsEndpointModel`, `MyOptionContractEndpointModel`, `MyOptionBarsEndpointModel`, `MyOptionQuotesEndpointModel`, `MyOptionTradesEndpointModel`, `MyOptionLatestBarEndpointModel`, `MyOptionLatestQuoteEndpointModel`, `MyOptionLatestTradeEndpointModel`, `MyOptionSnapshotsEndpointModel`, `MyOptionChainEndpointModel` |
+| **Option read models** | `MyOptionContractsEndpointModel`, `MyOptionContractEndpointModel`, `MyOptionBarsEndpointModel`, `MyOptionTradesEndpointModel`, `MyOptionLatestQuoteEndpointModel`, `MyOptionLatestTradeEndpointModel`, `MyOptionSnapshotsEndpointModel`, `MyOptionChainEndpointModel` |
 | **Streaming** | `connect_market_stream`, `subscribe!`, `unsubscribe!`, `on_trade`, `on_quote`, `on_bar`, `start!`, `stop!`, `isrunning` |
 | **Errors** | `AlpacaError`, `AlpacaSequenceError` |
 

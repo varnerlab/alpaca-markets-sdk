@@ -113,13 +113,11 @@ end
     @test occursin("timeframe=1Day", log[1].query)
 end
 
-@testset "options: latest quote / trade / bar" begin
+@testset "options: latest quote / trade" begin
     latest_quote = Dict("t" => "2026-04-11T20:00:00Z", "bp" => 10.2,
                         "bs" => 5, "ap" => 10.4, "as" => 4, "bx" => "C", "ax" => "C")
     latest_trade = Dict("t" => "2026-04-11T20:00:00Z", "p" => 10.3,
                         "s" => 7, "x" => "C", "i" => 99)
-    latest_bar = Dict("t" => "2026-04-11T20:00:00Z", "o" => 10.1, "h" => 10.5,
-                      "l" => 10.0, "c" => 10.3, "v" => 1200, "n" => 30, "vw" => 10.25)
 
     handler, log = recording_handler() do req
         uri = HTTP.URI(req.target)
@@ -127,8 +125,6 @@ end
             return json_response(200, Dict("quotes" => Dict(_OPT_SYMBOL => latest_quote)))
         elseif uri.path == "/options/trades/latest"
             return json_response(200, Dict("trades" => Dict(_OPT_SYMBOL => latest_trade)))
-        elseif uri.path == "/options/bars/latest"
-            return json_response(200, Dict("bars"   => Dict(_OPT_SYMBOL => latest_bar)))
         end
         return plain_response(404, "nope")
     end
@@ -142,9 +138,6 @@ end
         t = get_latest_option_trade(client, _OPT_SYMBOL)
         @test t[_OPT_SYMBOL].price == 10.3
         @test t[_OPT_SYMBOL].id == 99
-
-        b = get_latest_option_bar(client, _OPT_SYMBOL)
-        @test b[_OPT_SYMBOL].c == 10.3
     end
 
     @test occursin("symbols=$(_OPT_SYMBOL)", log[1].query)
