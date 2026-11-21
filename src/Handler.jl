@@ -1228,30 +1228,38 @@ function _default_handler(model::Type{MyAccountActivitiesEndpointModel}, body::S
     return _records_table(_json_records(body, String[]));
 end
 
+# _number_or_missing: a JSON number as a Float64, and null as missing -
+function _number_or_missing(value)::Union{Missing,Float64}
+    if (value === nothing)
+        return missing;
+    end
+    return Float64(value);
+end
+
 """
     _default_handler(model::Type{MyPortfolioHistoryEndpointModel}, body::String) -> DataFrame
 
 Process the response of the `/account/portfolio/history` endpoint. The table has one row for each timestamp.
 The columns are `timestamp` (a UTC `DateTime` from Unix seconds), `equity`, `profit_loss`, `profit_loss_pct`, and `base_value`,
 which holds the same value in every row. The `cashflow` object of the response is not a column.
-A response with empty or null arrays gives a table with no rows and the same five columns.
+A null element, or a null or absent `base_value`, is `missing`. A response with empty or null arrays gives a table with no rows and the same five columns.
 """
 function _default_handler(model::Type{MyPortfolioHistoryEndpointModel}, body::String)::DataFrame
 
     # parse the response body -
     parsed = JSON3.read(body);
 
-    # get the base value, which is the same in every row -
-    base_value = Float64(get(parsed, :base_value, 0));
+    # get the base value, which is the same in every row; null or absent is missing -
+    base_value = _number_or_missing(get(parsed, :base_value, nothing));
 
     # initialize: one array for each column of the table -
     timestamps = Array{DateTime,1}();
-    equities = Array{Float64,1}();
-    profit_losses = Array{Float64,1}();
-    profit_loss_pcts = Array{Float64,1}();
-    base_values = Array{Float64,1}();
+    equities = Array{Union{Missing,Float64},1}();
+    profit_losses = Array{Union{Missing,Float64},1}();
+    profit_loss_pcts = Array{Union{Missing,Float64},1}();
+    base_values = Array{Union{Missing,Float64},1}();
 
-    # null arrays are no rows; otherwise visit the rows by position -
+    # null arrays are no rows; otherwise visit the rows by position, and a null element is missing -
     stamps = get(parsed, :timestamp, nothing);
     if (stamps !== nothing)
         equity = get(parsed, :equity, nothing);
@@ -1259,9 +1267,9 @@ function _default_handler(model::Type{MyPortfolioHistoryEndpointModel}, body::St
         profit_loss_pct = get(parsed, :profit_loss_pct, nothing);
         for i in eachindex(stamps)
             push!(timestamps, Dates.unix2datetime(stamps[i]));
-            push!(equities, Float64(equity[i]));
-            push!(profit_losses, Float64(profit_loss[i]));
-            push!(profit_loss_pcts, Float64(profit_loss_pct[i]));
+            push!(equities, _number_or_missing(equity[i]));
+            push!(profit_losses, _number_or_missing(profit_loss[i]));
+            push!(profit_loss_pcts, _number_or_missing(profit_loss_pct[i]));
             push!(base_values, base_value);
         end
     end

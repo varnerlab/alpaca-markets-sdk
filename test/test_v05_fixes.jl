@@ -44,3 +44,23 @@ end
     end
     @test length(log) == 0
 end
+# --- final-review fixes ---------------------------------------------------------------------------------------- #
+
+@testset "portfolio history: null values are missing" begin
+    body = """{"timestamp":[1763650800,1763737200],"equity":[100000,null],"profit_loss":[null,12.5],"profit_loss_pct":[0.0001,null],"base_value":null}"""
+    df = Alpaca._default_handler(MyPortfolioHistoryEndpointModel, body)
+    @test size(df) == (2, 5)
+    @test df[1, :equity] == 100000.0 && ismissing(df[2, :equity])
+    @test ismissing(df[1, :profit_loss]) && df[2, :profit_loss] == 12.5
+    @test df[1, :profit_loss_pct] == 0.0001 && ismissing(df[2, :profit_loss_pct])
+    @test all(ismissing, df.base_value)
+    @test df[2, :timestamp] == DateTime(2025, 11, 21, 15)
+
+    # an absent base_value is missing too, and a present one is kept -
+    df = Alpaca._default_handler(MyPortfolioHistoryEndpointModel,
+        """{"timestamp":[1763650800],"equity":[1],"profit_loss":[2],"profit_loss_pct":[3]}""")
+    @test ismissing(df[1, :base_value])
+    df = Alpaca._default_handler(MyPortfolioHistoryEndpointModel,
+        """{"timestamp":[1763650800],"equity":[1],"profit_loss":[2],"profit_loss_pct":[3],"base_value":100000}""")
+    @test df[1, :base_value] == 100000.0
+end
