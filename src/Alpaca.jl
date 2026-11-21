@@ -5,7 +5,7 @@ using JSON3
 using TOML
 using URIs
 using Dates
-import DataFrames: DataFrame, Not, select!, rename!
+import DataFrames: DataFrame, Not, select!, rename!, insertcols!
 
 include("Types.jl")
 include("Utility.jl")
@@ -41,7 +41,10 @@ export MyAccountEndpointModel, MyClockEndpointModel,
        MyOptionBarsEndpointModel,
        MyOptionTradesEndpointModel,
        MyOptionLatestQuoteEndpointModel, MyOptionLatestTradeEndpointModel,
-       MyOptionSnapshotsEndpointModel, MyOptionChainEndpointModel
+       MyOptionSnapshotsEndpointModel, MyOptionChainEndpointModel,
+       MyAccountConfigurationsEndpointModel, MyAccountActivitiesEndpointModel,
+       MyPortfolioHistoryEndpointModel, MyMarketCalendarEndpointModel,
+       MyMarketClocksEndpointModel
 
 # Order models
 export MyEquityOrderModel, MyOptionLegModel, MyMixedOrderModel

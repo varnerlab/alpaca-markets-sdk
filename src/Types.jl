@@ -1099,6 +1099,170 @@ mutable struct MyOptionChainEndpointModel <: AbstractAlpacaOptionDataEndpointMod
 end
 
 """
+    mutable struct MyAccountConfigurationsEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for the Alpaca `/account/configurations` endpoint.
+This endpoint returns the settings of the account, e.g., the day-trade buying power check and fractional trading.
+
+### Fields
+- None: the endpoint takes no parameters.
+
+### Constructors
+- `MyAccountConfigurationsEndpointModel()`: returns a new `MyAccountConfigurationsEndpointModel` instance.
+"""
+mutable struct MyAccountConfigurationsEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # methods -
+    MyAccountConfigurationsEndpointModel() = new();
+end
+
+"""
+    mutable struct MyAccountActivitiesEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for the Alpaca `/account/activities` and `/account/activities/{activity_type}` endpoints.
+These endpoints return the account activities, e.g., fills and dividends, that match the filters.
+Alpaca pages the activities by `page_token`, and `api` does not follow the pages. A caller reads the last activity identifier and passes it as the next `page_token`.
+
+### Fields
+- `activity_type::Union{Nothing,String}`: one activity type, e.g., `"FILL"`, sent in the path, or `nothing`.
+- `activity_types::Union{Nothing,Vector{String}}`: the activity types to list, sent as a comma list, or `nothing`. The keyword accepts a `String` or a vector of strings.
+- `category::Union{Nothing,String}`: `"trade_activity"` or `"non_trade_activity"`, or `nothing`. The URL carries `category` only when `activity_type` is `nothing`.
+- `date::Union{Nothing,Date,String}`: the one day to list, or `nothing`.
+- `after::Union{Nothing,Date,DateTime,String}`: return only activities after this time, or `nothing`.
+- `until::Union{Nothing,Date,DateTime,String}`: return only activities until this time, or `nothing`.
+- `direction::String`: the sort direction of the activities, `"asc"` or `"desc"`.
+- `page_size::Int`: the largest number of activities to return, at most `100`.
+- `page_token::Union{Nothing,String}`: the identifier of the last activity of the previous page, or `nothing`.
+- `order_id::Union{Nothing,String}`: return only the activities of this order, or `nothing`.
+
+### Constructors
+- `MyAccountActivitiesEndpointModel(; activity_type = nothing, activity_types = nothing, category = nothing, date = nothing, after = nothing, until = nothing, direction = "desc", page_size = 100, page_token = nothing, order_id = nothing)`: returns a new `MyAccountActivitiesEndpointModel` instance.
+  Setting both `activity_type` and `activity_types` throws an `ArgumentError`.
+"""
+mutable struct MyAccountActivitiesEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    activity_type::Union{Nothing,String}
+    activity_types::Union{Nothing,Vector{String}}
+    category::Union{Nothing,String}
+    date::Union{Nothing,Date,String}
+    after::Union{Nothing,Date,DateTime,String}
+    until::Union{Nothing,Date,DateTime,String}
+    direction::String
+    page_size::Int
+    page_token::Union{Nothing,String}
+    order_id::Union{Nothing,String}
+
+    # methods -
+    function MyAccountActivitiesEndpointModel(; activity_type::Union{Nothing,String} = nothing, activity_types::Union{Nothing,AbstractString,AbstractVector} = nothing,
+        category::Union{Nothing,String} = nothing, date::Union{Nothing,Date,String} = nothing, after::Union{Nothing,Date,DateTime,String} = nothing,
+        until::Union{Nothing,Date,DateTime,String} = nothing, direction::String = "desc", page_size::Int = 100,
+        page_token::Union{Nothing,String} = nothing, order_id::Union{Nothing,String} = nothing)
+
+        # at most one of the two type keywords can be set -
+        if (activity_type !== nothing && activity_types !== nothing)
+            throw(ArgumentError("set at most one of `activity_type` and `activity_types`"));
+        end
+        return new(activity_type, _to_symbol_vector(activity_types), category, date, after, until, direction, page_size, page_token, order_id);
+    end
+end
+
+"""
+    mutable struct MyPortfolioHistoryEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for the Alpaca `/account/portfolio/history` endpoint.
+This endpoint returns the equity and the profit and loss of the account over a period.
+
+### Fields
+- `period::Union{Nothing,String}`: the length of the history, e.g., `"1M"`, or `nothing`.
+- `timeframe::Union{Nothing,String}`: the time between rows, e.g., `"1D"`, or `nothing`.
+- `intraday_reporting::Union{Nothing,String}`: `"market_hours"`, `"extended_hours"` or `"continuous"`, or `nothing`.
+- `start::Union{Nothing,Date,DateTime,String}`: the start of the history, or `nothing`.
+- `finish::Union{Nothing,Date,DateTime,String}`: the end of the history, sent as `end`, or `nothing`.
+- `pnl_reset::Union{Nothing,String}`: `"no_reset"` or `"per_day"`, or `nothing`.
+- `extended_hours::Union{Nothing,Bool}`: whether to include extended hours, or `nothing`.
+- `cashflow_types::Union{Nothing,Vector{String}}`: the cash flow types to include, sent as a comma list, or `nothing`. The keyword accepts a `String` or a vector of strings.
+
+### Constructors
+- `MyPortfolioHistoryEndpointModel(; period = nothing, timeframe = nothing, intraday_reporting = nothing, start = nothing, finish = nothing, pnl_reset = nothing, extended_hours = nothing, cashflow_types = nothing)`: returns a new `MyPortfolioHistoryEndpointModel` instance.
+"""
+mutable struct MyPortfolioHistoryEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    period::Union{Nothing,String}
+    timeframe::Union{Nothing,String}
+    intraday_reporting::Union{Nothing,String}
+    start::Union{Nothing,Date,DateTime,String}
+    finish::Union{Nothing,Date,DateTime,String}
+    pnl_reset::Union{Nothing,String}
+    extended_hours::Union{Nothing,Bool}
+    cashflow_types::Union{Nothing,Vector{String}}
+
+    # methods -
+    MyPortfolioHistoryEndpointModel(;
+        period::Union{Nothing,String} = nothing, timeframe::Union{Nothing,String} = nothing, intraday_reporting::Union{Nothing,String} = nothing,
+        start::Union{Nothing,Date,DateTime,String} = nothing, finish::Union{Nothing,Date,DateTime,String} = nothing,
+        pnl_reset::Union{Nothing,String} = nothing, extended_hours::Union{Nothing,Bool} = nothing,
+        cashflow_types::Union{Nothing,AbstractString,AbstractVector} = nothing) = new(period, timeframe, intraday_reporting, start, finish, pnl_reset, extended_hours, _to_symbol_vector(cashflow_types));
+end
+
+"""
+    mutable struct MyMarketCalendarEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for the Alpaca `/v3/calendar/{market}` endpoint.
+This endpoint returns the calendar of one market, e.g., the NYSE: the trading days and the times of the sessions.
+The model calls the `v3` base URL of the trading API.
+
+### Fields
+- `market::String`: the market acronym, e.g., `"NYSE"`.
+- `start::Union{Nothing,Date,DateTime,String}`: the first day of the calendar, or `nothing`.
+- `finish::Union{Nothing,Date,DateTime,String}`: the last day of the calendar, sent as `end`, or `nothing`.
+- `timezone::Union{Nothing,String}`: the time zone of the session times, `"UTC"`, or `nothing`.
+
+### Constructors
+- `MyMarketCalendarEndpointModel(; market = "NYSE", start = nothing, finish = nothing, timezone = nothing)`: returns a new `MyMarketCalendarEndpointModel` instance.
+"""
+mutable struct MyMarketCalendarEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    market::String
+    start::Union{Nothing,Date,DateTime,String}
+    finish::Union{Nothing,Date,DateTime,String}
+    timezone::Union{Nothing,String}
+
+    # methods -
+    MyMarketCalendarEndpointModel(;
+        market::String = "NYSE", start::Union{Nothing,Date,DateTime,String} = nothing, finish::Union{Nothing,Date,DateTime,String} = nothing,
+        timezone::Union{Nothing,String} = nothing) = new(market, start, finish, timezone);
+end
+
+"""
+    mutable struct MyMarketClocksEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for the Alpaca `/v3/clock` endpoint.
+This endpoint returns the clocks of several markets: whether each market is in a trading phase now, and when the market opens and closes next.
+The model calls the `v3` base URL of the trading API.
+
+### Fields
+- `markets::Union{Nothing,Vector{String}}`: the market acronyms, e.g., `"NYSE"`, sent as a comma list, or `nothing`. The keyword accepts a `String` or a vector of strings.
+- `time::Union{Nothing,Date,DateTime,String}`: the time to read the clocks at, or `nothing`.
+
+### Constructors
+- `MyMarketClocksEndpointModel(; markets = nothing, time = nothing)`: returns a new `MyMarketClocksEndpointModel` instance.
+"""
+mutable struct MyMarketClocksEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    markets::Union{Nothing,Vector{String}}
+    time::Union{Nothing,Date,DateTime,String}
+
+    # methods -
+    MyMarketClocksEndpointModel(;
+        markets::Union{Nothing,AbstractString,AbstractVector} = nothing,
+        time::Union{Nothing,Date,DateTime,String} = nothing) = new(_to_symbol_vector(markets), time);
+end
+
+"""
     mutable struct MyEquityOrderModel <: AbstractAlpacaOrderModel
 
 Order model for one equity or ETF order. The model says what to trade. The `submit` method supplies the order keywords.

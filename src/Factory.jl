@@ -821,6 +821,160 @@ function url(base::String, model::MyOptionChainEndpointModel)::String
 end
 
 """
+    url(base::String, model::MyAccountConfigurationsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/account/configurations` endpoint.
+An HTTP GET call to this URL returns the settings of the account.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyAccountConfigurationsEndpointModel`: the endpoint model of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyAccountConfigurationsEndpointModel)::String
+    return "$(base)/account/configurations";
+end
+
+"""
+    url(base::String, model::MyAccountActivitiesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/account/activities/{activity_type}` endpoint when the model holds `activity_type`,
+and for `/account/activities` otherwise. An HTTP GET call to this URL returns the account activities that match the filters.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+The `category` field is sent only on the `/account/activities` path.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyAccountActivitiesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyAccountActivitiesEndpointModel)::String
+
+    # get data from the model -
+    activity_type = model.activity_type;
+
+    # the path names one activity type, or the query lists the types and the category -
+    path = "/account/activities";
+    query_keys = String[];
+    query_values = Any[];
+    if (activity_type !== nothing)
+        path = "/account/activities/$(URIs.escapeuri(activity_type))";
+    else
+        push!(query_keys, "activity_types");
+        push!(query_values, _symbols_value(model.activity_types));
+        push!(query_keys, "category");
+        push!(query_values, _query_value(model.category));
+    end
+
+    # the remaining fields, in the order of the model; a nothing value is left out -
+    append!(query_keys, String["date", "after", "until", "direction", "page_size", "page_token", "order_id"]);
+    append!(query_values, Any[_time_value(model.date), _time_value(model.after), _time_value(model.until), _query_value(model.direction),
+        _query_value(model.page_size), _query_value(model.page_token), _query_value(model.order_id)]);
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    return "$(base)$(path)" * query_string;
+end
+
+"""
+    url(base::String, model::MyPortfolioHistoryEndpointModel) -> String
+
+Build the URL string for the Alpaca `/account/portfolio/history` endpoint.
+An HTTP GET call to this URL returns the equity and the profit and loss of the account over a period.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+The field `finish` is sent as `end`.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyPortfolioHistoryEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyPortfolioHistoryEndpointModel)::String
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["period", "timeframe", "intraday_reporting", "start", "end", "pnl_reset", "extended_hours", "cashflow_types"];
+    query_values = Any[_query_value(model.period), _query_value(model.timeframe), _query_value(model.intraday_reporting),
+        _time_value(model.start), _time_value(model.finish), _query_value(model.pnl_reset), _query_value(model.extended_hours),
+        _symbols_value(model.cashflow_types)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    return "$(base)/account/portfolio/history" * query_string;
+end
+
+"""
+    url(base::String, model::MyMarketCalendarEndpointModel) -> String
+
+Build the URL string for the Alpaca `/v3/calendar/{market}` endpoint.
+An HTTP GET call to this URL returns the calendar of one market. The base URL is the `v3` base of the trading API.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+The field `finish` is sent as `end`.
+
+### Arguments
+- `base::String`: the `v3` base URL of the trading API, e.g., `"https://paper-api.alpaca.markets/v3"`.
+- `model::MyMarketCalendarEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyMarketCalendarEndpointModel)::String
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["start", "end", "timezone"];
+    query_values = Any[_time_value(model.start), _time_value(model.finish), _query_value(model.timezone)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    return "$(base)/calendar/$(URIs.escapeuri(model.market))" * query_string;
+end
+
+"""
+    url(base::String, model::MyMarketClocksEndpointModel) -> String
+
+Build the URL string for the Alpaca `/v3/clock` endpoint.
+An HTTP GET call to this URL returns the clocks of the markets. The base URL is the `v3` base of the trading API.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the `v3` base URL of the trading API, e.g., `"https://paper-api.alpaca.markets/v3"`.
+- `model::MyMarketClocksEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyMarketClocksEndpointModel)::String
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["markets", "time"];
+    query_values = Any[_symbols_value(model.markets), _time_value(model.time)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    return "$(base)/clock" * query_string;
+end
+
+"""
     url(client::AlpacaClient, model::AbstractAlpacaEndpointModel) -> String
 
 Build the complete URL string of a model, using the base URL that the client holds for the API of the model.
@@ -870,6 +1024,14 @@ end
 
 function _base_url(client::AlpacaClient, model::AbstractAlpacaMarketDataEndpointModel)::String
     return client.options_data_url;
+end
+
+function _base_url(client::AlpacaClient, model::MyMarketCalendarEndpointModel)::String
+    return _versioned_url(client.trading_url, "v3");
+end
+
+function _base_url(client::AlpacaClient, model::MyMarketClocksEndpointModel)::String
+    return _versioned_url(client.trading_url, "v3");
 end
 
 # _http_method: the HTTP method of the request of a model. The default is GET. A write model adds a method -

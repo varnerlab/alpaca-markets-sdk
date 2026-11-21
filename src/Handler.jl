@@ -1029,6 +1029,103 @@ function _default_handler(model::Type{MyOptionChainEndpointModel}, body::String)
     return _snapshots_table(symbols, snapshots, true);
 end
 
+"""
+    _default_handler(model::Type{MyAccountConfigurationsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/account/configurations` endpoint. The table has one row, with one column for each setting of the account.
+"""
+function _default_handler(model::Type{MyAccountConfigurationsEndpointModel}, body::String)::DataFrame
+    return _records_table(_json_records(body, String[]));
+end
+
+"""
+    _default_handler(model::Type{MyAccountActivitiesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/account/activities` endpoints. The table has one row for each activity.
+The activities of different types have different fields, so a field that an activity lacks is `missing`.
+"""
+function _default_handler(model::Type{MyAccountActivitiesEndpointModel}, body::String)::DataFrame
+    return _records_table(_json_records(body, String[]));
+end
+
+"""
+    _default_handler(model::Type{MyPortfolioHistoryEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/account/portfolio/history` endpoint. The table has one row for each timestamp.
+The columns are `timestamp` (a UTC `DateTime` from Unix seconds), `equity`, `profit_loss`, `profit_loss_pct`, and `base_value`,
+which holds the same value in every row. The `cashflow` object of the response is not a column.
+A response with empty or null arrays gives a table with no rows and the same five columns.
+"""
+function _default_handler(model::Type{MyPortfolioHistoryEndpointModel}, body::String)::DataFrame
+
+    # parse the response body -
+    parsed = JSON3.read(body);
+
+    # get the base value, which is the same in every row -
+    base_value = Float64(get(parsed, :base_value, 0));
+
+    # initialize: one array for each column of the table -
+    timestamps = Array{DateTime,1}();
+    equities = Array{Float64,1}();
+    profit_losses = Array{Float64,1}();
+    profit_loss_pcts = Array{Float64,1}();
+    base_values = Array{Float64,1}();
+
+    # null arrays are no rows; otherwise visit the rows by position -
+    stamps = get(parsed, :timestamp, nothing);
+    if (stamps !== nothing)
+        equity = get(parsed, :equity, nothing);
+        profit_loss = get(parsed, :profit_loss, nothing);
+        profit_loss_pct = get(parsed, :profit_loss_pct, nothing);
+        for i in eachindex(stamps)
+            push!(timestamps, Dates.unix2datetime(stamps[i]));
+            push!(equities, Float64(equity[i]));
+            push!(profit_losses, Float64(profit_loss[i]));
+            push!(profit_loss_pcts, Float64(profit_loss_pct[i]));
+            push!(base_values, base_value);
+        end
+    end
+
+    # put the columns into a table, and return it -
+    return DataFrame(timestamp = timestamps, equity = equities, profit_loss = profit_losses,
+        profit_loss_pct = profit_loss_pcts, base_value = base_values);
+end
+
+"""
+    _default_handler(model::Type{MyMarketCalendarEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/v3/calendar/{market}` endpoint. The table has one row for each calendar day.
+The first column is `market`, which holds the acronym of the market in every row. The other columns are the fields of the
+calendar entries, e.g., `date`, `settlement_date`, `core_start` and `core_end`.
+"""
+function _default_handler(model::Type{MyMarketCalendarEndpointModel}, body::String)::DataFrame
+
+    # the calendar entries become the columns after the market -
+    table = _records_table(_json_records(body, String["calendar"]));
+    if (size(table, 1) == 0)
+        return table;
+    end
+
+    # read the acronym of the market, and put it first in every row -
+    parsed = JSON3.read(body);
+    acronym = missing;
+    if (haskey(parsed, :market) == true && parsed[:market] !== nothing)
+        acronym = String(get(parsed[:market], :acronym, ""));
+    end
+    insertcols!(table, 1, :market => fill(acronym, size(table, 1)));
+    return table;
+end
+
+"""
+    _default_handler(model::Type{MyMarketClocksEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/v3/clock` endpoint. The table has one row for each market clock.
+The `market` object of each clock is flattened into the columns `market_acronym`, `market_bic`, `market_mic`, `market_name` and `market_timezone`.
+"""
+function _default_handler(model::Type{MyMarketClocksEndpointModel}, body::String)::DataFrame
+    return _records_table(_json_records(body, String["clocks"]));
+end
+
 # --- Legacy handlers: return the legacy structs of v0.3.1 -------------------------------------------------------- #
 
 # _maybe_string: a text value that can be null; nothing when the value is nothing -
