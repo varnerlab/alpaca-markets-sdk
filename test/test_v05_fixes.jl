@@ -69,3 +69,12 @@ end
     m = MyCorporateActionsEndpointModel(symbols = "AAPL", start = DateTime(2026, 1, 1, 9, 30), finish = Date(2026, 2, 1))
     @test url("http://h", m) == "http://h/corporate-actions?symbols=AAPL&start=2026-01-01&end=2026-02-01&limit=100"
 end
+
+@testset "clock: time columns are UTC DateTimes" begin
+    body = """{"clocks":[{"market":{"acronym":"NYSE","timezone":"America/New_York"},"timestamp":"2026-11-20T15:00:00Z","is_market_day":true,"next_market_open":"2026-11-23T14:30:00Z","next_market_close":"2026-11-20T21:00:00Z","phase":"core","phase_until":"2026-11-20T21:00:00Z"}]}"""
+    df = Alpaca._default_handler(MyMarketClocksEndpointModel, body)
+    @test df[1, :next_market_open] == DateTime(2026, 11, 23, 14, 30)
+    @test df[1, :next_market_close] == DateTime(2026, 11, 20, 21)
+    @test df[1, :phase_until] == DateTime(2026, 11, 20, 21)
+    @test df[1, :timestamp] == DateTime(2026, 11, 20, 15)
+end

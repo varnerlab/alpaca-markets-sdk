@@ -18,7 +18,7 @@ bars = api(client, model)    # a DataFrame with every page
 
 The default handler of every read model returns a `DataFrame`. An endpoint that returns one record, such as the account, the clock, one asset, one order, one position, or one contract, returns a `DataFrame` with one row.
 
-A missing value is `missing` in a column. Timestamps are `DateTime` in UTC, and prices and sizes are `Float64`. The columns of a bars table are `timestamp`, `symbol`, `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`. A snapshots table has one row for each contract, and the nested objects (the latest quote, the latest trade, and the greeks) are columns with a prefix.
+A missing value is `missing` in a column. Timestamps are `DateTime` in UTC, and prices and sizes are `Float64`. The tables of account activities, account configurations, corporate actions, and fixed income keep the values as Alpaca sends them, so some prices and sizes in those tables are text. The columns of a bars table are `timestamp`, `symbol`, `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`. A snapshots table has one row for each contract, and the nested objects (the latest quote, the latest trade, and the greeks) are columns with a prefix.
 
 `MyAssetsEndpointModel` has no `tradable_only` field, because `tradable_only` is not an Alpaca query parameter. To keep only the tradable assets, filter the `tradable` column of the `DataFrame`.
 

@@ -14,7 +14,7 @@ function _is_time_column(name::String)::Bool
     if (endswith(name, "_at") == true)
         return true;
     end
-    if (name == "timestamp" || name == "transaction_time" || name == "t")
+    if (name == "timestamp" || name == "transaction_time" || name == "t" || name == "next_market_open" || name == "next_market_close" || name == "phase_until")
         return true;
     end
     return false;
