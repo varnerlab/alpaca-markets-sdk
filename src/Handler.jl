@@ -1764,4 +1764,38 @@ Process the response of the delete watchlist endpoint, which has no body. The re
 function _default_handler(model::Type{MyDeleteWatchlistEndpointModel}, body::String)::DataFrame
     return _empty_table(body);
 end
+
+"""
+    _default_handler(model::Type{MyUpdateAccountConfigurationsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the change account settings endpoint.
+The table has one row, with one column for each setting.
+"""
+function _default_handler(model::Type{MyUpdateAccountConfigurationsEndpointModel}, body::String)::DataFrame
+    return _records_table(_json_records(body, String[]));
+end
+
+"""
+    _default_handler(model::Type{MyReplaceOrderEndpointModel}, body::String) -> DataFrame
+
+Process the response of the replace order endpoint.
+The table has one row, with the columns of `_orders_table`.
+"""
+function _default_handler(model::Type{MyReplaceOrderEndpointModel}, body::String)::DataFrame
+    return _orders_table(_json_records(body, String[]));
+end
+
+"""
+    _default_handler(model::Type{T}, body::String) -> DataFrame
+
+Process the response of an option exercise endpoint, `T` being `MyExerciseOptionEndpointModel` or
+`MyDoNotExerciseOptionEndpointModel`. The endpoint has no body, so the result is an empty table.
+"""
+function _default_handler(model::Type{MyExerciseOptionEndpointModel}, body::String)::DataFrame
+    return _empty_table(body);
+end
+
+function _default_handler(model::Type{MyDoNotExerciseOptionEndpointModel}, body::String)::DataFrame
+    return _empty_table(body);
+end
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #

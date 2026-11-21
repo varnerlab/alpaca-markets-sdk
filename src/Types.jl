@@ -1611,3 +1611,163 @@ mutable struct MyDeleteWatchlistEndpointModel <: AbstractAlpacaTradingEndpointMo
         return new(id, name);
     end
 end
+
+# _none_set: true when every value in the tuple is nothing -
+function _none_set(values::Tuple)::Bool
+    for value in values
+        if (value !== nothing)
+            return false;
+        end
+    end
+    return true;
+end
+
+# _number_text: the text that a setting or an order field is sent as, or nothing when the field is not set -
+function _number_text(x::Union{Nothing,AbstractString,Real})::Union{Nothing,String}
+    if (x === nothing)
+        return nothing;
+    end
+    return string(x);
+end
+
+"""
+    mutable struct MyUpdateAccountConfigurationsEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for changing the account settings with an HTTP PATCH to the Alpaca `/account/configurations` endpoint.
+The request holds the settings that are set. The endpoint answers with all the settings of the account.
+
+### Fields
+- `disable_overnight_trading::Union{Nothing,Bool}`: `true` turns off overnight trading, or `nothing` to keep the setting.
+- `fractional_trading::Union{Nothing,Bool}`: `true` allows fractional trading, or `nothing` to keep the setting.
+- `max_margin_multiplier::Union{Nothing,String}`: the maximum margin multiplier, sent as text, or `nothing` to keep the setting.
+- `max_options_trading_level::Union{Nothing,Int}`: the maximum options trading level, an integer in `0:3`, or `nothing` to keep the setting.
+- `no_shorting::Union{Nothing,Bool}`: `true` blocks short sales, or `nothing` to keep the setting.
+- `ptp_no_exception_entry::Union{Nothing,Bool}`: `true` blocks entry orders for publicly traded partnerships, or `nothing` to keep the setting.
+- `suspend_trade::Union{Nothing,Bool}`: `true` suspends trading, or `nothing` to keep the setting.
+- `trade_confirm_email::Union{Nothing,String}`: the trade confirmation email setting, e.g., `"all"`, or `nothing` to keep the setting.
+
+### Constructors
+- `MyUpdateAccountConfigurationsEndpointModel(; disable_overnight_trading = nothing, fractional_trading = nothing, max_margin_multiplier = nothing, max_options_trading_level = nothing, no_shorting = nothing, ptp_no_exception_entry = nothing, suspend_trade = nothing, trade_confirm_email = nothing)`: returns a new `MyUpdateAccountConfigurationsEndpointModel` instance.
+  The keyword `max_margin_multiplier` accepts a `String` or a `Real`.
+  The constructor throws an `ArgumentError` when no setting is set, or when `max_options_trading_level` is not in `0:3`.
+"""
+mutable struct MyUpdateAccountConfigurationsEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    disable_overnight_trading::Union{Nothing,Bool}
+    fractional_trading::Union{Nothing,Bool}
+    max_margin_multiplier::Union{Nothing,String}
+    max_options_trading_level::Union{Nothing,Int}
+    no_shorting::Union{Nothing,Bool}
+    ptp_no_exception_entry::Union{Nothing,Bool}
+    suspend_trade::Union{Nothing,Bool}
+    trade_confirm_email::Union{Nothing,String}
+
+    # methods -
+    function MyUpdateAccountConfigurationsEndpointModel(; disable_overnight_trading::Union{Nothing,Bool} = nothing,
+        fractional_trading::Union{Nothing,Bool} = nothing, max_margin_multiplier::Union{Nothing,AbstractString,Real} = nothing,
+        max_options_trading_level::Union{Nothing,Integer} = nothing, no_shorting::Union{Nothing,Bool} = nothing,
+        ptp_no_exception_entry::Union{Nothing,Bool} = nothing, suspend_trade::Union{Nothing,Bool} = nothing,
+        trade_confirm_email::Union{Nothing,String} = nothing)
+
+        # the options trading level must be one of the four levels -
+        if (max_options_trading_level !== nothing && !(max_options_trading_level in 0:3))
+            throw(ArgumentError("`max_options_trading_level` must be an integer in 0:3"));
+        end
+
+        # at least one setting must be set -
+        if (_none_set((disable_overnight_trading, fractional_trading, max_margin_multiplier, max_options_trading_level,
+            no_shorting, ptp_no_exception_entry, suspend_trade, trade_confirm_email)))
+            throw(ArgumentError("set at least one account setting"));
+        end
+        return new(disable_overnight_trading, fractional_trading, _number_text(max_margin_multiplier), max_options_trading_level,
+            no_shorting, ptp_no_exception_entry, suspend_trade, trade_confirm_email);
+    end
+end
+
+"""
+    mutable struct MyReplaceOrderEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for replacing an open order with an HTTP PATCH to the Alpaca `/orders/{order_id}` endpoint.
+The request holds the order fields that change. The endpoint answers with the replacement order.
+
+### Fields
+- `id::String`: the identifier of the order to replace.
+- `qty::Union{Nothing,String}`: the new quantity, sent as text, or `nothing` to keep it.
+- `time_in_force::Union{Nothing,String}`: the new time in force, e.g., `"gtc"`, or `nothing` to keep it.
+- `limit_price::Union{Nothing,String}`: the new limit price, sent as text, or `nothing` to keep it.
+- `stop_price::Union{Nothing,String}`: the new stop price, sent as text, or `nothing` to keep it.
+- `trail::Union{Nothing,String}`: the new trail, sent as text, or `nothing` to keep it.
+- `client_order_id::Union{Nothing,String}`: the new order identifier assigned by the client, or `nothing` to keep it.
+
+### Constructors
+- `MyReplaceOrderEndpointModel(; id::String, qty = nothing, time_in_force = nothing, limit_price = nothing, stop_price = nothing, trail = nothing, client_order_id = nothing)`: returns a new `MyReplaceOrderEndpointModel` instance.
+  The keywords `qty`, `limit_price`, `stop_price`, and `trail` accept a `Real`.
+  The constructor throws an `ArgumentError` when no change is set.
+"""
+mutable struct MyReplaceOrderEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    id::String
+    qty::Union{Nothing,String}
+    time_in_force::Union{Nothing,String}
+    limit_price::Union{Nothing,String}
+    stop_price::Union{Nothing,String}
+    trail::Union{Nothing,String}
+    client_order_id::Union{Nothing,String}
+
+    # methods -
+    function MyReplaceOrderEndpointModel(; id::String, qty::Union{Nothing,Real} = nothing, time_in_force::Union{Nothing,String} = nothing,
+        limit_price::Union{Nothing,Real} = nothing, stop_price::Union{Nothing,Real} = nothing, trail::Union{Nothing,Real} = nothing,
+        client_order_id::Union{Nothing,String} = nothing)
+
+        # at least one change must be set -
+        if (_none_set((qty, time_in_force, limit_price, stop_price, trail, client_order_id)))
+            throw(ArgumentError("set at least one order change"));
+        end
+        return new(id, _number_text(qty), time_in_force, _number_text(limit_price), _number_text(stop_price), _number_text(trail),
+            client_order_id);
+    end
+end
+
+"""
+    mutable struct MyExerciseOptionEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for exercising an option position with an HTTP POST to the Alpaca `/positions/{symbol_or_contract_id}/exercise` endpoint.
+The endpoint answers with no body, so the default handler returns an empty table.
+
+### Fields
+- `symbol::String`: the symbol or the contract identifier of the option position.
+
+### Constructors
+- `MyExerciseOptionEndpointModel(; symbol::String)`: returns a new `MyExerciseOptionEndpointModel` instance.
+"""
+mutable struct MyExerciseOptionEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    symbol::String
+
+    # methods -
+    MyExerciseOptionEndpointModel(; symbol::String) = new(symbol);
+end
+
+"""
+    mutable struct MyDoNotExerciseOptionEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for instructing Alpaca not to exercise an option position with an HTTP POST to the Alpaca `/positions/{symbol_or_contract_id}/do-not-exercise` endpoint.
+The endpoint answers with no body, so the default handler returns an empty table.
+
+### Fields
+- `symbol::String`: the symbol or the contract identifier of the option position.
+
+### Constructors
+- `MyDoNotExerciseOptionEndpointModel(; symbol::String)`: returns a new `MyDoNotExerciseOptionEndpointModel` instance.
+"""
+mutable struct MyDoNotExerciseOptionEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    symbol::String
+
+    # methods -
+    MyDoNotExerciseOptionEndpointModel(; symbol::String) = new(symbol);
+end

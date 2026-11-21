@@ -48,7 +48,9 @@ export MyAccountEndpointModel, MyClockEndpointModel,
        MyWatchlistsEndpointModel, MyWatchlistEndpointModel,
        MyCreateWatchlistEndpointModel, MyUpdateWatchlistEndpointModel,
        MyAddWatchlistAssetEndpointModel, MyRemoveWatchlistAssetEndpointModel,
-       MyDeleteWatchlistEndpointModel
+       MyDeleteWatchlistEndpointModel,
+       MyUpdateAccountConfigurationsEndpointModel, MyReplaceOrderEndpointModel,
+       MyExerciseOptionEndpointModel, MyDoNotExerciseOptionEndpointModel
 
 # Order models
 export MyEquityOrderModel, MyOptionLegModel, MyMixedOrderModel

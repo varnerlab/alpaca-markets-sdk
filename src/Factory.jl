@@ -1138,6 +1138,86 @@ function url(base::String, model::MyDeleteWatchlistEndpointModel)::String
     return _watchlist_url(base, model.id, model.name);
 end
 
+"""
+    url(base::String, model::MyUpdateAccountConfigurationsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/account/configurations` endpoint.
+An HTTP PATCH call to this URL changes the account settings.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyUpdateAccountConfigurationsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyUpdateAccountConfigurationsEndpointModel)::String
+    return "$(base)/account/configurations";
+end
+
+"""
+    url(base::String, model::MyReplaceOrderEndpointModel) -> String
+
+Build the URL string for the Alpaca `/orders/{order_id}` endpoint.
+An HTTP PATCH call to this URL replaces an open order.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyReplaceOrderEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyReplaceOrderEndpointModel)::String
+    return "$(base)/orders/$(URIs.escapeuri(model.id))";
+end
+
+"""
+    url(base::String, model::MyExerciseOptionEndpointModel) -> String
+
+Build the URL string for the Alpaca `/positions/{symbol_or_contract_id}/exercise` endpoint.
+An HTTP POST call to this URL exercises an option position.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyExerciseOptionEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyExerciseOptionEndpointModel)::String
+    return "$(base)/positions/$(URIs.escapeuri(model.symbol))/exercise";
+end
+
+"""
+    url(base::String, model::MyDoNotExerciseOptionEndpointModel) -> String
+
+Build the URL string for the Alpaca `/positions/{symbol_or_contract_id}/do-not-exercise` endpoint.
+An HTTP POST call to this URL tells Alpaca not to exercise an option position.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyDoNotExerciseOptionEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyDoNotExerciseOptionEndpointModel)::String
+    return "$(base)/positions/$(URIs.escapeuri(model.symbol))/do-not-exercise";
+end
+
 # --- PUBLIC METHODS ABOVE HERE -------------------------------------------------------------------------------- #
 
 # --- PRIVATE METHODS BELOW HERE ------------------------------------------------------------------------------- #
@@ -1344,6 +1424,54 @@ end
 function _request_body(model::MyAddWatchlistAssetEndpointModel)::Dict{String,Any}
     body = Dict{String,Any}();
     body["symbol"] = model.symbol;
+    return body;
+end
+
+# _http_method of the account settings, order replacement, and option exercise models -
+function _http_method(model::MyUpdateAccountConfigurationsEndpointModel)::String
+    return "PATCH";
+end
+
+function _http_method(model::MyReplaceOrderEndpointModel)::String
+    return "PATCH";
+end
+
+function _http_method(model::MyExerciseOptionEndpointModel)::String
+    return "POST";
+end
+
+function _http_method(model::MyDoNotExerciseOptionEndpointModel)::String
+    return "POST";
+end
+
+# _request_body of the account settings model: the settings that are set -
+function _request_body(model::MyUpdateAccountConfigurationsEndpointModel)::Dict{String,Any}
+
+    # the body holds each setting that is set -
+    body = Dict{String,Any}();
+    names = ["disable_overnight_trading", "fractional_trading", "max_margin_multiplier", "max_options_trading_level",
+        "no_shorting", "ptp_no_exception_entry", "suspend_trade", "trade_confirm_email"];
+    for name in names
+        value = getfield(model, Symbol(name));
+        if (value !== nothing)
+            body[name] = value;
+        end
+    end
+    return body;
+end
+
+# _request_body of the order replacement model: the order fields that change -
+function _request_body(model::MyReplaceOrderEndpointModel)::Dict{String,Any}
+
+    # the body holds each field that is set -
+    body = Dict{String,Any}();
+    names = ["qty", "time_in_force", "limit_price", "stop_price", "trail", "client_order_id"];
+    for name in names
+        value = getfield(model, Symbol(name));
+        if (value !== nothing)
+            body[name] = value;
+        end
+    end
     return body;
 end
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #
