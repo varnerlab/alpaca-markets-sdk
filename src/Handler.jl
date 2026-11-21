@@ -1692,4 +1692,76 @@ function _legacy_handler(model::Type{MyOptionChainEndpointModel}, body::String):
     end
     return out;
 end
+"""
+    _watchlist_table(body::String) -> DataFrame
+
+Build the table of one watchlist from a response body. The table has one row for each asset of the watchlist.
+The columns are `watchlist_id` and `watchlist_name`, then the columns of `_assets_table`.
+A watchlist with no assets gives zero rows with the same columns.
+"""
+function _watchlist_table(body::String)::DataFrame
+
+    # parse the watchlist, and read its identifier, its name, and its assets -
+    watchlist = JSON3.read(body);
+    watchlist_id = _string_or_missing(watchlist, :id);
+    watchlist_name = _string_or_missing(watchlist, :name);
+    assets = Any[];
+    if (haskey(watchlist, :assets) == true && watchlist[:assets] !== nothing)
+        for asset in watchlist[:assets]
+            push!(assets, asset);
+        end
+    end
+
+    # the assets table, with the watchlist columns in front -
+    table = _assets_table(assets);
+    number_of_assets = size(table, 1);
+    insertcols!(table, 1, :watchlist_id => fill(watchlist_id, number_of_assets), :watchlist_name => fill(watchlist_name, number_of_assets));
+    return table;
+end
+
+"""
+    _default_handler(model::Type{MyWatchlistsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/watchlists` endpoint.
+The table has one row for each watchlist, with the columns `id`, `account_id`, `name`, `created_at`, and `updated_at`.
+"""
+function _default_handler(model::Type{MyWatchlistsEndpointModel}, body::String)::DataFrame
+    return _records_table(_json_records(body, String[]));
+end
+
+"""
+    _default_handler(model::Type{T}, body::String) -> DataFrame
+
+Process the response of a watchlist endpoint that answers with one watchlist, `T` being `MyWatchlistEndpointModel`,
+`MyCreateWatchlistEndpointModel`, `MyUpdateWatchlistEndpointModel`, `MyAddWatchlistAssetEndpointModel`, or
+`MyRemoveWatchlistAssetEndpointModel`. The table is the one that `_watchlist_table` builds.
+"""
+function _default_handler(model::Type{MyWatchlistEndpointModel}, body::String)::DataFrame
+    return _watchlist_table(body);
+end
+
+function _default_handler(model::Type{MyCreateWatchlistEndpointModel}, body::String)::DataFrame
+    return _watchlist_table(body);
+end
+
+function _default_handler(model::Type{MyUpdateWatchlistEndpointModel}, body::String)::DataFrame
+    return _watchlist_table(body);
+end
+
+function _default_handler(model::Type{MyAddWatchlistAssetEndpointModel}, body::String)::DataFrame
+    return _watchlist_table(body);
+end
+
+function _default_handler(model::Type{MyRemoveWatchlistAssetEndpointModel}, body::String)::DataFrame
+    return _watchlist_table(body);
+end
+
+"""
+    _default_handler(model::Type{MyDeleteWatchlistEndpointModel}, body::String) -> DataFrame
+
+Process the response of the delete watchlist endpoint, which has no body. The result is an empty table.
+"""
+function _default_handler(model::Type{MyDeleteWatchlistEndpointModel}, body::String)::DataFrame
+    return _empty_table(body);
+end
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #

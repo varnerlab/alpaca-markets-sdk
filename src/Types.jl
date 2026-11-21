@@ -1411,3 +1411,203 @@ function Base.showerror(io::IO, e::AlpacaSequenceError)::Nothing
     end
     return nothing;
 end
+
+"""
+    mutable struct MyWatchlistsEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for the Alpaca `/watchlists` endpoint.
+This endpoint lists the watchlists of the account, without their assets.
+
+### Fields
+- None: the endpoint takes no parameters.
+
+### Constructors
+- `MyWatchlistsEndpointModel()`: returns a new `MyWatchlistsEndpointModel` instance.
+"""
+mutable struct MyWatchlistsEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # methods -
+    MyWatchlistsEndpointModel() = new();
+end
+
+"""
+    mutable struct MyWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for the Alpaca `/watchlists/{watchlist_id}` or `/watchlists:by_name` endpoint.
+This endpoint returns one watchlist with its assets, by watchlist identifier or by name.
+
+### Fields
+- `id::Union{Nothing,String}`: the watchlist identifier assigned by Alpaca, or `nothing`.
+- `name::Union{Nothing,String}`: the name of the watchlist, or `nothing`.
+
+### Constructors
+- `MyWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing)`: returns a new `MyWatchlistEndpointModel` instance.
+  Exactly one of `id` and `name` must be set, otherwise the constructor throws an `ArgumentError`.
+"""
+mutable struct MyWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    id::Union{Nothing,String}
+    name::Union{Nothing,String}
+
+    # methods -
+    function MyWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing)
+
+        # exactly one of the identifier and the name must be set -
+        if ((id === nothing && name === nothing) || (id !== nothing && name !== nothing))
+            throw(ArgumentError("set exactly one of `id` and `name`"));
+        end
+        return new(id, name);
+    end
+end
+
+"""
+    mutable struct MyCreateWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for creating a watchlist with an HTTP POST to the Alpaca `/watchlists` endpoint.
+The endpoint answers with the new watchlist and its assets.
+
+### Fields
+- `name::String`: the name of the new watchlist.
+- `symbols::Vector{String}`: the symbols of the assets that the new watchlist starts with. The keyword accepts a `String` or a vector of strings.
+
+### Constructors
+- `MyCreateWatchlistEndpointModel(; name::String, symbols::Union{AbstractString,AbstractVector} = String[])`: returns a new `MyCreateWatchlistEndpointModel` instance.
+"""
+mutable struct MyCreateWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    name::String
+    symbols::Vector{String}
+
+    # methods -
+    MyCreateWatchlistEndpointModel(; name::String, symbols::Union{AbstractString,AbstractVector} = String[]) = new(name, _to_symbol_vector(symbols));
+end
+
+"""
+    mutable struct MyUpdateWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for changing a watchlist with an HTTP PUT to the Alpaca `/watchlists/{watchlist_id}` or `/watchlists:by_name` endpoint.
+The endpoint answers with the changed watchlist and its assets.
+
+### Fields
+- `id::Union{Nothing,String}`: the watchlist identifier assigned by Alpaca, or `nothing`.
+- `name::Union{Nothing,String}`: the current name of the watchlist, or `nothing`.
+- `new_name::Union{Nothing,String}`: the new name of the watchlist, or `nothing` to keep the name.
+- `symbols::Union{Nothing,Vector{String}}`: the symbols that replace the assets of the watchlist, or `nothing` to keep the assets. The keyword accepts a `String` or a vector of strings.
+
+### Constructors
+- `MyUpdateWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing, new_name::Union{Nothing,String} = nothing, symbols::Union{Nothing,AbstractString,AbstractVector} = nothing)`: returns a new `MyUpdateWatchlistEndpointModel` instance.
+  Exactly one of `id` and `name` must be set, and at least one of `new_name` and `symbols` must be set, otherwise the constructor throws an `ArgumentError`.
+"""
+mutable struct MyUpdateWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    id::Union{Nothing,String}
+    name::Union{Nothing,String}
+    new_name::Union{Nothing,String}
+    symbols::Union{Nothing,Vector{String}}
+
+    # methods -
+    function MyUpdateWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing,
+        new_name::Union{Nothing,String} = nothing, symbols::Union{Nothing,AbstractString,AbstractVector} = nothing)
+
+        # exactly one of the identifier and the name must be set -
+        if ((id === nothing && name === nothing) || (id !== nothing && name !== nothing))
+            throw(ArgumentError("set exactly one of `id` and `name`"));
+        end
+
+        # something must change -
+        if (new_name === nothing && symbols === nothing)
+            throw(ArgumentError("set at least one of `new_name` and `symbols`"));
+        end
+        return new(id, name, new_name, _to_symbol_vector(symbols));
+    end
+end
+
+"""
+    mutable struct MyAddWatchlistAssetEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for adding one asset to a watchlist with an HTTP POST to the Alpaca `/watchlists/{watchlist_id}` or `/watchlists:by_name` endpoint.
+The endpoint answers with the changed watchlist and its assets.
+
+### Fields
+- `id::Union{Nothing,String}`: the watchlist identifier assigned by Alpaca, or `nothing`.
+- `name::Union{Nothing,String}`: the name of the watchlist, or `nothing`.
+- `symbol::String`: the symbol of the asset to add.
+
+### Constructors
+- `MyAddWatchlistAssetEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing, symbol::String)`: returns a new `MyAddWatchlistAssetEndpointModel` instance.
+  Exactly one of `id` and `name` must be set, otherwise the constructor throws an `ArgumentError`.
+"""
+mutable struct MyAddWatchlistAssetEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    id::Union{Nothing,String}
+    name::Union{Nothing,String}
+    symbol::String
+
+    # methods -
+    function MyAddWatchlistAssetEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing, symbol::String)
+
+        # exactly one of the identifier and the name must be set -
+        if ((id === nothing && name === nothing) || (id !== nothing && name !== nothing))
+            throw(ArgumentError("set exactly one of `id` and `name`"));
+        end
+        return new(id, name, symbol);
+    end
+end
+
+"""
+    mutable struct MyRemoveWatchlistAssetEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for removing one asset from a watchlist with an HTTP DELETE to the Alpaca `/watchlists/{watchlist_id}/{symbol}` endpoint.
+Alpaca has no by-name form of this endpoint. The endpoint answers with the changed watchlist and its assets.
+
+### Fields
+- `id::String`: the watchlist identifier assigned by Alpaca.
+- `symbol::String`: the symbol of the asset to remove.
+
+### Constructors
+- `MyRemoveWatchlistAssetEndpointModel(; id::String, symbol::String)`: returns a new `MyRemoveWatchlistAssetEndpointModel` instance.
+"""
+mutable struct MyRemoveWatchlistAssetEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    id::String
+    symbol::String
+
+    # methods -
+    MyRemoveWatchlistAssetEndpointModel(; id::String, symbol::String) = new(id, symbol);
+end
+
+"""
+    mutable struct MyDeleteWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+Endpoint model for deleting a watchlist with an HTTP DELETE to the Alpaca `/watchlists/{watchlist_id}` or `/watchlists:by_name` endpoint.
+The endpoint answers with no body, so the default handler returns an empty table.
+
+### Fields
+- `id::Union{Nothing,String}`: the watchlist identifier assigned by Alpaca, or `nothing`.
+- `name::Union{Nothing,String}`: the name of the watchlist, or `nothing`.
+
+### Constructors
+- `MyDeleteWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing)`: returns a new `MyDeleteWatchlistEndpointModel` instance.
+  Exactly one of `id` and `name` must be set, otherwise the constructor throws an `ArgumentError`.
+"""
+mutable struct MyDeleteWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
+
+    # data -
+    id::Union{Nothing,String}
+    name::Union{Nothing,String}
+
+    # methods -
+    function MyDeleteWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing)
+
+        # exactly one of the identifier and the name must be set -
+        if ((id === nothing && name === nothing) || (id !== nothing && name !== nothing))
+            throw(ArgumentError("set exactly one of `id` and `name`"));
+        end
+        return new(id, name);
+    end
+end

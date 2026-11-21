@@ -998,6 +998,146 @@ function url(client::AlpacaClient, model::AbstractAlpacaEndpointModel)::String
     return url(base, model);
 end
 
+"""
+    url(base::String, model::MyWatchlistsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/watchlists` endpoint.
+An HTTP GET call to this URL lists the watchlists of the account.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyWatchlistsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyWatchlistsEndpointModel)::String
+    return "$(base)/watchlists";
+end
+
+"""
+    url(base::String, model::MyWatchlistEndpointModel) -> String
+
+Build the URL string for the Alpaca `/watchlists/{watchlist_id}` endpoint, or for `/watchlists:by_name` when the model holds a name.
+An HTTP GET call to this URL returns one watchlist with its assets.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyWatchlistEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyWatchlistEndpointModel)::String
+    return _watchlist_url(base, model.id, model.name);
+end
+
+"""
+    url(base::String, model::MyCreateWatchlistEndpointModel) -> String
+
+Build the URL string for the Alpaca `/watchlists` endpoint.
+An HTTP POST call to this URL creates a watchlist.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyCreateWatchlistEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyCreateWatchlistEndpointModel)::String
+    return "$(base)/watchlists";
+end
+
+"""
+    url(base::String, model::MyUpdateWatchlistEndpointModel) -> String
+
+Build the URL string for the Alpaca `/watchlists/{watchlist_id}` endpoint, or for `/watchlists:by_name` when the model holds a name.
+An HTTP PUT call to this URL changes the name or the assets of a watchlist.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyUpdateWatchlistEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyUpdateWatchlistEndpointModel)::String
+    return _watchlist_url(base, model.id, model.name);
+end
+
+"""
+    url(base::String, model::MyAddWatchlistAssetEndpointModel) -> String
+
+Build the URL string for the Alpaca `/watchlists/{watchlist_id}` endpoint, or for `/watchlists:by_name` when the model holds a name.
+An HTTP POST call to this URL adds one asset to a watchlist.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyAddWatchlistAssetEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyAddWatchlistAssetEndpointModel)::String
+    return _watchlist_url(base, model.id, model.name);
+end
+
+"""
+    url(base::String, model::MyRemoveWatchlistAssetEndpointModel) -> String
+
+Build the URL string for the Alpaca `/watchlists/{watchlist_id}/{symbol}` endpoint.
+An HTTP DELETE call to this URL removes one asset from a watchlist. The identifier and the symbol are escaped, so `BTC/USD` becomes `BTC%2FUSD`.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyRemoveWatchlistAssetEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyRemoveWatchlistAssetEndpointModel)::String
+    return "$(base)/watchlists/$(URIs.escapeuri(model.id))/$(URIs.escapeuri(model.symbol))";
+end
+
+"""
+    url(base::String, model::MyDeleteWatchlistEndpointModel) -> String
+
+Build the URL string for the Alpaca `/watchlists/{watchlist_id}` endpoint, or for `/watchlists:by_name` when the model holds a name.
+An HTTP DELETE call to this URL deletes a watchlist.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
+- `model::MyDeleteWatchlistEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyDeleteWatchlistEndpointModel)::String
+    return _watchlist_url(base, model.id, model.name);
+end
+
 # --- PUBLIC METHODS ABOVE HERE -------------------------------------------------------------------------------- #
 
 # --- PRIVATE METHODS BELOW HERE ------------------------------------------------------------------------------- #
@@ -1147,5 +1287,63 @@ function _query_string(keys::Vector{String}, values::Vector{Any})::String
         return "";
     end
     return "?" * join(pairs, "&");
+end
+# _watchlist_url: the URL of one watchlist. An identifier goes into the path, and a name goes into the query string of the by-name form -
+function _watchlist_url(base::String, id::Union{Nothing,String}, name::Union{Nothing,String})::String
+
+    # an identifier gives the path of the watchlist -
+    if (id !== nothing)
+        return "$(base)/watchlists/$(URIs.escapeuri(id))";
+    end
+
+    # a name gives the by-name form -
+    return "$(base)/watchlists:by_name" * _query_string(["name"], Any[name]);
+end
+
+# _http_method and _request_body of the watchlist write models -
+function _http_method(model::MyCreateWatchlistEndpointModel)::String
+    return "POST";
+end
+
+function _http_method(model::MyUpdateWatchlistEndpointModel)::String
+    return "PUT";
+end
+
+function _http_method(model::MyAddWatchlistAssetEndpointModel)::String
+    return "POST";
+end
+
+function _http_method(model::MyRemoveWatchlistAssetEndpointModel)::String
+    return "DELETE";
+end
+
+function _http_method(model::MyDeleteWatchlistEndpointModel)::String
+    return "DELETE";
+end
+
+function _request_body(model::MyCreateWatchlistEndpointModel)::Dict{String,Any}
+    body = Dict{String,Any}();
+    body["name"] = model.name;
+    body["symbols"] = model.symbols;
+    return body;
+end
+
+function _request_body(model::MyUpdateWatchlistEndpointModel)::Dict{String,Any}
+
+    # the body holds each field that is set -
+    body = Dict{String,Any}();
+    if (model.new_name !== nothing)
+        body["name"] = model.new_name;
+    end
+    if (model.symbols !== nothing)
+        body["symbols"] = model.symbols;
+    end
+    return body;
+end
+
+function _request_body(model::MyAddWatchlistAssetEndpointModel)::Dict{String,Any}
+    body = Dict{String,Any}();
+    body["symbol"] = model.symbol;
+    return body;
 end
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #
