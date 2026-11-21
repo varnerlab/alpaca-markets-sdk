@@ -4,7 +4,7 @@
 # --- PUBLIC METHODS BELOW HERE -------------------------------------------------------------------------------- #
 """
     api(client::AlpacaClient, model::AbstractAlpacaEndpointModel;
-        handler::Function = _default_handler)
+        handler::Function = _default_handler, max_pages::Union{Nothing,Int} = nothing)
 
 Make the HTTP call for an endpoint model and process the response body with a handler.
 A paginated endpoint is called once for each page, and the handler results are merged in page order.
@@ -14,15 +14,22 @@ A model whose HTTP method is not `GET` sends one request, with the JSON body of 
 - `client::AlpacaClient`: the client that holds the credentials and the base URLs.
 - `model::AbstractAlpacaEndpointModel`: the endpoint model that describes the request.
 - `handler::Function`: the function that receives the type of the model and the body of a page as a `String`.
+- `max_pages::Union{Nothing,Int}`: the number of pages after which a paginated request stops. `nothing` follows every page. A write model ignores it.
 
 ### Returns
 - The result of the handler. A paginated endpoint returns the merged result of all pages.
 
 ### Throws
 - `AlpacaError`: when the response status is not in the range 200 to 299.
+- `ArgumentError`: when `max_pages` is less than `1`. The call sends no request.
 """
 function api(client::AlpacaClient, model::AbstractAlpacaEndpointModel;
-    handler::Function = _default_handler)
+    handler::Function = _default_handler, max_pages::Union{Nothing,Int} = nothing)
+
+    # check the page cap before any request -
+    if (max_pages !== nothing && max_pages < 1)
+        throw(ArgumentError("max_pages must be at least 1, got $(max_pages)"));
+    end
 
     # the URL of the first page -
     first_url = url(client, model);
@@ -47,6 +54,11 @@ function api(client::AlpacaClient, model::AbstractAlpacaEndpointModel;
         end
         token = _next_page_token(body);
         if (token === nothing)
+            break;
+        end
+
+        # stop at the page cap -
+        if (max_pages !== nothing && length(pages) >= max_pages)
             break;
         end
         request_url = first_url * "&page_token=" * URIs.escapeuri(token);
