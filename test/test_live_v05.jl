@@ -3,20 +3,20 @@
 #
 #   ALPACA_LIVE_TESTS=1 ALPACA_LIVE_WRITE_TESTS=1 julia --project=. -e 'using Pkg; Pkg.test()'
 #
-# An endpoint that the paper account's subscription refuses (HTTP 403) is recorded as a skip with Alpaca's
-# message. Any other HTTP error is a failure. The tests never print the credentials.
+# An endpoint that the paper account's subscription refuses (HTTP 403 with "subscription" in the message) is
+# recorded as a skip with Alpaca's message. Any other HTTP error, including any other 403, is a failure. The tests never print the credentials.
 
 """
     _live_read(client::AlpacaClient, model) -> Tuple{Any,String}
 
 Send one read request. Returns `(result, "")` when Alpaca answers, and `(nothing, message)` when Alpaca refuses
-the request with HTTP 403. Any other error is thrown.
+the request with HTTP 403 and a message that contains "subscription", in any case. Any other error is thrown.
 """
 function _live_read(client::AlpacaClient, model)::Tuple{Any,String}
     try
         return (api(client, model), "");
     catch error
-        if (error isa AlpacaError && error.status == 403)
+        if (error isa AlpacaError && error.status == 403 && occursin("subscription", lowercase(error.message)))
             return (nothing, error.message);
         end
         rethrow(error);
