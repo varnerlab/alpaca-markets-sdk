@@ -70,6 +70,12 @@ end
     @test names(df)[1] == "market" && df.market == ["NYSE"]
     @test df[1, :date] == "2026-11-20"
 
+    # an empty or absent calendar keeps the market column -
+    df = Alpaca._default_handler(MyMarketCalendarEndpointModel, """{"calendar":[],"market":{"acronym":"NYSE"}}""")
+    @test size(df) == (0, 1) && names(df)[1] == "market"
+    df = Alpaca._default_handler(MyMarketCalendarEndpointModel, """{"market":{"acronym":"NYSE"}}""")
+    @test size(df, 1) == 0 && names(df)[1] == "market"
+
     # clocks -
     df = Alpaca._default_handler(MyMarketClocksEndpointModel,
         """{"clocks":[{"market":{"acronym":"NYSE","name":"NYSE"},"timestamp":"2026-11-20T15:00:00Z","is_market_day":true,"phase":"core","next_market_open":"2026-11-23T14:30:00Z"}]}""")

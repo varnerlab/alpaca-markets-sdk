@@ -1102,9 +1102,6 @@ function _default_handler(model::Type{MyMarketCalendarEndpointModel}, body::Stri
 
     # the calendar entries become the columns after the market -
     table = _records_table(_json_records(body, String["calendar"]));
-    if (size(table, 1) == 0)
-        return table;
-    end
 
     # read the acronym of the market, and put it first in every row -
     parsed = JSON3.read(body);
@@ -1112,7 +1109,8 @@ function _default_handler(model::Type{MyMarketCalendarEndpointModel}, body::Stri
     if (haskey(parsed, :market) == true && parsed[:market] !== nothing)
         acronym = String(get(parsed[:market], :acronym, ""));
     end
-    insertcols!(table, 1, :market => fill(acronym, size(table, 1)));
+    markets = Vector{Union{Missing,String}}(fill(acronym, size(table, 1)));
+    insertcols!(table, 1, :market => markets);
     return table;
 end
 
