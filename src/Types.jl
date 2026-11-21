@@ -2542,3 +2542,226 @@ mutable struct MyCryptoSnapshotsEndpointModel <: AbstractAlpacaCryptoDataEndpoin
         return new(_to_symbol_vector(symbols), loc);
     end
 end
+
+"""
+    mutable struct MyNewsEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+Endpoint model for the Alpaca `/news` endpoint.
+This endpoint returns one page of at most 50 news articles. The endpoint is not paginated by `api`, so pass the `next_page_token` of a response as `page_token` to ask for the next page.
+
+### Fields
+- `symbols::Union{Nothing,Vector{String}}`: the symbols that the articles must mention, or `nothing` for all symbols. The keyword accepts a `String` or a vector of strings.
+- `start::Union{Nothing,String,Date,DateTime}`: the first time of the request, or `nothing` to leave it open.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `sort::String`: the sort order of the articles by creation time, `"asc"` or `"desc"`.
+- `limit::Int`: the largest number of articles to return, at most 50.
+- `include_content::Bool`: `true` to include the full content of each article.
+- `exclude_contentless::Bool`: `true` to leave out the articles that have no content.
+- `page_token::Union{Nothing,String}`: the token of the page to return, or `nothing` for the first page.
+
+### Constructors
+- `MyNewsEndpointModel(; symbols = nothing, start = nothing, finish = nothing, sort::String = "desc", limit::Int = 50, include_content::Bool = false, exclude_contentless::Bool = false, page_token::Union{Nothing,String} = nothing)`: returns a new `MyNewsEndpointModel` instance.
+"""
+mutable struct MyNewsEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+    # data -
+    symbols::Union{Nothing,Vector{String}}
+    start::Union{Nothing,String,Date,DateTime}
+    finish::Union{Nothing,String,Date,DateTime}
+    sort::String
+    limit::Int
+    include_content::Bool
+    exclude_contentless::Bool
+    page_token::Union{Nothing,String}
+
+    # methods -
+    MyNewsEndpointModel(;
+        symbols::Union{Nothing,AbstractString,AbstractVector} = nothing, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, sort::String = "desc", limit::Int = 50, include_content::Bool = false, exclude_contentless::Bool = false, page_token::Union{Nothing,String} = nothing) = new(_to_symbol_vector(symbols), start, finish, sort, limit, include_content, exclude_contentless, page_token);
+end
+
+"""
+    mutable struct MyMostActivesEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+Endpoint model for the Alpaca `/screener/stocks/most-actives` endpoint.
+This endpoint returns the most active stocks of the day.
+
+### Fields
+- `by::String`: the ranking, `"volume"` or `"trades"`.
+- `top::Int`: the number of stocks to return, at most 100.
+
+### Constructors
+- `MyMostActivesEndpointModel(; by::String = "volume", top::Int = 10)`: returns a new `MyMostActivesEndpointModel` instance.
+  The constructor throws an `ArgumentError` unless `by` is `"volume"` or `"trades"`.
+"""
+mutable struct MyMostActivesEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+    # data -
+    by::String
+    top::Int
+
+    # methods -
+    function MyMostActivesEndpointModel(; by::String = "volume", top::Int = 10)
+
+        # the ranking must be a value that Alpaca accepts -
+        if (by != "volume" && by != "trades")
+            throw(ArgumentError("`by` must be \"volume\" or \"trades\""));
+        end
+        return new(by, top);
+    end
+end
+
+"""
+    mutable struct MyMoversEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+Endpoint model for the Alpaca `/screener/{market_type}/movers` endpoint.
+This endpoint returns the top gainers and the top losers of the day.
+
+### Fields
+- `market_type::String`: the market to screen, `"stocks"` or `"crypto"`. The URL puts this field in the path.
+- `top::Int`: the number of gainers and the number of losers to return, at most 50.
+
+### Constructors
+- `MyMoversEndpointModel(; market_type::String = "stocks", top::Int = 10)`: returns a new `MyMoversEndpointModel` instance.
+  The constructor throws an `ArgumentError` unless `market_type` is `"stocks"` or `"crypto"`.
+"""
+mutable struct MyMoversEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+    # data -
+    market_type::String
+    top::Int
+
+    # methods -
+    function MyMoversEndpointModel(; market_type::String = "stocks", top::Int = 10)
+
+        # the market type must be a value that Alpaca accepts -
+        if (market_type != "stocks" && market_type != "crypto")
+            throw(ArgumentError("`market_type` must be \"stocks\" or \"crypto\""));
+        end
+        return new(market_type, top);
+    end
+end
+
+"""
+    mutable struct MyCorporateActionsEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+Endpoint model for the Alpaca `/v1/corporate-actions` endpoint.
+This endpoint returns corporate actions such as cash dividends and splits. Its base URL uses `v1`, not `v1beta1`.
+
+### Fields
+- `symbols::Union{Nothing,Vector{String}}`: the symbols to request, or `nothing`. The keyword accepts a `String` or a vector of strings.
+- `cusips::Union{Nothing,Vector{String}}`: the CUSIPs to request, or `nothing`. The keyword accepts a `String` or a vector of strings.
+- `types::Union{Nothing,Vector{String}}`: the corporate action types to request, e.g., `"cash_dividend"`, or `nothing` for all types. The keyword accepts a `String` or a vector of strings.
+- `start::Union{Nothing,String,Date,DateTime}`: the first date of the request, or `nothing` to leave it open.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last date of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `ids::Union{Nothing,Vector{String}}`: the corporate action identifiers to request, or `nothing`. The keyword accepts a `String` or a vector of strings.
+- `limit::Int`: the largest number of actions to return per page.
+- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+- `region::Union{Nothing,String}`: the region, `"us"`, `"non_us"`, or `"all"`, or `nothing` to leave it to Alpaca.
+- `data_quality::Union{Nothing,String}`: `"complete"` or `"all"`, or `nothing` to leave it to Alpaca.
+
+### Constructors
+- `MyCorporateActionsEndpointModel(; symbols = nothing, cusips = nothing, types = nothing, start = nothing, finish = nothing, ids = nothing, limit::Int = 100, sort = nothing, region = nothing, data_quality = nothing)`: returns a new `MyCorporateActionsEndpointModel` instance.
+"""
+mutable struct MyCorporateActionsEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+    # data -
+    symbols::Union{Nothing,Vector{String}}
+    cusips::Union{Nothing,Vector{String}}
+    types::Union{Nothing,Vector{String}}
+    start::Union{Nothing,String,Date,DateTime}
+    finish::Union{Nothing,String,Date,DateTime}
+    ids::Union{Nothing,Vector{String}}
+    limit::Int
+    sort::Union{Nothing,String}
+    region::Union{Nothing,String}
+    data_quality::Union{Nothing,String}
+
+    # methods -
+    MyCorporateActionsEndpointModel(;
+        symbols::Union{Nothing,AbstractString,AbstractVector} = nothing, cusips::Union{Nothing,AbstractString,AbstractVector} = nothing, types::Union{Nothing,AbstractString,AbstractVector} = nothing, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, ids::Union{Nothing,AbstractString,AbstractVector} = nothing, limit::Int = 100, sort::Union{Nothing,String} = nothing, region::Union{Nothing,String} = nothing, data_quality::Union{Nothing,String} = nothing) = new(_to_symbol_vector(symbols), _to_symbol_vector(cusips), _to_symbol_vector(types), start, finish, _to_symbol_vector(ids), limit, sort, region, data_quality);
+end
+
+"""
+    mutable struct MyLogoEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+Endpoint model for the Alpaca `/logos/{symbol}` endpoint.
+This endpoint returns the logo of a company as a PNG image. It is the one read model whose default handler returns a `Vector{UInt8}` (the bytes of the PNG), not a `DataFrame`.
+
+### Fields
+- `symbol::String`: the symbol of the company. The URL puts this field, escaped, in the path.
+- `placeholder::Bool`: `true` to get a placeholder image when the company has no logo.
+
+### Constructors
+- `MyLogoEndpointModel(; symbol::String, placeholder::Bool = true)`: returns a new `MyLogoEndpointModel` instance.
+"""
+mutable struct MyLogoEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+    # data -
+    symbol::String
+    placeholder::Bool
+
+    # methods -
+    MyLogoEndpointModel(; symbol::String, placeholder::Bool = true) = new(symbol, placeholder);
+end
+
+"""
+    mutable struct MyFixedIncomeLatestPricesEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+Endpoint model for the Alpaca `/fixed_income/latest/prices` endpoint.
+This endpoint returns the latest price and yields of each of several bonds.
+
+### Fields
+- `isins::Vector{String}`: the ISINs of the bonds. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+
+### Constructors
+- `MyFixedIncomeLatestPricesEndpointModel(; isins::Union{AbstractString,AbstractVector})`: returns a new `MyFixedIncomeLatestPricesEndpointModel` instance.
+  The constructor throws an `ArgumentError` when `isins` is empty.
+"""
+mutable struct MyFixedIncomeLatestPricesEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+    # data -
+    isins::Vector{String}
+
+    # methods -
+    function MyFixedIncomeLatestPricesEndpointModel(; isins::Union{AbstractString,AbstractVector})
+
+        # the request needs at least one ISIN -
+        isin_vector = _to_symbol_vector(isins);
+        if (isempty(isin_vector) == true)
+            throw(ArgumentError("`isins` must hold at least one ISIN"));
+        end
+        return new(isin_vector);
+    end
+end
+
+"""
+    mutable struct MyFixedIncomeLatestQuotesEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+Endpoint model for the Alpaca `/fixed_income/latest/quotes` endpoint.
+This endpoint returns the latest bid and ask quotes of each of several bonds.
+
+### Fields
+- `isins::Vector{String}`: the ISINs of the bonds. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `trade_size::Union{Nothing,Int}`: the trade size that the quotes are for, or `nothing` to leave it to Alpaca.
+
+### Constructors
+- `MyFixedIncomeLatestQuotesEndpointModel(; isins::Union{AbstractString,AbstractVector}, trade_size::Union{Nothing,Int} = nothing)`: returns a new `MyFixedIncomeLatestQuotesEndpointModel` instance.
+  The constructor throws an `ArgumentError` when `isins` is empty.
+"""
+mutable struct MyFixedIncomeLatestQuotesEndpointModel <: AbstractAlpacaMarketDataEndpointModel
+
+    # data -
+    isins::Vector{String}
+    trade_size::Union{Nothing,Int}
+
+    # methods -
+    function MyFixedIncomeLatestQuotesEndpointModel(; isins::Union{AbstractString,AbstractVector}, trade_size::Union{Nothing,Int} = nothing)
+
+        # the request needs at least one ISIN -
+        isin_vector = _to_symbol_vector(isins);
+        if (isempty(isin_vector) == true)
+            throw(ArgumentError("`isins` must hold at least one ISIN"));
+        end
+        return new(isin_vector, trade_size);
+    end
+end

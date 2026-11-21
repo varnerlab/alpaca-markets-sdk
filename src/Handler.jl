@@ -2175,4 +2175,205 @@ function _default_handler(model::Type{MyCryptoSnapshotsEndpointModel}, body::Str
     return _snapshots_table(symbols, snapshots, false);
 end
 
+"""
+    _default_handler(model::Type{MyNewsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/news` endpoint. The articles are under the `news` key (a bare JSON array is also accepted).
+The table has one row for each article, with the columns `id`, `created_at`, `updated_at` (UTC `DateTime`), `headline`, `author`, `source`, `summary`, `url`,
+`symbols` (the symbols of the article joined with commas), and `content` (`missing` unless the response sends it).
+No articles give a table with no rows and the same columns.
+"""
+function _default_handler(model::Type{MyNewsEndpointModel}, body::String)::DataFrame
+
+    # the columns, empty -
+    ids = Int[];
+    created_at = Union{Missing,DateTime}[];
+    updated_at = Union{Missing,DateTime}[];
+    headlines = Union{Missing,String}[];
+    authors = Union{Missing,String}[];
+    sources = Union{Missing,String}[];
+    summaries = Union{Missing,String}[];
+    urls = Union{Missing,String}[];
+    symbol_lists = String[];
+    contents = Union{Missing,String}[];
+
+    # one row for each article; a field that the article lacks is missing -
+    for article in _json_records(body, String["news"])
+        push!(ids, Int(article[:id]));
+        push!(created_at, _parse_utc(get(article, :created_at, nothing)));
+        push!(updated_at, _parse_utc(get(article, :updated_at, nothing)));
+        push!(headlines, _text_or_missing(get(article, :headline, nothing)));
+        push!(authors, _text_or_missing(get(article, :author, nothing)));
+        push!(sources, _text_or_missing(get(article, :source, nothing)));
+        push!(summaries, _text_or_missing(get(article, :summary, nothing)));
+        push!(urls, _text_or_missing(get(article, :url, nothing)));
+        push!(contents, _text_or_missing(get(article, :content, nothing)));
+
+        # the symbols of the article, joined with commas -
+        article_symbols = String[];
+        if (haskey(article, :symbols) == true && article[:symbols] !== nothing)
+            for symbol in article[:symbols]
+                push!(article_symbols, String(symbol));
+            end
+        end
+        push!(symbol_lists, join(article_symbols, ","));
+    end
+
+    # assemble the table -
+    return DataFrame(id = ids, created_at = created_at, updated_at = updated_at, headline = headlines, author = authors,
+        source = sources, summary = summaries, url = urls, symbols = symbol_lists, content = contents);
+end
+
+# _text_or_missing: a JSON text value as a String, and anything else (null, or a field that is not sent) as missing -
+function _text_or_missing(x)::Union{Missing,String}
+    if (x isa AbstractString)
+        return String(x);
+    end
+    return missing;
+end
+
+"""
+    _default_handler(model::Type{MyMostActivesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/screener/stocks/most-actives` endpoint. The stocks are under the `most_actives` key.
+The table has one row for each stock, with the columns `symbol`, `volume`, and `trade_count`.
+No stocks give a table with no rows and the same columns.
+"""
+function _default_handler(model::Type{MyMostActivesEndpointModel}, body::String)::DataFrame
+
+    # one row for each stock -
+    symbols = String[];
+    volumes = Float64[];
+    trade_counts = Float64[];
+    for record in _json_records(body, String["most_actives"])
+        push!(symbols, String(record[:symbol]));
+        push!(volumes, Float64(record[:volume]));
+        push!(trade_counts, Float64(record[:trade_count]));
+    end
+    return DataFrame(symbol = symbols, volume = volumes, trade_count = trade_counts);
+end
+
+"""
+    _default_handler(model::Type{MyMoversEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/screener/{market_type}/movers` endpoint. The `gainers` and `losers` keys hold the lists.
+The table has one row for each mover, with the columns `direction` (`"gainer"` or `"loser"`), `symbol`, `price`, `change`, and `percent_change`.
+All gainers come first, then all losers, each in response order. No movers give a table with no rows and the same columns.
+"""
+function _default_handler(model::Type{MyMoversEndpointModel}, body::String)::DataFrame
+
+    # parse the response, and collect the gainers and then the losers -
+    parsed = JSON3.read(body);
+    directions = String[];
+    symbols = String[];
+    prices = Float64[];
+    changes = Float64[];
+    percent_changes = Float64[];
+    group_keys = Symbol[:gainers, :losers];
+    group_names = String["gainer", "loser"];
+    for group_index in eachindex(group_keys)
+
+        # a list that is missing or null has no movers -
+        if (haskey(parsed, group_keys[group_index]) == false || parsed[group_keys[group_index]] === nothing)
+            continue;
+        end
+        for record in parsed[group_keys[group_index]]
+            push!(directions, group_names[group_index]);
+            push!(symbols, String(record[:symbol]));
+            push!(prices, Float64(record[:price]));
+            push!(changes, Float64(record[:change]));
+            push!(percent_changes, Float64(record[:percent_change]));
+        end
+    end
+    return DataFrame(direction = directions, symbol = symbols, price = prices, change = changes, percent_change = percent_changes);
+end
+
+"""
+    _default_handler(model::Type{MyCorporateActionsEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/v1/corporate-actions` endpoint. The `corporate_actions` object groups the records by type, e.g., `cash_dividends`.
+The table has one row for each action. The first column is `type`, the group key, followed by the columns of `_records_table`
+(a field that an action lacks is `missing`). No actions give a table with no rows and the column `type`.
+"""
+function _default_handler(model::Type{MyCorporateActionsEndpointModel}, body::String)::DataFrame
+
+    # the groups of actions; no object, or a null object, means no actions -
+    parsed = JSON3.read(body);
+    groups = DataFrame[];
+    if (haskey(parsed, :corporate_actions) == true && parsed[:corporate_actions] !== nothing)
+        for (group_key, group_records) in pairs(parsed[:corporate_actions])
+
+            # a table for the group, with the group key as the first column -
+            records = Any[];
+            for record in group_records
+                push!(records, record);
+            end
+            group_table = _records_table(records);
+            insertcols!(group_table, 1, :type => fill(String(group_key), length(records)));
+            push!(groups, group_table);
+        end
+    end
+
+    # no actions give an empty table with the type column -
+    if (isempty(groups) == true)
+        return DataFrame(type = String[]);
+    end
+
+    # stack the groups, with the columns of every group -
+    return reduce(vcat, groups; cols = :union);
+end
+
+"""
+    _default_handler(model::Type{MyLogoEndpointModel}, body::String) -> Vector{UInt8}
+
+Process the response of the `/logos/{symbol}` endpoint. The body is the PNG image of the logo.
+This is the one read handler that does not return a `DataFrame`: it returns the bytes of the body, unchanged.
+"""
+function _default_handler(model::Type{MyLogoEndpointModel}, body::String)::Vector{UInt8}
+    return Vector{UInt8}(body);
+end
+
+# _isin_records_table: a table with one row for each ISIN under the key of the response. The first column is isin, followed by the columns of _records_table -
+function _isin_records_table(body::String, key::Symbol)::DataFrame
+
+    # a table for each ISIN, with the ISIN as the first column -
+    parsed = JSON3.read(body);
+    tables = DataFrame[];
+    if (haskey(parsed, key) == true && parsed[key] !== nothing)
+        for (isin, record) in pairs(parsed[key])
+            isin_table = _records_table(Any[record]);
+            insertcols!(isin_table, 1, :isin => String[String(isin)]);
+            push!(tables, isin_table);
+        end
+    end
+
+    # no ISINs give an empty table with the isin column -
+    if (isempty(tables) == true)
+        return DataFrame(isin = String[]);
+    end
+    return reduce(vcat, tables; cols = :union);
+end
+
+"""
+    _default_handler(model::Type{MyFixedIncomeLatestPricesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/fixed_income/latest/prices` endpoint. The records are under the `prices` key, one for each ISIN.
+The table has one row for each ISIN. The first column is `isin`, followed by the fields of the record under Alpaca's short names
+(`t` as a UTC `DateTime`, `p`, `ytm`, `ytw`). No ISINs give a table with no rows and the column `isin`.
+"""
+function _default_handler(model::Type{MyFixedIncomeLatestPricesEndpointModel}, body::String)::DataFrame
+    return _isin_records_table(body, :prices);
+end
+
+"""
+    _default_handler(model::Type{MyFixedIncomeLatestQuotesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/fixed_income/latest/quotes` endpoint. The records are under the `quotes` key, one for each ISIN.
+The table has one row for each ISIN. The first column is `isin`, followed by the fields of the record under Alpaca's short names
+(`t` as a UTC `DateTime`, `bp`, `bs`, `ap`, `as`, and so on). No ISINs give a table with no rows and the column `isin`.
+"""
+function _default_handler(model::Type{MyFixedIncomeLatestQuotesEndpointModel}, body::String)::DataFrame
+    return _isin_records_table(body, :quotes);
+end
+
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #

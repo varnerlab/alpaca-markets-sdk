@@ -2018,6 +2018,193 @@ function url(base::String, model::MyCryptoSnapshotsEndpointModel)::String
     return url_string;
 end
 
+"""
+    url(base::String, model::MyNewsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/news` endpoint.
+An HTTP GET call to this URL returns one page of news articles.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
+- `model::MyNewsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyNewsEndpointModel)::String
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "start", "end", "sort", "limit", "include_content", "exclude_contentless", "page_token"];
+    query_values = Any[_symbols_value(model.symbols), _time_value(model.start), _time_value(model.finish), _query_value(model.sort), _query_value(model.limit), _query_value(model.include_content), _query_value(model.exclude_contentless), _query_value(model.page_token)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    return "$(base)/news" * query_string;
+end
+
+"""
+    url(base::String, model::MyMostActivesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/screener/stocks/most-actives` endpoint.
+An HTTP GET call to this URL returns the most active stocks.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
+- `model::MyMostActivesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyMostActivesEndpointModel)::String
+
+    # build the query string -
+    query_string = _query_string(String["by", "top"], Any[_query_value(model.by), _query_value(model.top)]);
+
+    # build the URL string: base + path + query string -
+    return "$(base)/screener/stocks/most-actives" * query_string;
+end
+
+"""
+    url(base::String, model::MyMoversEndpointModel) -> String
+
+Build the URL string for the Alpaca `/screener/{market_type}/movers` endpoint.
+An HTTP GET call to this URL returns the top gainers and losers.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
+- `model::MyMoversEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyMoversEndpointModel)::String
+
+    # build the query string -
+    query_string = _query_string(String["top"], Any[_query_value(model.top)]);
+
+    # build the URL string: base + path + query string -
+    return "$(base)/screener/$(URIs.escapeuri(model.market_type))/movers" * query_string;
+end
+
+"""
+    url(base::String, model::MyCorporateActionsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/corporate-actions` endpoint.
+An HTTP GET call to this URL returns one page of corporate actions. The base URL of the client for this model ends in `v1`.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
+- `model::MyCorporateActionsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyCorporateActionsEndpointModel)::String
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "cusips", "types", "start", "end", "ids", "limit", "sort", "region", "data_quality"];
+    query_values = Any[_symbols_value(model.symbols), _symbols_value(model.cusips), _symbols_value(model.types), _time_value(model.start), _time_value(model.finish), _symbols_value(model.ids), _query_value(model.limit), _query_value(model.sort), _query_value(model.region), _query_value(model.data_quality)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    return "$(base)/corporate-actions" * query_string;
+end
+
+"""
+    url(base::String, model::MyLogoEndpointModel) -> String
+
+Build the URL string for the Alpaca `/logos/{symbol}` endpoint.
+An HTTP GET call to this URL returns the logo as PNG bytes. The symbol is escaped in the path.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
+- `model::MyLogoEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyLogoEndpointModel)::String
+
+    # build the query string -
+    query_string = _query_string(String["placeholder"], Any[_query_value(model.placeholder)]);
+
+    # build the URL string: base + path + query string -
+    return "$(base)/logos/$(URIs.escapeuri(model.symbol))" * query_string;
+end
+
+"""
+    url(base::String, model::MyFixedIncomeLatestPricesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/fixed_income/latest/prices` endpoint.
+An HTTP GET call to this URL returns the latest price of each bond.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
+- `model::MyFixedIncomeLatestPricesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyFixedIncomeLatestPricesEndpointModel)::String
+
+    # build the query string -
+    query_string = _query_string(String["isins"], Any[_symbols_value(model.isins)]);
+
+    # build the URL string: base + path + query string -
+    return "$(base)/fixed_income/latest/prices" * query_string;
+end
+
+"""
+    url(base::String, model::MyFixedIncomeLatestQuotesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/fixed_income/latest/quotes` endpoint.
+An HTTP GET call to this URL returns the latest quote of each bond.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
+- `model::MyFixedIncomeLatestQuotesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyFixedIncomeLatestQuotesEndpointModel)::String
+
+    # build the query string -
+    query_string = _query_string(String["isins", "trade_size"], Any[_symbols_value(model.isins), _query_value(model.trade_size)]);
+
+    # build the URL string: base + path + query string -
+    return "$(base)/fixed_income/latest/quotes" * query_string;
+end
+
+
 # --- PUBLIC METHODS ABOVE HERE -------------------------------------------------------------------------------- #
 
 # --- PRIVATE METHODS BELOW HERE ------------------------------------------------------------------------------- #
@@ -2044,6 +2231,10 @@ end
 
 function _base_url(client::AlpacaClient, model::AbstractAlpacaMarketDataEndpointModel)::String
     return client.options_data_url;
+end
+
+function _base_url(client::AlpacaClient, model::MyCorporateActionsEndpointModel)::String
+    return _versioned_url(client.data_url, "v1");
 end
 
 function _base_url(client::AlpacaClient, model::MyMarketCalendarEndpointModel)::String
@@ -2110,6 +2301,10 @@ function _is_paginated(model::MyGlobalStockQuotesEndpointModel)::Bool
 end
 
 function _is_paginated(model::MyGlobalStockTradesEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyCorporateActionsEndpointModel)::Bool
     return true;
 end
 

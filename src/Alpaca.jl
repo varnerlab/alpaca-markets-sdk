@@ -62,7 +62,10 @@ export MyAccountEndpointModel, MyClockEndpointModel,
        MyAddWatchlistAssetEndpointModel, MyRemoveWatchlistAssetEndpointModel,
        MyDeleteWatchlistEndpointModel,
        MyUpdateAccountConfigurationsEndpointModel, MyReplaceOrderEndpointModel,
-       MyExerciseOptionEndpointModel, MyDoNotExerciseOptionEndpointModel
+       MyExerciseOptionEndpointModel, MyDoNotExerciseOptionEndpointModel,
+       MyNewsEndpointModel, MyMostActivesEndpointModel, MyMoversEndpointModel,
+       MyCorporateActionsEndpointModel, MyLogoEndpointModel,
+       MyFixedIncomeLatestPricesEndpointModel, MyFixedIncomeLatestQuotesEndpointModel
 
 # Order models
 export MyEquityOrderModel, MyCryptoOrderModel, MyOptionLegModel, MyMixedOrderModel
