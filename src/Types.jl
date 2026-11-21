@@ -1412,6 +1412,14 @@ function Base.showerror(io::IO, e::AlpacaSequenceError)::Nothing
     return nothing;
 end
 
+# _check_id_or_name: throws an ArgumentError unless exactly one of the identifier and the name of a watchlist is set -
+function _check_id_or_name(id::Union{Nothing,String}, name::Union{Nothing,String})::Nothing
+    if ((id === nothing && name === nothing) || (id !== nothing && name !== nothing))
+        throw(ArgumentError("set exactly one of `id` and `name`"));
+    end
+    return nothing;
+end
+
 """
     mutable struct MyWatchlistsEndpointModel <: AbstractAlpacaTradingEndpointModel
 
@@ -1454,9 +1462,7 @@ mutable struct MyWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
     function MyWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing)
 
         # exactly one of the identifier and the name must be set -
-        if ((id === nothing && name === nothing) || (id !== nothing && name !== nothing))
-            throw(ArgumentError("set exactly one of `id` and `name`"));
-        end
+        _check_id_or_name(id, name);
         return new(id, name);
     end
 end
@@ -1513,9 +1519,7 @@ mutable struct MyUpdateWatchlistEndpointModel <: AbstractAlpacaTradingEndpointMo
         new_name::Union{Nothing,String} = nothing, symbols::Union{Nothing,AbstractString,AbstractVector} = nothing)
 
         # exactly one of the identifier and the name must be set -
-        if ((id === nothing && name === nothing) || (id !== nothing && name !== nothing))
-            throw(ArgumentError("set exactly one of `id` and `name`"));
-        end
+        _check_id_or_name(id, name);
 
         # something must change -
         if (new_name === nothing && symbols === nothing)
@@ -1551,9 +1555,7 @@ mutable struct MyAddWatchlistAssetEndpointModel <: AbstractAlpacaTradingEndpoint
     function MyAddWatchlistAssetEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing, symbol::String)
 
         # exactly one of the identifier and the name must be set -
-        if ((id === nothing && name === nothing) || (id !== nothing && name !== nothing))
-            throw(ArgumentError("set exactly one of `id` and `name`"));
-        end
+        _check_id_or_name(id, name);
         return new(id, name, symbol);
     end
 end
@@ -1605,9 +1607,7 @@ mutable struct MyDeleteWatchlistEndpointModel <: AbstractAlpacaTradingEndpointMo
     function MyDeleteWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing)
 
         # exactly one of the identifier and the name must be set -
-        if ((id === nothing && name === nothing) || (id !== nothing && name !== nothing))
-            throw(ArgumentError("set exactly one of `id` and `name`"));
-        end
+        _check_id_or_name(id, name);
         return new(id, name);
     end
 end
