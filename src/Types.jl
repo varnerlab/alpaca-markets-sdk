@@ -1972,3 +1972,243 @@ mutable struct MyDoNotExerciseOptionEndpointModel <: AbstractAlpacaTradingEndpoi
     # methods -
     MyDoNotExerciseOptionEndpointModel(; symbol::String) = new(symbol);
 end
+
+# _check_global_feed: throws an ArgumentError unless the feed is one of the five feeds for stocks on non-US exchanges -
+function _check_global_feed(feed::String)::Nothing
+
+    # the feeds of the Alpaca Stock v3 API -
+    allowed = ["euroctp", "xetr", "xhkg", "xlon", "xsau"];
+    if (feed in allowed)
+        return nothing;
+    end
+    throw(ArgumentError("feed must be one of $(join(allowed, ", ")), got \"$(feed)\""));
+end
+
+"""
+    mutable struct MyGlobalStockBarsEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/{feed}/bars` endpoint (Alpaca's "Stock v3" API).
+This endpoint returns historical bars of stocks on non-US exchanges.
+
+### Fields
+- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `timeframe::String`: the width of each bar, e.g., `"1Day"`.
+- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`. Alpaca requires this field.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `page_size::Int`: the largest number of rows to return per page.
+- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+
+### Constructors
+- `MyGlobalStockBarsEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, page_size::Int = 1000, sort::Union{Nothing,String} = nothing)`: returns a new `MyGlobalStockBarsEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
+"""
+mutable struct MyGlobalStockBarsEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+    # data -
+    feed::String
+    symbols::Vector{String}
+    timeframe::String
+    start::Union{String,Date,DateTime}
+    finish::Union{Nothing,String,Date,DateTime}
+    page_size::Int
+    sort::Union{Nothing,String}
+
+    # methods -
+    function MyGlobalStockBarsEndpointModel(;
+        feed::String, symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, page_size::Int = 1000, sort::Union{Nothing,String} = nothing)
+
+        # check the feed, and build the model -
+        _check_global_feed(feed);
+        return new(feed, _to_symbol_vector(symbols), timeframe, start, finish, page_size, sort);
+    end
+end
+
+"""
+    mutable struct MyGlobalStockQuotesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/{feed}/quotes` endpoint (Alpaca's "Stock v3" API).
+This endpoint returns historical quotes of stocks on non-US exchanges.
+
+### Fields
+- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`. Alpaca requires this field.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `page_size::Int`: the largest number of rows to return per page.
+- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+
+### Constructors
+- `MyGlobalStockQuotesEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, page_size::Int = 1000, sort::Union{Nothing,String} = nothing)`: returns a new `MyGlobalStockQuotesEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
+"""
+mutable struct MyGlobalStockQuotesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+    # data -
+    feed::String
+    symbols::Vector{String}
+    start::Union{String,Date,DateTime}
+    finish::Union{Nothing,String,Date,DateTime}
+    page_size::Int
+    sort::Union{Nothing,String}
+
+    # methods -
+    function MyGlobalStockQuotesEndpointModel(;
+        feed::String, symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, page_size::Int = 1000, sort::Union{Nothing,String} = nothing)
+
+        # check the feed, and build the model -
+        _check_global_feed(feed);
+        return new(feed, _to_symbol_vector(symbols), start, finish, page_size, sort);
+    end
+end
+
+"""
+    mutable struct MyGlobalStockTradesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/{feed}/trades` endpoint (Alpaca's "Stock v3" API).
+This endpoint returns historical trades of stocks on non-US exchanges.
+
+### Fields
+- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`. Alpaca requires this field.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `page_size::Int`: the largest number of rows to return per page.
+- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+
+### Constructors
+- `MyGlobalStockTradesEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, page_size::Int = 1000, sort::Union{Nothing,String} = nothing)`: returns a new `MyGlobalStockTradesEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
+"""
+mutable struct MyGlobalStockTradesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+    # data -
+    feed::String
+    symbols::Vector{String}
+    start::Union{String,Date,DateTime}
+    finish::Union{Nothing,String,Date,DateTime}
+    page_size::Int
+    sort::Union{Nothing,String}
+
+    # methods -
+    function MyGlobalStockTradesEndpointModel(;
+        feed::String, symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, page_size::Int = 1000, sort::Union{Nothing,String} = nothing)
+
+        # check the feed, and build the model -
+        _check_global_feed(feed);
+        return new(feed, _to_symbol_vector(symbols), start, finish, page_size, sort);
+    end
+end
+
+"""
+    mutable struct MyGlobalStockLatestBarsEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/{feed}/latest/bars` endpoint (Alpaca's "Stock v3" API).
+This endpoint returns the latest bar of each of several symbols of stocks on non-US exchanges.
+
+### Fields
+- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+
+### Constructors
+- `MyGlobalStockLatestBarsEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector})`: returns a new `MyGlobalStockLatestBarsEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
+"""
+mutable struct MyGlobalStockLatestBarsEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+    # data -
+    feed::String
+    symbols::Vector{String}
+
+    # methods -
+    function MyGlobalStockLatestBarsEndpointModel(;
+        feed::String, symbols::Union{AbstractString,AbstractVector})
+
+        # check the feed, and build the model -
+        _check_global_feed(feed);
+        return new(feed, _to_symbol_vector(symbols));
+    end
+end
+
+"""
+    mutable struct MyGlobalStockLatestQuotesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/{feed}/latest/quotes` endpoint (Alpaca's "Stock v3" API).
+This endpoint returns the latest quote of each of several symbols of stocks on non-US exchanges.
+
+### Fields
+- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+
+### Constructors
+- `MyGlobalStockLatestQuotesEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector})`: returns a new `MyGlobalStockLatestQuotesEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
+"""
+mutable struct MyGlobalStockLatestQuotesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+    # data -
+    feed::String
+    symbols::Vector{String}
+
+    # methods -
+    function MyGlobalStockLatestQuotesEndpointModel(;
+        feed::String, symbols::Union{AbstractString,AbstractVector})
+
+        # check the feed, and build the model -
+        _check_global_feed(feed);
+        return new(feed, _to_symbol_vector(symbols));
+    end
+end
+
+"""
+    mutable struct MyGlobalStockLatestTradesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/{feed}/latest/trades` endpoint (Alpaca's "Stock v3" API).
+This endpoint returns the latest trade of each of several symbols of stocks on non-US exchanges.
+
+### Fields
+- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+
+### Constructors
+- `MyGlobalStockLatestTradesEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector})`: returns a new `MyGlobalStockLatestTradesEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
+"""
+mutable struct MyGlobalStockLatestTradesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+    # data -
+    feed::String
+    symbols::Vector{String}
+
+    # methods -
+    function MyGlobalStockLatestTradesEndpointModel(;
+        feed::String, symbols::Union{AbstractString,AbstractVector})
+
+        # check the feed, and build the model -
+        _check_global_feed(feed);
+        return new(feed, _to_symbol_vector(symbols));
+    end
+end
+
+"""
+    mutable struct MyGlobalStockSnapshotsEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/{feed}/snapshots` endpoint (Alpaca's "Stock v3" API).
+This endpoint returns the snapshot of each of several symbols of stocks on non-US exchanges.
+
+### Fields
+- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+
+### Constructors
+- `MyGlobalStockSnapshotsEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector})`: returns a new `MyGlobalStockSnapshotsEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
+"""
+mutable struct MyGlobalStockSnapshotsEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
+
+    # data -
+    feed::String
+    symbols::Vector{String}
+
+    # methods -
+    function MyGlobalStockSnapshotsEndpointModel(;
+        feed::String, symbols::Union{AbstractString,AbstractVector})
+
+        # check the feed, and build the model -
+        _check_global_feed(feed);
+        return new(feed, _to_symbol_vector(symbols));
+    end
+end

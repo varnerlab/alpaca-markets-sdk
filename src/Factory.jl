@@ -1425,6 +1425,260 @@ function url(base::String, model::MyDoNotExerciseOptionEndpointModel)::String
     return "$(base)/positions/$(URIs.escapeuri(model.symbol))/do-not-exercise";
 end
 
+"""
+    url(base::String, model::MyGlobalStockBarsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/{feed}/bars` endpoint.
+An HTTP GET call to this URL returns historical bars of stocks on non-US exchanges.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v3"`.
+- `model::MyGlobalStockBarsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyGlobalStockBarsEndpointModel)::String
+
+    # get data from the model -
+    feed = model.feed;
+    symbols = model.symbols;
+    timeframe = model.timeframe;
+    start = model.start;
+    finish = model.finish;
+    page_size = model.page_size;
+    sort = model.sort;
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "timeframe", "start", "end", "page_size", "sort"];
+    query_values = Any[_symbols_value(symbols), _query_value(timeframe), _time_value(start), _time_value(finish), _query_value(page_size), _query_value(sort)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the feed is escaped in the path -
+    url_string = "$(base)/stocks/$(URIs.escapeuri(feed))/bars" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyGlobalStockQuotesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/{feed}/quotes` endpoint.
+An HTTP GET call to this URL returns historical quotes of stocks on non-US exchanges.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v3"`.
+- `model::MyGlobalStockQuotesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyGlobalStockQuotesEndpointModel)::String
+
+    # get data from the model -
+    feed = model.feed;
+    symbols = model.symbols;
+    start = model.start;
+    finish = model.finish;
+    page_size = model.page_size;
+    sort = model.sort;
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "start", "end", "page_size", "sort"];
+    query_values = Any[_symbols_value(symbols), _time_value(start), _time_value(finish), _query_value(page_size), _query_value(sort)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the feed is escaped in the path -
+    url_string = "$(base)/stocks/$(URIs.escapeuri(feed))/quotes" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyGlobalStockTradesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/{feed}/trades` endpoint.
+An HTTP GET call to this URL returns historical trades of stocks on non-US exchanges.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v3"`.
+- `model::MyGlobalStockTradesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyGlobalStockTradesEndpointModel)::String
+
+    # get data from the model -
+    feed = model.feed;
+    symbols = model.symbols;
+    start = model.start;
+    finish = model.finish;
+    page_size = model.page_size;
+    sort = model.sort;
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "start", "end", "page_size", "sort"];
+    query_values = Any[_symbols_value(symbols), _time_value(start), _time_value(finish), _query_value(page_size), _query_value(sort)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the feed is escaped in the path -
+    url_string = "$(base)/stocks/$(URIs.escapeuri(feed))/trades" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyGlobalStockLatestBarsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/{feed}/latest/bars` endpoint.
+An HTTP GET call to this URL returns the latest bar of each of several symbols of stocks on non-US exchanges.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v3"`.
+- `model::MyGlobalStockLatestBarsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyGlobalStockLatestBarsEndpointModel)::String
+
+    # get data from the model -
+    feed = model.feed;
+    symbols = model.symbols;
+
+    # build the query keys and values; a nothing value is left out -
+    query_keys = String["symbols"];
+    query_values = Any[_symbols_value(symbols)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the feed is escaped in the path -
+    url_string = "$(base)/stocks/$(URIs.escapeuri(feed))/latest/bars" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyGlobalStockLatestQuotesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/{feed}/latest/quotes` endpoint.
+An HTTP GET call to this URL returns the latest quote of each of several symbols of stocks on non-US exchanges.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v3"`.
+- `model::MyGlobalStockLatestQuotesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyGlobalStockLatestQuotesEndpointModel)::String
+
+    # get data from the model -
+    feed = model.feed;
+    symbols = model.symbols;
+
+    # build the query keys and values; a nothing value is left out -
+    query_keys = String["symbols"];
+    query_values = Any[_symbols_value(symbols)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the feed is escaped in the path -
+    url_string = "$(base)/stocks/$(URIs.escapeuri(feed))/latest/quotes" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyGlobalStockLatestTradesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/{feed}/latest/trades` endpoint.
+An HTTP GET call to this URL returns the latest trade of each of several symbols of stocks on non-US exchanges.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v3"`.
+- `model::MyGlobalStockLatestTradesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyGlobalStockLatestTradesEndpointModel)::String
+
+    # get data from the model -
+    feed = model.feed;
+    symbols = model.symbols;
+
+    # build the query keys and values; a nothing value is left out -
+    query_keys = String["symbols"];
+    query_values = Any[_symbols_value(symbols)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the feed is escaped in the path -
+    url_string = "$(base)/stocks/$(URIs.escapeuri(feed))/latest/trades" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyGlobalStockSnapshotsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/{feed}/snapshots` endpoint.
+An HTTP GET call to this URL returns the snapshot of each of several symbols of stocks on non-US exchanges.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v3"`.
+- `model::MyGlobalStockSnapshotsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyGlobalStockSnapshotsEndpointModel)::String
+
+    # get data from the model -
+    feed = model.feed;
+    symbols = model.symbols;
+
+    # build the query keys and values; a nothing value is left out -
+    query_keys = String["symbols"];
+    query_values = Any[_symbols_value(symbols)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the feed is escaped in the path -
+    url_string = "$(base)/stocks/$(URIs.escapeuri(feed))/snapshots" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
 # --- PUBLIC METHODS ABOVE HERE -------------------------------------------------------------------------------- #
 
 # --- PRIVATE METHODS BELOW HERE ------------------------------------------------------------------------------- #
@@ -1505,6 +1759,18 @@ function _is_paginated(model::MyStockTradesEndpointModel)::Bool
 end
 
 function _is_paginated(model::MyStockAuctionsEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyGlobalStockBarsEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyGlobalStockQuotesEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyGlobalStockTradesEndpointModel)::Bool
     return true;
 end
 

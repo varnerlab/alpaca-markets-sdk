@@ -811,18 +811,23 @@ function _trades_table(symbols::Vector{Union{Missing,String}}, records::Vector{A
 end
 
 """
-    _snapshots_table(symbols::Vector{Union{Missing,String}}, snapshots::Vector{Any}, with_greeks::Bool) -> DataFrame
+    _snapshots_table(symbols::Vector{Union{Missing,String}}, snapshots::Vector{Any}, with_greeks::Bool; snake_case::Bool = false) -> DataFrame
 
 Build the snapshots table, one row for each snapshot. The columns are `symbol`, then the columns of the trades,
 quotes, and bars tables (without `symbol`) for the `latestTrade`, `latestQuote`, `minuteBar`, `dailyBar`, and
 `prevDailyBar` objects, with the prefixes `latest_trade_`, `latest_quote_`, `minute_bar_`, `daily_bar_`, and
 `prev_daily_bar_`. An object that is absent makes every column of its group `missing`. When `with_greeks` is `true`
 (option snapshots), the columns `implied_volatility`, `delta`, `gamma`, `theta`, `vega`, and `rho` follow.
+When `snake_case` is `true` (stocks on non-US exchanges), the objects are read from the keys `latest_trade`,
+`latest_quote`, `minute_bar`, `daily_bar`, and `prev_daily_bar`. The columns are the same either way.
 """
-function _snapshots_table(symbols::Vector{Union{Missing,String}}, snapshots::Vector{Any}, with_greeks::Bool)::DataFrame
+function _snapshots_table(symbols::Vector{Union{Missing,String}}, snapshots::Vector{Any}, with_greeks::Bool; snake_case::Bool = false)::DataFrame
 
     # the groups of a snapshot: the key in the response, the column prefix, and the kind of table -
     group_keys = [:latestTrade, :latestQuote, :minuteBar, :dailyBar, :prevDailyBar];
+    if (snake_case == true)
+        group_keys = [:latest_trade, :latest_quote, :minute_bar, :daily_bar, :prev_daily_bar];
+    end
     prefixes = ["latest_trade_", "latest_quote_", "minute_bar_", "daily_bar_", "prev_daily_bar_"];
     kinds = ["trade", "quote", "bar", "bar", "bar"];
 
@@ -1936,4 +1941,88 @@ end
 function _default_handler(model::Type{MyDoNotExerciseOptionEndpointModel}, body::String)::DataFrame
     return _empty_table(body);
 end
+"""
+    _default_handler(model::Type{MyGlobalStockBarsEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/stocks/{feed}/bars` endpoint. The records are under the `bars` key, grouped by symbol.
+The table has one row for each record, with the columns of `_bars_table`.
+A `null` or empty `bars` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyGlobalStockBarsEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :bars);
+    return _bars_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyGlobalStockQuotesEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/stocks/{feed}/quotes` endpoint. The records are under the `quotes` key, grouped by symbol.
+The table has one row for each record, with the columns of `_quotes_table`.
+A `null` or empty `quotes` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyGlobalStockQuotesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :quotes);
+    return _quotes_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyGlobalStockTradesEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/stocks/{feed}/trades` endpoint. The records are under the `trades` key, grouped by symbol.
+The table has one row for each record, with the columns of `_trades_table`.
+A `null` or empty `trades` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyGlobalStockTradesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :trades);
+    return _trades_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyGlobalStockLatestBarsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/stocks/{feed}/latest/bars` endpoint. The records are under the `bars` key, one for each symbol.
+The table has one row for each symbol, with the columns of `_bars_table`.
+A `null` or empty `bars` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyGlobalStockLatestBarsEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :bars);
+    return _bars_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyGlobalStockLatestQuotesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/stocks/{feed}/latest/quotes` endpoint. The records are under the `quotes` key, one for each symbol.
+The table has one row for each symbol, with the columns of `_quotes_table`.
+A `null` or empty `quotes` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyGlobalStockLatestQuotesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :quotes);
+    return _quotes_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyGlobalStockLatestTradesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/stocks/{feed}/latest/trades` endpoint. The records are under the `trades` key, one for each symbol.
+The table has one row for each symbol, with the columns of `_trades_table`.
+A `null` or empty `trades` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyGlobalStockLatestTradesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :trades);
+    return _trades_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyGlobalStockSnapshotsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/stocks/{feed}/snapshots` endpoint. The snapshots are under the `snapshots` key, one for
+each symbol, and their keys are in snake_case (`daily_bar`, `latest_quote`, and so on).
+The table has one row for each symbol, with the columns of `_snapshots_table` (without the greeks).
+"""
+function _default_handler(model::Type{MyGlobalStockSnapshotsEndpointModel}, body::String)::DataFrame
+    (symbols, snapshots) = _option_snapshot_records(body);
+    return _snapshots_table(symbols, snapshots, false; snake_case = true);
+end
+
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #
