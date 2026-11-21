@@ -4,6 +4,98 @@
 # --- PUBLIC METHODS ABOVE HERE -------------------------------------------------------------------------------- #
 
 # --- PRIVATE METHODS BELOW HERE ------------------------------------------------------------------------------- #
+# _empty_table: the handler result of a write that Alpaca answers with no body -
+function _empty_table(body::String)::DataFrame
+    return DataFrame();
+end
+
+# _is_time_column: true when the name of a column holds a timestamp that _records_table parses -
+function _is_time_column(name::String)::Bool
+    if (endswith(name, "_at") == true)
+        return true;
+    end
+    if (name == "timestamp" || name == "transaction_time" || name == "t")
+        return true;
+    end
+    return false;
+end
+
+# _record_value: one JSON value as a table cell. A number is a Float64, text in a time column is a UTC DateTime,
+# an array or a deeper object is its JSON text, and null is missing -
+function _record_value(name::String, value)
+    if (value === nothing)
+        return missing;
+    end
+    if (value isa Bool)
+        return value;
+    end
+    if (value isa Number)
+        return Float64(value);
+    end
+    if (value isa AbstractString)
+        if (_is_time_column(name) == true)
+            return _parse_utc(String(value));
+        end
+        return String(value);
+    end
+    return JSON3.write(value);
+end
+
+"""
+    _records_table(records::Vector{Any}) -> DataFrame
+
+Build a table from records whose fields differ by type, e.g., account activities or watchlists.
+The columns are the union of the record keys, in first-seen order, and a field that a record lacks is `missing`.
+A nested object is flattened one level with the prefix `<key>_`, and an array becomes its JSON text.
+Text in a field whose name ends with `_at`, or is `timestamp`, `transaction_time` or `t`, becomes a UTC `DateTime`.
+Every other value keeps its JSON type (`String`, `Float64` for any number, `Bool`), and `null` is `missing`.
+
+### Arguments
+- `records::Vector{Any}`: the parsed JSON objects, one for each row.
+
+### Returns
+- `DataFrame`: one row for each record. No records give an empty table with no columns.
+"""
+function _records_table(records::Vector{Any})::DataFrame
+
+    # flatten each record into (column name, value) pairs, and collect the column names in first-seen order -
+    flat_records = Vector{Dict{String,Any}}();
+    column_names = String[];
+    for record in records
+        flat = Dict{String,Any}();
+        for (key, value) in pairs(record)
+            name = String(key);
+
+            # a nested object is flattened one level -
+            if (value isa JSON3.Object)
+                for (inner_key, inner_value) in pairs(value)
+                    inner_name = name * "_" * String(inner_key);
+                    flat[inner_name] = _record_value(inner_name, inner_value);
+                    if ((inner_name in column_names) == false)
+                        push!(column_names, inner_name);
+                    end
+                end
+            else
+                flat[name] = _record_value(name, value);
+                if ((name in column_names) == false)
+                    push!(column_names, name);
+                end
+            end
+        end
+        push!(flat_records, flat);
+    end
+
+    # one column for each name, with missing where a record lacks the field -
+    table = DataFrame();
+    for name in column_names
+        column = Any[];
+        for flat in flat_records
+            push!(column, get(flat, name, missing));
+        end
+        table[!, Symbol(name)] = identity.(column);
+    end
+    return table;
+end
 """
     _json_records(body::String, list_keys::Vector{String}) -> Vector{Any}
 

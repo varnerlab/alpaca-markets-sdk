@@ -1010,7 +1010,7 @@ function _close_position(client::AlpacaClient, symbol::AbstractString; qty::Unio
     if (percentage !== nothing)
         query["percentage"] = string(percentage);
     end
-    request_url = _build_url(client.trading_url, "/positions/$(symbol)", query);
+    request_url = _build_url(client.trading_url, "/positions/$(URIs.escapeuri(symbol))", query);
     return _http_call(client, "DELETE", request_url);
 end
 

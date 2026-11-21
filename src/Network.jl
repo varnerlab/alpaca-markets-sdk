@@ -8,6 +8,7 @@
 
 Make the HTTP call for an endpoint model and process the response body with a handler.
 A paginated endpoint is called once for each page, and the handler results are merged in page order.
+A model whose HTTP method is not `GET` sends one request, with the JSON body of the model, and is never paginated.
 
 ### Arguments
 - `client::AlpacaClient`: the client that holds the credentials and the base URLs.
@@ -27,6 +28,13 @@ function api(client::AlpacaClient, model::AbstractAlpacaEndpointModel;
     first_url = url(client, model);
     request_url = first_url;
     pages = Any[];
+
+    # a write model sends one request with its own method and body, and returns the result of the handler -
+    method = _http_method(model);
+    if (method != "GET")
+        body = _http_call(client, method, first_url; body = _request_body(model));
+        return handler(typeof(model), body);
+    end
 
     # get a page, process it, and follow the page token until there are no more pages -
     while (true)

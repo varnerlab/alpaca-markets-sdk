@@ -80,24 +80,37 @@ end
 
 # --- PRIVATE METHODS BELOW HERE ------------------------------------------------------------------------------- #
 """
-    _derive_options_url(data_url::AbstractString) -> String
+    _versioned_url(base::AbstractString, version::AbstractString) -> String
 
-Derive the base URL of the options data API from the base URL of the stock data API.
-A `/v2` suffix becomes `/v1beta1`. A URL with no `/v2` segment (e.g., a mock server) is returned unchanged.
+Build the base URL of another Alpaca API version from a base URL that ends in `/v2`.
+A `/v2` suffix becomes `/<version>`, and an inner `/v2/` segment becomes `/<version>/`.
+A URL with no `/v2` segment (e.g., a mock server) is returned unchanged.
+
+### Arguments
+- `base::AbstractString`: the base URL, e.g., `"https://data.alpaca.markets/v2"`.
+- `version::AbstractString`: the version segment of the new URL, e.g., `"v1beta3"`.
+
+### Returns
+- `String`: the base URL of the API version.
 """
-function _derive_options_url(data_url::AbstractString)::String
+function _versioned_url(base::AbstractString, version::AbstractString)::String
 
-    # data.alpaca.markets/v2 becomes data.alpaca.markets/v1beta1 -
-    s = String(data_url);
+    # data.alpaca.markets/v2 becomes data.alpaca.markets/<version> -
+    s = String(base);
     if (endswith(s, "/v2") == true)
-        return s[1:end - length("/v2")] * "/v1beta1";
+        return s[1:end - length("/v2")] * "/" * String(version);
     end
     if (occursin("/v2/", s) == true)
-        return replace(s, "/v2/" => "/v1beta1/");
+        return replace(s, "/v2/" => "/" * String(version) * "/");
     end
 
     # a mock or custom base with no v2 segment keeps the same host -
     return s;
+end
+
+# _derive_options_url: the base URL of the options data API, which is the v1beta1 version of the data URL -
+function _derive_options_url(data_url::AbstractString)::String
+    return _versioned_url(data_url, "v1beta1");
 end
 
 # _parse_float: a JSON value as a Float64; nothing and an empty string become nothing -

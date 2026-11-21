@@ -173,7 +173,7 @@ function url(base::String, model::MyAssetEndpointModel)::String
     symbol = model.symbol;
 
     # build the URL string: base + path -
-    url_string = "$(base)/assets/$(symbol)";
+    url_string = "$(base)/assets/$(URIs.escapeuri(symbol))";
 
     # return the URL string -
     return url_string;
@@ -201,7 +201,7 @@ function url(base::String, model::MyPositionEndpointModel)::String
     symbol = model.symbol;
 
     # build the URL string: base + path -
-    url_string = "$(base)/positions/$(symbol)";
+    url_string = "$(base)/positions/$(URIs.escapeuri(symbol))";
 
     # return the URL string -
     return url_string;
@@ -340,7 +340,7 @@ function url(base::String, model::MyOptionContractEndpointModel)::String
     symbol = model.symbol;
 
     # build the URL string: base + path -
-    url_string = "$(base)/options/contracts/$(symbol)";
+    url_string = "$(base)/options/contracts/$(URIs.escapeuri(symbol))";
 
     # return the URL string -
     return url_string;
@@ -885,7 +885,7 @@ function url(base::String, model::MyOptionChainEndpointModel)::String
     query_string = _query_string(query_keys, query_values);
 
     # build the URL string: base + path + query string -
-    url_string = "$(base)/options/snapshots/$(underlying)" * query_string;
+    url_string = "$(base)/options/snapshots/$(URIs.escapeuri(underlying))" * query_string;
 
     # return the URL string -
     return url_string;
@@ -929,6 +929,28 @@ end
 
 function _base_url(client::AlpacaClient, model::AbstractAlpacaOptionDataEndpointModel)::String
     return client.options_data_url;
+end
+
+function _base_url(client::AlpacaClient, model::AbstractAlpacaCryptoDataEndpointModel)::String
+    return _versioned_url(client.data_url, "v1beta3");
+end
+
+function _base_url(client::AlpacaClient, model::AbstractAlpacaGlobalStockDataEndpointModel)::String
+    return _versioned_url(client.data_url, "v3");
+end
+
+function _base_url(client::AlpacaClient, model::AbstractAlpacaMarketDataEndpointModel)::String
+    return client.options_data_url;
+end
+
+# _http_method: the HTTP method of the request of a model. The default is GET. A write model adds a method -
+function _http_method(model::AbstractAlpacaEndpointModel)::String
+    return "GET";
+end
+
+# _request_body: the body of the request of a model, which api sends as JSON. The default is no body. A write model adds a method -
+function _request_body(model::AbstractAlpacaEndpointModel)
+    return nothing;
 end
 
 # _is_paginated: true when the response of the endpoint holds a next_page_token. The default is false -

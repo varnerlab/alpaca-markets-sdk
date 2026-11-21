@@ -27,6 +27,27 @@ Supertype of the endpoint models that call the options market data API.
 abstract type AbstractAlpacaOptionDataEndpointModel <: AbstractAlpacaEndpointModel end
 
 """
+    AbstractAlpacaCryptoDataEndpointModel <: AbstractAlpacaEndpointModel
+
+Supertype of the endpoint models that call the crypto market data API.
+"""
+abstract type AbstractAlpacaCryptoDataEndpointModel <: AbstractAlpacaEndpointModel end
+
+"""
+    AbstractAlpacaGlobalStockDataEndpointModel <: AbstractAlpacaEndpointModel
+
+Supertype of the endpoint models that call the market data API of stocks on non-US exchanges.
+"""
+abstract type AbstractAlpacaGlobalStockDataEndpointModel <: AbstractAlpacaEndpointModel end
+
+"""
+    AbstractAlpacaMarketDataEndpointModel <: AbstractAlpacaEndpointModel
+
+Supertype of the endpoint models that call the news, screener, logo, and fixed income market data APIs.
+"""
+abstract type AbstractAlpacaMarketDataEndpointModel <: AbstractAlpacaEndpointModel end
+
+"""
     AbstractAlpacaOrderModel
 
 Supertype of the order models that describe an order to submit.

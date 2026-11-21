@@ -25,7 +25,8 @@ export url, api, submit, cancel, roll
 # Abstract types
 export AbstractAlpacaEndpointModel, AbstractAlpacaTradingEndpointModel,
        AbstractAlpacaStockDataEndpointModel, AbstractAlpacaOptionDataEndpointModel,
-       AbstractAlpacaOrderModel
+       AbstractAlpacaOrderModel, AbstractAlpacaCryptoDataEndpointModel,
+       AbstractAlpacaGlobalStockDataEndpointModel, AbstractAlpacaMarketDataEndpointModel
 
 # Read models
 export MyAccountEndpointModel, MyClockEndpointModel,
