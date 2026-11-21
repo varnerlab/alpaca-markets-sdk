@@ -1015,6 +1015,43 @@ function _codes_table(body::String)::DataFrame
     return DataFrame(code = codes, name = names);
 end
 
+# _orderbooks_table: the table of a crypto order book response, one row for each price level -
+# for each symbol, all the bids come first and then all the asks, each in response order -
+function _orderbooks_table(body::String)::DataFrame
+
+    # initialize the columns of the table -
+    timestamps = Union{Missing,DateTime}[];
+    symbols = Union{Missing,String}[];
+    sides = String[];
+    prices = Union{Missing,Float64}[];
+    sizes = Union{Missing,Float64}[];
+
+    # visit the order book of each symbol, in the order of the response -
+    (book_symbols, books) = _symbol_records_under(body, :orderbooks);
+    for i in eachindex(books)
+        book = books[i];
+        timestamp = _parse_utc(get(book, :t, nothing));
+
+        # the bids come first, then the asks -
+        for (side, key) in (("bid", :b), ("ask", :a))
+            levels = get(book, key, nothing);
+            if (levels === nothing)
+                continue;
+            end
+            for level in levels
+                push!(timestamps, timestamp);
+                push!(symbols, book_symbols[i]);
+                push!(sides, side);
+                push!(prices, _float_or_missing(level, :p));
+                push!(sizes, _float_or_missing(level, :s));
+            end
+        end
+    end
+
+    # put the columns into a table, and return it -
+    return DataFrame(timestamp = timestamps, symbol = symbols, side = sides, price = prices, size = sizes);
+end
+
 # _auction_prints!: add the prints of one auction (opening or closing) of one day to the columns of the auctions table -
 function _auction_prints!(columns::Dict{Symbol,Any}, symbol::String, day, label::String, prints)
 
@@ -2023,6 +2060,119 @@ The table has one row for each symbol, with the columns of `_snapshots_table` (w
 function _default_handler(model::Type{MyGlobalStockSnapshotsEndpointModel}, body::String)::DataFrame
     (symbols, snapshots) = _option_snapshot_records(body);
     return _snapshots_table(symbols, snapshots, false; snake_case = true);
+end
+
+"""
+    _default_handler(model::Type{MyOptionExchangesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/options/meta/exchanges` endpoint.
+The table has the columns `code` and `name`, one row for each exchange code.
+"""
+function _default_handler(model::Type{MyOptionExchangesEndpointModel}, body::String)::DataFrame
+    return _codes_table(body);
+end
+
+"""
+    _default_handler(model::Type{MyOptionConditionsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/options/meta/conditions/{ticktype}` endpoint.
+The table has the columns `code` and `name`, one row for each condition code.
+"""
+function _default_handler(model::Type{MyOptionConditionsEndpointModel}, body::String)::DataFrame
+    return _codes_table(body);
+end
+
+"""
+    _default_handler(model::Type{MyCryptoBarsEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/crypto/{loc}/bars` endpoint. The records are under the `bars` key, grouped by pair.
+The table has one row for each record, with the columns of `_bars_table`.
+A `null` or empty `bars` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyCryptoBarsEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :bars);
+    return _bars_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyCryptoQuotesEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/crypto/{loc}/quotes` endpoint. The records are under the `quotes` key, grouped by pair.
+The table has one row for each record, with the columns of `_quotes_table`.
+A `null` or empty `quotes` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyCryptoQuotesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :quotes);
+    return _quotes_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyCryptoTradesEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/crypto/{loc}/trades` endpoint. The records are under the `trades` key, grouped by pair.
+The table has one row for each record, with the columns of `_trades_table`.
+A `null` or empty `trades` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyCryptoTradesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :trades);
+    return _trades_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyCryptoLatestBarsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/crypto/{loc}/latest/bars` endpoint. The records are under the `bars` key, one for each pair.
+The table has one row for each pair, with the columns of `_bars_table`.
+A `null` or empty `bars` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyCryptoLatestBarsEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :bars);
+    return _bars_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyCryptoLatestQuotesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/crypto/{loc}/latest/quotes` endpoint. The records are under the `quotes` key, one for each pair.
+The table has one row for each pair, with the columns of `_quotes_table`.
+A `null` or empty `quotes` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyCryptoLatestQuotesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :quotes);
+    return _quotes_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyCryptoLatestTradesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/crypto/{loc}/latest/trades` endpoint. The records are under the `trades` key, one for each pair.
+The table has one row for each pair, with the columns of `_trades_table`.
+A `null` or empty `trades` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyCryptoLatestTradesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :trades);
+    return _trades_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyCryptoLatestOrderbooksEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/crypto/{loc}/latest/orderbooks` endpoint. The table has one row for each price level, with the columns of `_orderbooks_table`: all bids first, then all asks, each in response order.
+A `null` or empty `orderbooks` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyCryptoLatestOrderbooksEndpointModel}, body::String)::DataFrame
+    return _orderbooks_table(body);
+end
+
+"""
+    _default_handler(model::Type{MyCryptoSnapshotsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/crypto/{loc}/snapshots` endpoint. The snapshots are under the `snapshots` key, one for each pair, and their keys are in camelCase (`dailyBar`, `latestQuote`, and so on).
+The table has one row for each pair, with the columns of `_snapshots_table` (without the greeks).
+"""
+function _default_handler(model::Type{MyCryptoSnapshotsEndpointModel}, body::String)::DataFrame
+    (symbols, snapshots) = _option_snapshot_records(body);
+    return _snapshots_table(symbols, snapshots, false);
 end
 
 # --- PRIVATE METHODS ABOVE HERE ------------------------------------------------------------------------------- #

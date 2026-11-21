@@ -1679,6 +1679,345 @@ function url(base::String, model::MyGlobalStockSnapshotsEndpointModel)::String
     return url_string;
 end
 
+"""
+    url(base::String, model::MyOptionExchangesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/options/meta/exchanges` endpoint.
+An HTTP GET call to this URL returns the map from each option exchange code to its name.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
+- `model::MyOptionExchangesEndpointModel`: the endpoint model, which has no fields.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyOptionExchangesEndpointModel)::String
+
+    # build the URL string: base + path -
+    url_string = "$(base)/options/meta/exchanges";
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyOptionConditionsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/options/meta/conditions/{ticktype}` endpoint.
+An HTTP GET call to this URL returns the map from each option condition code to its name.
+The tick type is part of the path.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
+- `model::MyOptionConditionsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyOptionConditionsEndpointModel)::String
+
+    # build the URL string: base + path; the tick type is escaped in the path -
+    url_string = "$(base)/options/meta/conditions/$(URIs.escapeuri(model.ticktype))";
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyCryptoBarsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/crypto/{loc}/bars` endpoint.
+An HTTP GET call to this URL returns historical bars of crypto pairs.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta3"`.
+- `model::MyCryptoBarsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyCryptoBarsEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    timeframe = model.timeframe;
+    start = model.start;
+    finish = model.finish;
+    limit = model.limit;
+    sort = model.sort;
+    loc = model.loc;
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "timeframe", "start", "end", "limit", "sort"];
+    query_values = Any[_symbols_value(symbols), _query_value(timeframe), _time_value(start), _time_value(finish), _query_value(limit), _query_value(sort)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the location is escaped in the path -
+    url_string = "$(base)/crypto/$(URIs.escapeuri(loc))/bars" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyCryptoQuotesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/crypto/{loc}/quotes` endpoint.
+An HTTP GET call to this URL returns historical quotes of crypto pairs.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta3"`.
+- `model::MyCryptoQuotesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyCryptoQuotesEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    start = model.start;
+    finish = model.finish;
+    limit = model.limit;
+    sort = model.sort;
+    loc = model.loc;
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "start", "end", "limit", "sort"];
+    query_values = Any[_symbols_value(symbols), _time_value(start), _time_value(finish), _query_value(limit), _query_value(sort)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the location is escaped in the path -
+    url_string = "$(base)/crypto/$(URIs.escapeuri(loc))/quotes" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyCryptoTradesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/crypto/{loc}/trades` endpoint.
+An HTTP GET call to this URL returns historical trades of crypto pairs.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta3"`.
+- `model::MyCryptoTradesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyCryptoTradesEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    start = model.start;
+    finish = model.finish;
+    limit = model.limit;
+    sort = model.sort;
+    loc = model.loc;
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "start", "end", "limit", "sort"];
+    query_values = Any[_symbols_value(symbols), _time_value(start), _time_value(finish), _query_value(limit), _query_value(sort)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the location is escaped in the path -
+    url_string = "$(base)/crypto/$(URIs.escapeuri(loc))/trades" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyCryptoLatestBarsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/crypto/{loc}/latest/bars` endpoint.
+An HTTP GET call to this URL returns the latest bar of each of several crypto pairs.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta3"`.
+- `model::MyCryptoLatestBarsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyCryptoLatestBarsEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    loc = model.loc;
+
+    # build the query keys and values; a nothing value is left out -
+    query_keys = String["symbols"];
+    query_values = Any[_symbols_value(symbols)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the location is escaped in the path -
+    url_string = "$(base)/crypto/$(URIs.escapeuri(loc))/latest/bars" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyCryptoLatestQuotesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/crypto/{loc}/latest/quotes` endpoint.
+An HTTP GET call to this URL returns the latest quote of each of several crypto pairs.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta3"`.
+- `model::MyCryptoLatestQuotesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyCryptoLatestQuotesEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    loc = model.loc;
+
+    # build the query keys and values; a nothing value is left out -
+    query_keys = String["symbols"];
+    query_values = Any[_symbols_value(symbols)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the location is escaped in the path -
+    url_string = "$(base)/crypto/$(URIs.escapeuri(loc))/latest/quotes" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyCryptoLatestTradesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/crypto/{loc}/latest/trades` endpoint.
+An HTTP GET call to this URL returns the latest trade of each of several crypto pairs.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta3"`.
+- `model::MyCryptoLatestTradesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyCryptoLatestTradesEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    loc = model.loc;
+
+    # build the query keys and values; a nothing value is left out -
+    query_keys = String["symbols"];
+    query_values = Any[_symbols_value(symbols)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the location is escaped in the path -
+    url_string = "$(base)/crypto/$(URIs.escapeuri(loc))/latest/trades" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyCryptoLatestOrderbooksEndpointModel) -> String
+
+Build the URL string for the Alpaca `/crypto/{loc}/latest/orderbooks` endpoint.
+An HTTP GET call to this URL returns the latest order book of each of several crypto pairs.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta3"`.
+- `model::MyCryptoLatestOrderbooksEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyCryptoLatestOrderbooksEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    loc = model.loc;
+
+    # build the query keys and values; a nothing value is left out -
+    query_keys = String["symbols"];
+    query_values = Any[_symbols_value(symbols)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the location is escaped in the path -
+    url_string = "$(base)/crypto/$(URIs.escapeuri(loc))/latest/orderbooks" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyCryptoSnapshotsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/crypto/{loc}/snapshots` endpoint.
+An HTTP GET call to this URL returns the snapshot of each of several crypto pairs.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta3"`.
+- `model::MyCryptoSnapshotsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyCryptoSnapshotsEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    loc = model.loc;
+
+    # build the query keys and values; a nothing value is left out -
+    query_keys = String["symbols"];
+    query_values = Any[_symbols_value(symbols)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string; the location is escaped in the path -
+    url_string = "$(base)/crypto/$(URIs.escapeuri(loc))/snapshots" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
 # --- PUBLIC METHODS ABOVE HERE -------------------------------------------------------------------------------- #
 
 # --- PRIVATE METHODS BELOW HERE ------------------------------------------------------------------------------- #
@@ -1771,6 +2110,18 @@ function _is_paginated(model::MyGlobalStockQuotesEndpointModel)::Bool
 end
 
 function _is_paginated(model::MyGlobalStockTradesEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyCryptoBarsEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyCryptoQuotesEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyCryptoTradesEndpointModel)::Bool
     return true;
 end
 

@@ -1048,9 +1048,7 @@ mutable struct MyStockConditionsEndpointModel <: AbstractAlpacaStockDataEndpoint
     function MyStockConditionsEndpointModel(; ticktype::String = "trade", tape::String = "A")
 
         # the tick type and the tape must be values that Alpaca accepts -
-        if (ticktype != "trade" && ticktype != "quote")
-            throw(ArgumentError("`ticktype` must be \"trade\" or \"quote\""));
-        end
+        _check_ticktype(ticktype);
         if (tape != "A" && tape != "B" && tape != "C")
             throw(ArgumentError("`tape` must be \"A\", \"B\", or \"C\""));
         end
@@ -2210,5 +2208,337 @@ mutable struct MyGlobalStockSnapshotsEndpointModel <: AbstractAlpacaGlobalStockD
         # check the feed, and build the model -
         _check_global_feed(feed);
         return new(feed, _to_symbol_vector(symbols));
+    end
+end
+
+# _check_ticktype: throws an ArgumentError unless the tick type is "trade" or "quote" -
+function _check_ticktype(ticktype::String)::Nothing
+
+    # the tick types that Alpaca accepts -
+    if (ticktype == "trade" || ticktype == "quote")
+        return nothing;
+    end
+    throw(ArgumentError("`ticktype` must be \"trade\" or \"quote\""));
+end
+
+"""
+    mutable struct MyOptionExchangesEndpointModel <: AbstractAlpacaOptionDataEndpointModel
+
+Endpoint model for the Alpaca `/options/meta/exchanges` endpoint.
+This endpoint returns the map from each option exchange code to the name of the exchange. The model has no fields.
+
+### Fields
+- None: the request has no parameters.
+
+### Constructors
+- `MyOptionExchangesEndpointModel()`: returns a new `MyOptionExchangesEndpointModel` instance.
+"""
+mutable struct MyOptionExchangesEndpointModel <: AbstractAlpacaOptionDataEndpointModel
+
+    # methods -
+    MyOptionExchangesEndpointModel() = new();
+end
+
+"""
+    mutable struct MyOptionConditionsEndpointModel <: AbstractAlpacaOptionDataEndpointModel
+
+Endpoint model for the Alpaca `/options/meta/conditions/{ticktype}` endpoint.
+This endpoint returns the map from each option condition code to its name, for the trades or the quotes.
+
+### Fields
+- `ticktype::String`: the kind of tick whose condition codes to list, `"trade"` or `"quote"`. The URL carries it in the path.
+
+### Constructors
+- `MyOptionConditionsEndpointModel(; ticktype::String = "trade")`: returns a new `MyOptionConditionsEndpointModel` instance.
+  The constructor throws an `ArgumentError` unless `ticktype` is `"trade"` or `"quote"`.
+"""
+mutable struct MyOptionConditionsEndpointModel <: AbstractAlpacaOptionDataEndpointModel
+
+    # data -
+    ticktype::String
+
+    # methods -
+    function MyOptionConditionsEndpointModel(; ticktype::String = "trade")
+
+        # check the tick type, and build the model -
+        _check_ticktype(ticktype);
+        return new(ticktype);
+    end
+end
+
+# _check_crypto_loc: throws an ArgumentError unless the location is one of the five crypto locations -
+function _check_crypto_loc(loc::String)::Nothing
+
+    # the locations of the Alpaca crypto market data API -
+    allowed = ["us", "us-1", "us-2", "eu-1", "bs-1"];
+    if (loc in allowed)
+        return nothing;
+    end
+    throw(ArgumentError("`loc` must be one of $(join(allowed, ", ")), got \"$(loc)\""));
+end
+
+"""
+    mutable struct MyCryptoBarsEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+Endpoint model for the Alpaca `/crypto/{loc}/bars` endpoint.
+This endpoint returns historical bars of crypto pairs.
+
+### Fields
+- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `timeframe::String`: the width of each bar, e.g., `"1Hour"`.
+- `start::Union{Nothing,String,Date,DateTime}`: the first time of the request, or `nothing` to leave it to Alpaca.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `limit::Int`: the largest number of rows to return per page.
+- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+
+### Constructors
+- `MyCryptoBarsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, sort::Union{Nothing,String} = nothing, loc::String = "us")`: returns a new `MyCryptoBarsEndpointModel` instance.
+  The constructor throws an `ArgumentError` when `loc` is not one of the five locations.
+"""
+mutable struct MyCryptoBarsEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    timeframe::String
+    start::Union{Nothing,String,Date,DateTime}
+    finish::Union{Nothing,String,Date,DateTime}
+    limit::Int
+    sort::Union{Nothing,String}
+    loc::String
+
+    # methods -
+    function MyCryptoBarsEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, sort::Union{Nothing,String} = nothing, loc::String = "us")
+
+        # check the location, and build the model -
+        _check_crypto_loc(loc);
+        return new(_to_symbol_vector(symbols), timeframe, start, finish, limit, sort, loc);
+    end
+end
+
+"""
+    mutable struct MyCryptoQuotesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+Endpoint model for the Alpaca `/crypto/{loc}/quotes` endpoint.
+This endpoint returns historical quotes of crypto pairs.
+
+### Fields
+- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `start::Union{Nothing,String,Date,DateTime}`: the first time of the request, or `nothing` to leave it to Alpaca.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `limit::Int`: the largest number of rows to return per page.
+- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+
+### Constructors
+- `MyCryptoQuotesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, sort::Union{Nothing,String} = nothing, loc::String = "us")`: returns a new `MyCryptoQuotesEndpointModel` instance.
+  The constructor throws an `ArgumentError` when `loc` is not one of the five locations.
+"""
+mutable struct MyCryptoQuotesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    start::Union{Nothing,String,Date,DateTime}
+    finish::Union{Nothing,String,Date,DateTime}
+    limit::Int
+    sort::Union{Nothing,String}
+    loc::String
+
+    # methods -
+    function MyCryptoQuotesEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, sort::Union{Nothing,String} = nothing, loc::String = "us")
+
+        # check the location, and build the model -
+        _check_crypto_loc(loc);
+        return new(_to_symbol_vector(symbols), start, finish, limit, sort, loc);
+    end
+end
+
+"""
+    mutable struct MyCryptoTradesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+Endpoint model for the Alpaca `/crypto/{loc}/trades` endpoint.
+This endpoint returns historical trades of crypto pairs.
+
+### Fields
+- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `start::Union{Nothing,String,Date,DateTime}`: the first time of the request, or `nothing` to leave it to Alpaca.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `limit::Int`: the largest number of rows to return per page.
+- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+
+### Constructors
+- `MyCryptoTradesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, sort::Union{Nothing,String} = nothing, loc::String = "us")`: returns a new `MyCryptoTradesEndpointModel` instance.
+  The constructor throws an `ArgumentError` when `loc` is not one of the five locations.
+"""
+mutable struct MyCryptoTradesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    start::Union{Nothing,String,Date,DateTime}
+    finish::Union{Nothing,String,Date,DateTime}
+    limit::Int
+    sort::Union{Nothing,String}
+    loc::String
+
+    # methods -
+    function MyCryptoTradesEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, sort::Union{Nothing,String} = nothing, loc::String = "us")
+
+        # check the location, and build the model -
+        _check_crypto_loc(loc);
+        return new(_to_symbol_vector(symbols), start, finish, limit, sort, loc);
+    end
+end
+
+"""
+    mutable struct MyCryptoLatestBarsEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+Endpoint model for the Alpaca `/crypto/{loc}/latest/bars` endpoint.
+This endpoint returns the latest bar of each of several crypto pairs.
+
+### Fields
+- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+
+### Constructors
+- `MyCryptoLatestBarsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, loc::String = "us")`: returns a new `MyCryptoLatestBarsEndpointModel` instance.
+  The constructor throws an `ArgumentError` when `loc` is not one of the five locations.
+"""
+mutable struct MyCryptoLatestBarsEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    loc::String
+
+    # methods -
+    function MyCryptoLatestBarsEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, loc::String = "us")
+
+        # check the location, and build the model -
+        _check_crypto_loc(loc);
+        return new(_to_symbol_vector(symbols), loc);
+    end
+end
+
+"""
+    mutable struct MyCryptoLatestQuotesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+Endpoint model for the Alpaca `/crypto/{loc}/latest/quotes` endpoint.
+This endpoint returns the latest quote of each of several crypto pairs.
+
+### Fields
+- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+
+### Constructors
+- `MyCryptoLatestQuotesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, loc::String = "us")`: returns a new `MyCryptoLatestQuotesEndpointModel` instance.
+  The constructor throws an `ArgumentError` when `loc` is not one of the five locations.
+"""
+mutable struct MyCryptoLatestQuotesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    loc::String
+
+    # methods -
+    function MyCryptoLatestQuotesEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, loc::String = "us")
+
+        # check the location, and build the model -
+        _check_crypto_loc(loc);
+        return new(_to_symbol_vector(symbols), loc);
+    end
+end
+
+"""
+    mutable struct MyCryptoLatestTradesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+Endpoint model for the Alpaca `/crypto/{loc}/latest/trades` endpoint.
+This endpoint returns the latest trade of each of several crypto pairs.
+
+### Fields
+- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+
+### Constructors
+- `MyCryptoLatestTradesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, loc::String = "us")`: returns a new `MyCryptoLatestTradesEndpointModel` instance.
+  The constructor throws an `ArgumentError` when `loc` is not one of the five locations.
+"""
+mutable struct MyCryptoLatestTradesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    loc::String
+
+    # methods -
+    function MyCryptoLatestTradesEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, loc::String = "us")
+
+        # check the location, and build the model -
+        _check_crypto_loc(loc);
+        return new(_to_symbol_vector(symbols), loc);
+    end
+end
+
+"""
+    mutable struct MyCryptoLatestOrderbooksEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+Endpoint model for the Alpaca `/crypto/{loc}/latest/orderbooks` endpoint.
+This endpoint returns the latest order book of each of several crypto pairs.
+
+### Fields
+- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+
+### Constructors
+- `MyCryptoLatestOrderbooksEndpointModel(; symbols::Union{AbstractString,AbstractVector}, loc::String = "us")`: returns a new `MyCryptoLatestOrderbooksEndpointModel` instance.
+  The constructor throws an `ArgumentError` when `loc` is not one of the five locations.
+"""
+mutable struct MyCryptoLatestOrderbooksEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    loc::String
+
+    # methods -
+    function MyCryptoLatestOrderbooksEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, loc::String = "us")
+
+        # check the location, and build the model -
+        _check_crypto_loc(loc);
+        return new(_to_symbol_vector(symbols), loc);
+    end
+end
+
+"""
+    mutable struct MyCryptoSnapshotsEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+Endpoint model for the Alpaca `/crypto/{loc}/snapshots` endpoint.
+This endpoint returns the snapshot of each of several crypto pairs.
+
+### Fields
+- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+
+### Constructors
+- `MyCryptoSnapshotsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, loc::String = "us")`: returns a new `MyCryptoSnapshotsEndpointModel` instance.
+  The constructor throws an `ArgumentError` when `loc` is not one of the five locations.
+"""
+mutable struct MyCryptoSnapshotsEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    loc::String
+
+    # methods -
+    function MyCryptoSnapshotsEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, loc::String = "us")
+
+        # check the location, and build the model -
+        _check_crypto_loc(loc);
+        return new(_to_symbol_vector(symbols), loc);
     end
 end

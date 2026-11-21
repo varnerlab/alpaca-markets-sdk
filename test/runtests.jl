@@ -57,4 +57,5 @@ global_logger(DropDepwarnLogger(global_logger()))
     include("test_trading_classes_crypto_v05.jl")
     include("test_endpoints_stocks_v05.jl")
     include("test_endpoints_global_stocks_v05.jl")
+    include("test_endpoints_crypto_v05.jl")
 end
