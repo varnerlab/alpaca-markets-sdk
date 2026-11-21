@@ -994,6 +994,144 @@ function _default_handler(model::Type{MyOptionLatestTradeEndpointModel}, body::S
     return _trades_table(symbols, records);
 end
 
+# _codes_table: the table of a response that maps each code to its name, one row for each code in response order -
+function _codes_table(body::String)::DataFrame
+
+    # visit the codes in the order of the response -
+    codes = String[];
+    names = String[];
+    parsed = JSON3.read(body);
+    for (key, value) in pairs(parsed)
+        push!(codes, String(key));
+        push!(names, String(value));
+    end
+
+    # put the columns into a table, and return it -
+    return DataFrame(code = codes, name = names);
+end
+
+# _auction_prints!: add the prints of one auction (opening or closing) of one day to the columns of the auctions table -
+function _auction_prints!(columns::Dict{Symbol,Any}, symbol::String, day, label::String, prints)
+
+    # a day without prints of this auction adds no rows -
+    if (prints === nothing)
+        return nothing;
+    end
+
+    # visit the prints in the order of the response -
+    for item in prints
+        record = _as_record(item);
+        push!(columns[:timestamp], _parse_utc(get(record, :t, nothing)));
+        push!(columns[:symbol], symbol);
+        push!(columns[:date], _date_or_missing(day, :d));
+        push!(columns[:auction], label);
+        push!(columns[:price], _float_or_missing(record, :p));
+        push!(columns[:size], _int_or_missing(record, :s));
+        push!(columns[:exchange], _string_or_missing(record, :x));
+        push!(columns[:condition], _string_or_missing(record, :c));
+    end
+    return nothing;
+end
+
+# _auctions_table: the auctions table, one row for each auction print; for each day, the opening prints come first -
+function _auctions_table(body::String)::DataFrame
+
+    # initialize: one array for each column of the table -
+    columns = Dict{Symbol,Any}();
+    columns[:timestamp] = Array{Union{Missing,DateTime},1}();
+    columns[:symbol] = Array{Union{Missing,String},1}();
+    columns[:date] = Array{Union{Missing,Date},1}();
+    columns[:auction] = Array{String,1}();
+    columns[:price] = Array{Union{Missing,Float64},1}();
+    columns[:size] = Array{Union{Missing,Int},1}();
+    columns[:exchange] = Array{Union{Missing,String},1}();
+    columns[:condition] = Array{Union{Missing,String},1}();
+
+    # visit the symbols, then the days of each symbol -
+    container = get(JSON3.read(body), :auctions, nothing);
+    if (container !== nothing)
+        for (key, days) in pairs(container)
+            if (days isa JSON3.Array)
+                for day in days
+                    _auction_prints!(columns, String(key), day, "open", get(day, :o, nothing));
+                    _auction_prints!(columns, String(key), day, "close", get(day, :c, nothing));
+                end
+            end
+        end
+    end
+
+    # put the columns into a table, and return it -
+    return DataFrame(timestamp = columns[:timestamp], symbol = columns[:symbol], date = columns[:date], auction = columns[:auction],
+        price = columns[:price], size = columns[:size], exchange = columns[:exchange], condition = columns[:condition]);
+end
+
+"""
+    _default_handler(model::Type{MyStockLatestBarsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/stocks/bars/latest` endpoint. The records are under the `bars` key, one for each symbol.
+The table has one row for each symbol, with the columns of `_bars_table`.
+A `null` or empty `bars` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyStockLatestBarsEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :bars);
+    return _bars_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyStockLatestQuotesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/stocks/quotes/latest` endpoint. The records are under the `quotes` key, one for each symbol.
+The table has one row for each symbol, with the columns of `_quotes_table`.
+A `null` or empty `quotes` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyStockLatestQuotesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :quotes);
+    return _quotes_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyStockLatestTradesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/stocks/trades/latest` endpoint. The records are under the `trades` key, one for each symbol.
+The table has one row for each symbol, with the columns of `_trades_table`.
+A `null` or empty `trades` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyStockLatestTradesEndpointModel}, body::String)::DataFrame
+    (symbols, records) = _symbol_records_under(body, :trades);
+    return _trades_table(symbols, records);
+end
+
+"""
+    _default_handler(model::Type{MyStockAuctionsEndpointModel}, body::String) -> DataFrame
+
+Process one page of the `/stocks/auctions` endpoint. The days are under the `auctions` key, grouped by symbol.
+The table has one row for each auction print, with the columns of `_auctions_table`.
+A `null` or empty `auctions` object gives a table with no rows.
+"""
+function _default_handler(model::Type{MyStockAuctionsEndpointModel}, body::String)::DataFrame
+    return _auctions_table(body);
+end
+
+"""
+    _default_handler(model::Type{MyStockConditionsEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/stocks/meta/conditions/{ticktype}` endpoint.
+The table has the columns `code` and `name`, one row for each condition code.
+"""
+function _default_handler(model::Type{MyStockConditionsEndpointModel}, body::String)::DataFrame
+    return _codes_table(body);
+end
+
+"""
+    _default_handler(model::Type{MyStockExchangesEndpointModel}, body::String) -> DataFrame
+
+Process the response of the `/stocks/meta/exchanges` endpoint.
+The table has the columns `code` and `name`, one row for each exchange code.
+"""
+function _default_handler(model::Type{MyStockExchangesEndpointModel}, body::String)::DataFrame
+    return _codes_table(body);
+end
+
 """
     _default_handler(model::Type{MyStockSnapshotsEndpointModel}, body::String) -> DataFrame
 

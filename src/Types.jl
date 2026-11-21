@@ -915,6 +915,168 @@ mutable struct MyStockLatestTradeEndpointModel <: AbstractAlpacaStockDataEndpoin
 end
 
 """
+    mutable struct MyStockLatestBarsEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/bars/latest` endpoint.
+This endpoint returns the latest stock bar of each of several symbols.
+
+### Fields
+- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `feed::String`: the market data feed, e.g., `"iex"`.
+- `currency::Union{Nothing,String}`: the currency of the prices, or `nothing` to leave it to Alpaca.
+
+### Constructors
+- `MyStockLatestBarsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, feed::String = "iex", currency::Union{Nothing,String} = nothing)`: returns a new `MyStockLatestBarsEndpointModel` instance.
+"""
+mutable struct MyStockLatestBarsEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    feed::String
+    currency::Union{Nothing,String}
+
+    # methods -
+    MyStockLatestBarsEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, feed::String = "iex", currency::Union{Nothing,String} = nothing) = new(_to_symbol_vector(symbols), feed, currency);
+end
+
+"""
+    mutable struct MyStockLatestQuotesEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/quotes/latest` endpoint.
+This endpoint returns the latest stock quote of each of several symbols.
+
+### Fields
+- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `feed::String`: the market data feed, e.g., `"iex"`.
+- `currency::Union{Nothing,String}`: the currency of the prices, or `nothing` to leave it to Alpaca.
+
+### Constructors
+- `MyStockLatestQuotesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, feed::String = "iex", currency::Union{Nothing,String} = nothing)`: returns a new `MyStockLatestQuotesEndpointModel` instance.
+"""
+mutable struct MyStockLatestQuotesEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    feed::String
+    currency::Union{Nothing,String}
+
+    # methods -
+    MyStockLatestQuotesEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, feed::String = "iex", currency::Union{Nothing,String} = nothing) = new(_to_symbol_vector(symbols), feed, currency);
+end
+
+"""
+    mutable struct MyStockLatestTradesEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/trades/latest` endpoint.
+This endpoint returns the latest stock trade of each of several symbols.
+
+### Fields
+- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `feed::String`: the market data feed, e.g., `"iex"`.
+- `currency::Union{Nothing,String}`: the currency of the prices, or `nothing` to leave it to Alpaca.
+
+### Constructors
+- `MyStockLatestTradesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, feed::String = "iex", currency::Union{Nothing,String} = nothing)`: returns a new `MyStockLatestTradesEndpointModel` instance.
+"""
+mutable struct MyStockLatestTradesEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    feed::String
+    currency::Union{Nothing,String}
+
+    # methods -
+    MyStockLatestTradesEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, feed::String = "iex", currency::Union{Nothing,String} = nothing) = new(_to_symbol_vector(symbols), feed, currency);
+end
+
+"""
+    mutable struct MyStockAuctionsEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/auctions` endpoint.
+This endpoint returns the historical opening and closing auction prints of each of several symbols.
+
+### Fields
+- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `start::Union{Nothing,String,Date,DateTime}`: the first time of the request, or `nothing` to leave it open.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `limit::Int`: the largest number of rows to return per page.
+- `feed::String`: the market data feed. Alpaca accepts only `"sip"` for auctions.
+- `sort::Union{Nothing,String}`: the sort order of the prints, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+
+### Constructors
+- `MyStockAuctionsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "sip", sort::Union{Nothing,String} = nothing)`: returns a new `MyStockAuctionsEndpointModel` instance.
+"""
+mutable struct MyStockAuctionsEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+    # data -
+    symbols::Vector{String}
+    start::Union{Nothing,String,Date,DateTime}
+    finish::Union{Nothing,String,Date,DateTime}
+    limit::Int
+    feed::String
+    sort::Union{Nothing,String}
+
+    # methods -
+    MyStockAuctionsEndpointModel(;
+        symbols::Union{AbstractString,AbstractVector}, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "sip", sort::Union{Nothing,String} = nothing) = new(_to_symbol_vector(symbols), start, finish, limit, feed, sort);
+end
+
+"""
+    mutable struct MyStockConditionsEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/meta/conditions/{ticktype}` endpoint.
+This endpoint returns the map from each condition code to its name, for the trades or the quotes of one tape.
+
+### Fields
+- `ticktype::String`: the kind of tick whose condition codes to list, `"trade"` or `"quote"`. The URL carries it in the path.
+- `tape::String`: the tape whose condition codes to list, `"A"`, `"B"`, or `"C"`.
+
+### Constructors
+- `MyStockConditionsEndpointModel(; ticktype::String = "trade", tape::String = "A")`: returns a new `MyStockConditionsEndpointModel` instance.
+  The constructor throws an `ArgumentError` unless `ticktype` is `"trade"` or `"quote"` and `tape` is `"A"`, `"B"`, or `"C"`.
+"""
+mutable struct MyStockConditionsEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+    # data -
+    ticktype::String
+    tape::String
+
+    # methods -
+    function MyStockConditionsEndpointModel(; ticktype::String = "trade", tape::String = "A")
+
+        # the tick type and the tape must be values that Alpaca accepts -
+        if (ticktype != "trade" && ticktype != "quote")
+            throw(ArgumentError("`ticktype` must be \"trade\" or \"quote\""));
+        end
+        if (tape != "A" && tape != "B" && tape != "C")
+            throw(ArgumentError("`tape` must be \"A\", \"B\", or \"C\""));
+        end
+        return new(ticktype, tape);
+    end
+end
+
+"""
+    mutable struct MyStockExchangesEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+Endpoint model for the Alpaca `/stocks/meta/exchanges` endpoint.
+This endpoint returns the map from each exchange code to the name of the exchange. The model has no fields.
+
+### Fields
+- None: the request has no parameters.
+
+### Constructors
+- `MyStockExchangesEndpointModel()`: returns a new `MyStockExchangesEndpointModel` instance.
+"""
+mutable struct MyStockExchangesEndpointModel <: AbstractAlpacaStockDataEndpointModel
+
+    # methods -
+    MyStockExchangesEndpointModel() = new();
+end
+
+"""
     mutable struct MyStockSnapshotsEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
 Endpoint model for the Alpaca `/stocks/snapshots` endpoint.

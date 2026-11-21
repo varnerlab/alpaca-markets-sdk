@@ -568,6 +568,213 @@ function url(base::String, model::MyStockLatestTradeEndpointModel)::String
 end
 
 """
+    url(base::String, model::MyStockLatestBarsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/bars/latest` endpoint.
+An HTTP GET call to this URL returns the latest stock bar of each symbol.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `model::MyStockLatestBarsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyStockLatestBarsEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    feed = model.feed;
+    currency = model.currency;
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "feed", "currency"];
+    query_values = Any[_symbols_value(symbols), _query_value(feed), _query_value(currency)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    url_string = "$(base)/stocks/bars/latest" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyStockLatestQuotesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/quotes/latest` endpoint.
+An HTTP GET call to this URL returns the latest stock quote of each symbol.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `model::MyStockLatestQuotesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyStockLatestQuotesEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    feed = model.feed;
+    currency = model.currency;
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "feed", "currency"];
+    query_values = Any[_symbols_value(symbols), _query_value(feed), _query_value(currency)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    url_string = "$(base)/stocks/quotes/latest" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyStockLatestTradesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/trades/latest` endpoint.
+An HTTP GET call to this URL returns the latest stock trade of each symbol.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `model::MyStockLatestTradesEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyStockLatestTradesEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    feed = model.feed;
+    currency = model.currency;
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "feed", "currency"];
+    query_values = Any[_symbols_value(symbols), _query_value(feed), _query_value(currency)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    url_string = "$(base)/stocks/trades/latest" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyStockAuctionsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/auctions` endpoint.
+An HTTP GET call to this URL returns the historical opening and closing auction prints.
+The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `model::MyStockAuctionsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyStockAuctionsEndpointModel)::String
+
+    # get data from the model -
+    symbols = model.symbols;
+    start = model.start;
+    finish = model.finish;
+    limit = model.limit;
+    feed = model.feed;
+    sort = model.sort;
+
+    # build the query keys and values, in the order of the model; a nothing value is left out -
+    query_keys = String["symbols", "start", "end", "limit", "feed", "sort"];
+    query_values = Any[_symbols_value(symbols), _time_value(start), _time_value(finish), _query_value(limit), _query_value(feed), _query_value(sort)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    url_string = "$(base)/stocks/auctions" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyStockConditionsEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/meta/conditions/{ticktype}` endpoint.
+An HTTP GET call to this URL returns the map from each condition code to its name.
+The tick type is part of the path, and the tape is the query string.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `model::MyStockConditionsEndpointModel`: the endpoint model that holds the fields of the request.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyStockConditionsEndpointModel)::String
+
+    # get data from the model -
+    ticktype = model.ticktype;
+    tape = model.tape;
+
+    # build the query keys and values -
+    query_keys = String["tape"];
+    query_values = Any[_query_value(tape)];
+    query_string = _query_string(query_keys, query_values);
+
+    # build the URL string: base + path + query string -
+    url_string = "$(base)/stocks/meta/conditions/$(URIs.escapeuri(ticktype))" * query_string;
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
+    url(base::String, model::MyStockExchangesEndpointModel) -> String
+
+Build the URL string for the Alpaca `/stocks/meta/exchanges` endpoint.
+An HTTP GET call to this URL returns the map from each exchange code to the name of the exchange.
+
+### Arguments
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v2"`.
+- `model::MyStockExchangesEndpointModel`: the endpoint model, which has no fields.
+
+### Returns
+- `String`: the complete URL string.
+
+### Throws
+- None: this method builds a string and does not call the network.
+"""
+function url(base::String, model::MyStockExchangesEndpointModel)::String
+
+    # build the URL string: base + path -
+    url_string = "$(base)/stocks/meta/exchanges";
+
+    # return the URL string -
+    return url_string;
+end
+
+"""
     url(base::String, model::MyStockSnapshotsEndpointModel) -> String
 
 Build the URL string for the Alpaca `/stocks/snapshots` endpoint.
@@ -1294,6 +1501,10 @@ function _is_paginated(model::MyStockQuotesEndpointModel)::Bool
 end
 
 function _is_paginated(model::MyStockTradesEndpointModel)::Bool
+    return true;
+end
+
+function _is_paginated(model::MyStockAuctionsEndpointModel)::Bool
     return true;
 end
 
