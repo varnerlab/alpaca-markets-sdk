@@ -78,3 +78,23 @@ end
     @test df[1, :phase_until] == DateTime(2026, 11, 20, 21)
     @test df[1, :timestamp] == DateTime(2026, 11, 20, 15)
 end
+
+@testset "order numbers: no exponent" begin
+    @test Alpaca._decimal_text(150.25) == "150.25"
+    @test Alpaca._decimal_text(10) == "10"
+    @test Alpaca._decimal_text(1.0) == "1.0"
+    @test Alpaca._decimal_text("0.5") == "0.5"
+    @test Alpaca._decimal_text(0.00001) == "0.00001"
+    @test Alpaca._decimal_text(2.5e-8) == "0.000000025"
+    @test Alpaca._decimal_text(1.0e20) == "100000000000000000000"
+    @test Alpaca._decimal_text(-1.5e-7) == "-0.00000015"
+    body = Alpaca._single_order_body("BTC/USD", 0.00001, "buy"; type = "limit", limit_price = 2.5e-8)
+    @test body["qty"] == "0.00001" && body["limit_price"] == "0.000000025"
+    body = Alpaca._single_order_body("AAPL", 10, "buy"; type = "limit", limit_price = 150.25)
+    @test body["qty"] == "10" && body["limit_price"] == "150.25"
+    body = Dict{String,Any}()
+    Alpaca._add_order_class!(body, "bracket", 2.5e-8, 1.0e-5, 1.0e-5)
+    @test body["take_profit"]["limit_price"] == "0.000000025"
+    @test body["stop_loss"]["stop_price"] == "0.00001" && body["stop_loss"]["limit_price"] == "0.00001"
+    @test MyReplaceOrderEndpointModel(id = "x", qty = 0.00001).qty == "0.00001"
+end

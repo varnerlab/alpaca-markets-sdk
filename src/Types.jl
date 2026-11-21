@@ -1821,12 +1821,67 @@ function _none_set(values::Tuple)::Bool
     return true;
 end
 
+# _decimal_text: a number as the text of an order field. Text that string(x) writes without an exponent is returned as it is.
+# A number that string(x) writes with an exponent, e.g., 1.0e-5, becomes a plain decimal with no exponent and no trailing zeros -
+function _decimal_text(x::Union{AbstractString,Real})::String
+    text = string(x);
+
+    # find the exponent mark; text with no exponent is returned unchanged -
+    if (x isa AbstractString)
+        return text;
+    end
+    mark = 0;
+    for i in 2:length(text)
+        if ((text[i] == 'e' || text[i] == 'f') && isdigit(text[i-1]))
+            mark = i;
+            break;
+        end
+    end
+    if (mark == 0)
+        return text;
+    end
+
+    # split the text into the sign, the digits of the mantissa, and the exponent -
+    mantissa = text[1:mark-1];
+    exponent = parse(Int, text[mark+1:end]);
+    sign = "";
+    if (startswith(mantissa, "-"))
+        sign = "-";
+        mantissa = mantissa[2:end];
+    end
+    dot = findfirst('.', mantissa);
+    whole_length = length(mantissa);
+    digits = mantissa;
+    if (dot !== nothing)
+        whole_length = dot - 1;
+        digits = mantissa[1:dot-1] * mantissa[dot+1:end];
+    end
+
+    # move the decimal point by the exponent -
+    point = whole_length + exponent;
+    plain = "";
+    if (point <= 0)
+        plain = "0." * repeat("0", -point) * digits;
+    elseif (point >= length(digits))
+        plain = digits * repeat("0", point - length(digits));
+    else
+        plain = digits[1:point] * "." * digits[point+1:end];
+    end
+
+    # drop the trailing zeros after the decimal point, and the point itself when nothing follows it -
+    if (occursin('.', plain))
+        plain = rstrip(plain, '0');
+        plain = rstrip(plain, '.');
+    end
+    return sign * plain;
+end
+
 # _number_text: the text that a setting or an order field is sent as, or nothing when the field is not set -
 function _number_text(x::Union{Nothing,AbstractString,Real})::Union{Nothing,String}
     if (x === nothing)
         return nothing;
     end
-    return string(x);
+    return _decimal_text(x);
 end
 
 """

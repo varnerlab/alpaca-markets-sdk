@@ -809,7 +809,7 @@ function _check_order_class(order_class, type::AbstractString, take_profit_limit
     return nothing;
 end
 
-# _add_order_class!: add the order class and the exit legs to an order body. Prices are written with string(x). With no class, the body is unchanged -
+# _add_order_class!: add the order class and the exit legs to an order body. Numbers are written with _decimal_text(x). With no class, the body is unchanged -
 function _add_order_class!(body::Dict{String,Any}, order_class, take_profit_limit_price, stop_loss_stop_price, stop_loss_limit_price)::Nothing
 
     # no class, no change -
@@ -820,14 +820,14 @@ function _add_order_class!(body::Dict{String,Any}, order_class, take_profit_limi
 
     # the take-profit leg -
     if (take_profit_limit_price !== nothing)
-        body["take_profit"] = Dict{String,Any}("limit_price" => string(take_profit_limit_price));
+        body["take_profit"] = Dict{String,Any}("limit_price" => _decimal_text(take_profit_limit_price));
     end
 
     # the stop-loss leg -
     if (stop_loss_stop_price !== nothing)
-        leg = Dict{String,Any}("stop_price" => string(stop_loss_stop_price));
+        leg = Dict{String,Any}("stop_price" => _decimal_text(stop_loss_stop_price));
         if (stop_loss_limit_price !== nothing)
-            leg["limit_price"] = string(stop_loss_limit_price);
+            leg["limit_price"] = _decimal_text(stop_loss_limit_price);
         end
         body["stop_loss"] = leg;
     end
@@ -883,7 +883,7 @@ function _check_leg_fields(side::AbstractString, ratio::Integer)::Nothing
     return nothing;
 end
 
-# _single_order_body: build the body of a single-leg order. Prices are written with string(x), so 150.25 is sent as "150.25" -
+# _single_order_body: build the body of a single-leg order. Numbers are written with _decimal_text(x), so 150.25 is sent as "150.25" -
 function _single_order_body(symbol, qty, side; type = "market", time_in_force = "day", limit_price = nothing, stop_price = nothing,
     trail_price = nothing, trail_percent = nothing, client_order_id = nothing, extended_hours = false, notional = nothing,
     position_intent = nothing)::Dict{String,Any}
@@ -907,22 +907,22 @@ function _single_order_body(symbol, qty, side; type = "market", time_in_force = 
 
     # the keys that are sent only when set -
     if (qty !== nothing)
-        body["qty"] = string(qty);
+        body["qty"] = _decimal_text(qty);
     end
     if (notional !== nothing)
-        body["notional"] = string(notional);
+        body["notional"] = _decimal_text(notional);
     end
     if (limit_price !== nothing)
-        body["limit_price"] = string(limit_price);
+        body["limit_price"] = _decimal_text(limit_price);
     end
     if (stop_price !== nothing)
-        body["stop_price"] = string(stop_price);
+        body["stop_price"] = _decimal_text(stop_price);
     end
     if (trail_price !== nothing)
-        body["trail_price"] = string(trail_price);
+        body["trail_price"] = _decimal_text(trail_price);
     end
     if (trail_percent !== nothing)
-        body["trail_percent"] = string(trail_percent);
+        body["trail_percent"] = _decimal_text(trail_percent);
     end
     if (client_order_id !== nothing)
         body["client_order_id"] = client_order_id;
@@ -984,7 +984,7 @@ function _mleg_body(symbols::Vector{String}, sides::Vector{String}, intents::Vec
     for i in eachindex(symbols)
         push!(leg_bodies, Dict(
             "symbol" => symbols[i],
-            "ratio_qty" => string(ratios[i]),
+            "ratio_qty" => _decimal_text(ratios[i]),
             "side" => sides[i],
             "position_intent" => intents[i],
         ));
@@ -993,14 +993,14 @@ function _mleg_body(symbols::Vector{String}, sides::Vector{String}, intents::Vec
     # build the body of the order -
     body = Dict{String,Any}(
         "order_class" => "mleg",
-        "qty" => string(qty),
+        "qty" => _decimal_text(qty),
         "type" => type,
         "time_in_force" => time_in_force,
         "extended_hours" => extended_hours,
         "legs" => leg_bodies,
     );
     if (limit_price !== nothing)
-        body["limit_price"] = string(limit_price);
+        body["limit_price"] = _decimal_text(limit_price);
     end
     if (client_order_id !== nothing)
         body["client_order_id"] = client_order_id;
@@ -1134,10 +1134,10 @@ function _close_position(client::AlpacaClient, symbol::AbstractString; qty::Unio
     percentage::Union{Nothing,Real} = nothing)::String
     query = Dict{String,Any}();
     if (qty !== nothing)
-        query["qty"] = string(qty);
+        query["qty"] = _decimal_text(qty);
     end
     if (percentage !== nothing)
-        query["percentage"] = string(percentage);
+        query["percentage"] = _decimal_text(percentage);
     end
     request_url = _build_url(client.trading_url, "/positions/$(URIs.escapeuri(symbol))", query);
     return _http_call(client, "DELETE", request_url);
