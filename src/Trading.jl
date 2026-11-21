@@ -6,9 +6,11 @@
 """
     submit(client::AlpacaClient, m::MyEquityOrderModel; type = "market", time_in_force = "day",
         limit_price = nothing, stop_price = nothing, trail_price = nothing, trail_percent = nothing,
-        client_order_id = nothing, extended_hours = false) -> Order
+        client_order_id = nothing, extended_hours = false, order_class = nothing, take_profit_limit_price = nothing,
+        stop_loss_stop_price = nothing, stop_loss_limit_price = nothing) -> Order
 
 Submit one equity or ETF order, using an HTTP POST call to the Alpaca `/orders` endpoint.
+Set `order_class` to `"bracket"`, `"oco"`, or `"oto"` to attach the exit legs. Without the class keywords, the body is the same as in version 0.4.0.
 
 ### Arguments
 - `client::AlpacaClient`: the client that holds the credentials and the base URLs.
@@ -18,17 +20,23 @@ Submit one equity or ETF order, using an HTTP POST call to the Alpaca `/orders` 
 - `limit_price`, `stop_price`, `trail_price`, `trail_percent`: the prices of the order, or `nothing`.
 - `client_order_id`: the order identifier assigned by the client, or `nothing`.
 - `extended_hours::Bool`: `true` allows the order to fill outside regular trading hours.
+- `order_class`: `nothing`, `"simple"`, `"bracket"`, `"oco"`, or `"oto"`.
+- `take_profit_limit_price`: the limit price of the take-profit leg, or `nothing`.
+- `stop_loss_stop_price`, `stop_loss_limit_price`: the stop price and the optional limit price of the stop-loss leg, or `nothing`.
 
 ### Returns
 - `Order`: the order as Alpaca accepted it.
 
 ### Throws
-- `ArgumentError`: when `m.side` is not `"buy"` or `"sell"`, or when the `type` requires a price that is `nothing`, e.g., `"limit"` without `limit_price`. The call sends no request.
+- `ArgumentError`: when `m.side` is not `"buy"` or `"sell"`, or when the `type` requires a price that is `nothing`, e.g., `"limit"` without `limit_price`.
+  Also when the order class rules fail: a bracket needs both legs, an `"oco"` needs both legs and `type = "limit"`, an `"oto"` needs exactly one leg, the legs are refused without a class, and `stop_loss_limit_price` needs `stop_loss_stop_price`. The call sends no request.
 - `AlpacaError`: when Alpaca rejects the request.
 """
 function submit(client::AlpacaClient, m::MyEquityOrderModel; type::AbstractString = "market", time_in_force::AbstractString = "day",
     limit_price::Union{Nothing,Real} = nothing, stop_price::Union{Nothing,Real} = nothing, trail_price::Union{Nothing,Real} = nothing,
-    trail_percent::Union{Nothing,Real} = nothing, client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false)::Order
+    trail_percent::Union{Nothing,Real} = nothing, client_order_id::Union{Nothing,AbstractString} = nothing, extended_hours::Bool = false,
+    order_class::Union{Nothing,AbstractString} = nothing, take_profit_limit_price::Union{Nothing,Real} = nothing,
+    stop_loss_stop_price::Union{Nothing,Real} = nothing, stop_loss_limit_price::Union{Nothing,Real} = nothing)::Order
 
     # the model is mutable, so check the side again, before any request -
     _check_side(m.side);
@@ -36,10 +44,63 @@ function submit(client::AlpacaClient, m::MyEquityOrderModel; type::AbstractStrin
     # check the prices that the order type requires, before any request -
     _check_order_prices(type, limit_price, stop_price, trail_price, trail_percent, true);
 
+    # check the order class and its legs, before any request -
+    _check_order_class(order_class, type, take_profit_limit_price, stop_loss_stop_price, stop_loss_limit_price);
+
     # build the request body from the model and the keywords -
     body = _single_order_body(m.symbol, m.qty, m.side; type = type, time_in_force = time_in_force, limit_price = limit_price,
         stop_price = stop_price, trail_price = trail_price, trail_percent = trail_percent, client_order_id = client_order_id,
         extended_hours = extended_hours, notional = m.notional);
+
+    # add the order class and the exit legs, when there are any -
+    _add_order_class!(body, order_class, take_profit_limit_price, stop_loss_stop_price, stop_loss_limit_price);
+
+    # send the order -
+    return _post_order(client, body);
+end
+
+"""
+    submit(client::AlpacaClient, m::MyCryptoOrderModel; type = "market", time_in_force = "gtc",
+        limit_price = nothing, stop_price = nothing, client_order_id = nothing) -> Order
+
+Submit one crypto order, using an HTTP POST call to the Alpaca `/orders` endpoint.
+
+### Arguments
+- `client::AlpacaClient`: the client that holds the credentials and the base URLs.
+- `m::MyCryptoOrderModel`: the order model that holds the pair, the side, and the quantity in coins or the notional in USD.
+- `type::String`: `"market"`, `"limit"`, or `"stop_limit"`.
+- `time_in_force::String`: `"gtc"` or `"ioc"`.
+- `limit_price`, `stop_price`: the prices of the order, or `nothing`.
+- `client_order_id`: the order identifier assigned by the client, or `nothing`.
+
+### Returns
+- `Order`: the order as Alpaca accepted it.
+
+### Throws
+- `ArgumentError`: when `m.side` is not `"buy"` or `"sell"`, when `type` or `time_in_force` is not in the lists above, or when the `type` requires a price that is `nothing`. The call sends no request.
+- `AlpacaError`: when Alpaca rejects the request.
+"""
+function submit(client::AlpacaClient, m::MyCryptoOrderModel; type::AbstractString = "market", time_in_force::AbstractString = "gtc",
+    limit_price::Union{Nothing,Real} = nothing, stop_price::Union{Nothing,Real} = nothing,
+    client_order_id::Union{Nothing,AbstractString} = nothing)::Order
+
+    # the model is mutable, so check the side again, before any request -
+    _check_side(m.side);
+
+    # check the type and the time in force that Alpaca accepts for crypto -
+    if ((type in _CRYPTO_ORDER_TYPES) == false)
+        throw(ArgumentError("type must be one of $(_CRYPTO_ORDER_TYPES), got \"$(type)\""));
+    end
+    if ((time_in_force in _CRYPTO_TIME_IN_FORCE) == false)
+        throw(ArgumentError("time_in_force must be one of $(_CRYPTO_TIME_IN_FORCE), got \"$(time_in_force)\""));
+    end
+
+    # check the prices that the order type requires, before any request -
+    _check_order_prices(type, limit_price, stop_price, nothing, nothing, false);
+
+    # build the request body from the model and the keywords -
+    body = _single_order_body(m.symbol, m.qty, m.side; type = type, time_in_force = time_in_force, limit_price = limit_price,
+        stop_price = stop_price, client_order_id = client_order_id, notional = m.notional);
 
     # send the order -
     return _post_order(client, body);
@@ -704,6 +765,74 @@ end
 const _LEG_SIDES = ("buy", "sell");
 const _LEG_INTENTS = ("buy_to_open", "sell_to_open", "buy_to_close", "sell_to_close");
 const _MLEG_ORDER_TYPES = ("market", "limit");
+const _CRYPTO_ORDER_TYPES = ("market", "limit", "stop_limit");
+const _CRYPTO_TIME_IN_FORCE = ("gtc", "ioc");
+const _ORDER_CLASSES = ("simple", "bracket", "oco", "oto");
+
+# _check_order_class: check the order class and its exit legs. A bracket needs both legs, an oco needs both legs and a limit order, an oto needs one leg -
+function _check_order_class(order_class, type::AbstractString, take_profit_limit_price, stop_loss_stop_price, stop_loss_limit_price)::Nothing
+
+    # the order class is one of the supported classes -
+    if (order_class !== nothing && (order_class in _ORDER_CLASSES) == false)
+        throw(ArgumentError("order_class must be nothing or one of $(_ORDER_CLASSES), got \"$(order_class)\""));
+    end
+
+    # a stop-loss limit price needs a stop-loss stop price -
+    if (stop_loss_limit_price !== nothing && stop_loss_stop_price === nothing)
+        throw(ArgumentError("stop_loss_limit_price requires stop_loss_stop_price"));
+    end
+
+    # without a class, the exit legs are refused -
+    has_take_profit = (take_profit_limit_price !== nothing);
+    has_stop_loss = (stop_loss_stop_price !== nothing);
+    if (order_class === nothing || order_class == "simple")
+        if (has_take_profit || has_stop_loss)
+            throw(ArgumentError("take_profit_limit_price and stop_loss_stop_price need order_class \"bracket\", \"oco\", or \"oto\""));
+        end
+        return nothing;
+    end
+
+    # a bracket and an oco need both legs -
+    if ((order_class == "bracket" || order_class == "oco") && (has_take_profit == false || has_stop_loss == false))
+        throw(ArgumentError("order_class \"$(order_class)\" requires take_profit_limit_price and stop_loss_stop_price"));
+    end
+
+    # an oco is a limit order -
+    if (order_class == "oco" && type != "limit")
+        throw(ArgumentError("order_class \"oco\" requires type=\"limit\", got \"$(type)\""));
+    end
+
+    # an oto needs exactly one leg -
+    if (order_class == "oto" && has_take_profit == has_stop_loss)
+        throw(ArgumentError("order_class \"oto\" requires exactly one of take_profit_limit_price and stop_loss_stop_price"));
+    end
+    return nothing;
+end
+
+# _add_order_class!: add the order class and the exit legs to an order body. Prices are written with string(x). With no class, the body is unchanged -
+function _add_order_class!(body::Dict{String,Any}, order_class, take_profit_limit_price, stop_loss_stop_price, stop_loss_limit_price)::Nothing
+
+    # no class, no change -
+    if (order_class === nothing)
+        return nothing;
+    end
+    body["order_class"] = order_class;
+
+    # the take-profit leg -
+    if (take_profit_limit_price !== nothing)
+        body["take_profit"] = Dict{String,Any}("limit_price" => string(take_profit_limit_price));
+    end
+
+    # the stop-loss leg -
+    if (stop_loss_stop_price !== nothing)
+        leg = Dict{String,Any}("stop_price" => string(stop_loss_stop_price));
+        if (stop_loss_limit_price !== nothing)
+            leg["limit_price"] = string(stop_loss_limit_price);
+        end
+        body["stop_loss"] = leg;
+    end
+    return nothing;
+end
 
 # _check_order_prices: check that the prices that the order type requires are set. This runs in the public submit methods -
 function _check_order_prices(type::AbstractString, limit_price, stop_price, trail_price, trail_percent, is_equity::Bool)::Nothing

@@ -53,7 +53,7 @@ export MyAccountEndpointModel, MyClockEndpointModel,
        MyExerciseOptionEndpointModel, MyDoNotExerciseOptionEndpointModel
 
 # Order models
-export MyEquityOrderModel, MyOptionLegModel, MyMixedOrderModel
+export MyEquityOrderModel, MyCryptoOrderModel, MyOptionLegModel, MyMixedOrderModel
 
 # Errors and the order returned by the trading verbs
 export AlpacaError, AlpacaSequenceError, Order

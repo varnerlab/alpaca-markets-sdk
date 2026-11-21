@@ -1302,6 +1302,45 @@ mutable struct MyEquityOrderModel <: AbstractAlpacaOrderModel
 end
 
 """
+    mutable struct MyCryptoOrderModel <: AbstractAlpacaOrderModel
+
+Order model for one crypto order. The model says what to trade. The `submit` method supplies the order keywords.
+
+### Fields
+- `symbol::String`: the crypto pair, e.g., `"BTC/USD"`.
+- `side::String`: `"buy"` or `"sell"`.
+- `qty::Union{Nothing,Real}`: the number of coins (can be fractional), or `nothing` when `notional` is set.
+- `notional::Union{Nothing,Real}`: the dollar amount to trade, or `nothing` when `qty` is set.
+
+### Constructors
+- `MyCryptoOrderModel(; symbol::String, side::String, qty::Union{Nothing,Real} = nothing, notional::Union{Nothing,Real} = nothing)`: returns a new `MyCryptoOrderModel` instance.
+  The constructor throws an `ArgumentError` unless `side` is `"buy"` or `"sell"` and exactly one of `qty` and `notional` is set.
+"""
+mutable struct MyCryptoOrderModel <: AbstractAlpacaOrderModel
+
+    # data -
+    symbol::String
+    side::String
+    qty::Union{Nothing,Real}
+    notional::Union{Nothing,Real}
+
+    # methods -
+    function MyCryptoOrderModel(; symbol::String, side::String, qty::Union{Nothing,Real} = nothing, notional::Union{Nothing,Real} = nothing)
+
+        # the side must be buy or sell -
+        if ((side == "buy" || side == "sell") == false)
+            throw(ArgumentError("side must be \"buy\" or \"sell\", got \"$(side)\""));
+        end
+
+        # exactly one of qty and notional must be set -
+        if ((qty === nothing && notional === nothing) || (qty !== nothing && notional !== nothing))
+            throw(ArgumentError("set exactly one of `qty` and `notional`"));
+        end
+        return new(symbol, side, qty, notional);
+    end
+end
+
+"""
     mutable struct MyOptionLegModel <: AbstractAlpacaOrderModel
 
 Order model for one option leg. A leg has no position intent. The verb (`submit`, and later `close` and `roll`) supplies the intent.
