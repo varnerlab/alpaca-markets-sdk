@@ -1699,7 +1699,7 @@ The endpoint answers with the changed watchlist and its assets.
 - `id::Union{Nothing,String}`: the watchlist identifier assigned by Alpaca, or `nothing`.
 - `name::Union{Nothing,String}`: the current name of the watchlist, or `nothing`.
 - `new_name::Union{Nothing,String}`: the new name of the watchlist, or `nothing` to keep the name.
-- `symbols::Union{Nothing,Vector{String}}`: the symbols that replace the assets of the watchlist, or `nothing` to keep the assets. The keyword accepts a `String` or a vector of strings.
+- `symbols::Union{Nothing,Vector{String}}`: the symbols that replace the assets of the watchlist, or `nothing`. Alpaca replaces the whole watchlist, so a rename without `symbols` empties the list. Pass the current symbols to keep them. The keyword accepts a `String` or a vector of strings.
 
 ### Constructors
 - `MyUpdateWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing, new_name::Union{Nothing,String} = nothing, symbols::Union{Nothing,AbstractString,AbstractVector} = nothing)`: returns a new `MyUpdateWatchlistEndpointModel` instance.
@@ -1889,6 +1889,7 @@ end
 
 Endpoint model for replacing an open order with an HTTP PATCH to the Alpaca `/orders/{order_id}` endpoint.
 The request holds the order fields that change. The endpoint answers with the replacement order.
+Alpaca answers HTTP 422 "pending replacement" when an order is replaced or cancelled before Alpaca has accepted the previous change. Wait and retry.
 
 ### Fields
 - `id::String`: the identifier of the order to replace.
