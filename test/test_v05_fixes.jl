@@ -37,6 +37,23 @@ end
         @test length(log) == 2
     end
 
+    # a capped request whose first page has a token carries that token in its metadata -
+    handler, log = recording_handler(_two_page_handler)
+    with_mock(handler) do client
+        result = api(client, model; max_pages = 1)
+        @test DataFrames.metadata(result, "next_page_token", nothing) == "p2"
+    end
+
+    # a request that reaches the last page carries no token, with a cap of 2 or with no cap -
+    for cap in (2, nothing)
+        handler, log = recording_handler(_two_page_handler)
+        with_mock(handler) do client
+            result = api(client, model; max_pages = cap)
+            @test DataFrames.metadata(result, "next_page_token", nothing) === nothing
+            @test ("next_page_token" in DataFrames.metadatakeys(result)) == false
+        end
+    end
+
     # max_pages below 1 throws before any request -
     handler, log = recording_handler(_two_page_handler)
     with_mock(handler) do client

@@ -18,6 +18,7 @@ A model whose HTTP method is not `GET` sends one request, with the JSON body of 
 
 ### Returns
 - The result of the handler. A paginated endpoint returns the merged result of all pages.
+- A `DataFrame` result that `max_pages` stopped carries the next page token in its metadata under `"next_page_token"`, which you read with `metadata(df, "next_page_token", nothing)`.
 
 ### Throws
 - `AlpacaError`: when the response status is not in the range 200 to 299.
@@ -35,6 +36,7 @@ function api(client::AlpacaClient, model::AbstractAlpacaEndpointModel;
     first_url = url(client, model);
     request_url = first_url;
     pages = Any[];
+    remaining_token = nothing;
 
     # a write model sends one request with its own method and body, and returns the result of the handler -
     method = _http_method(model);
@@ -59,16 +61,23 @@ function api(client::AlpacaClient, model::AbstractAlpacaEndpointModel;
 
         # stop at the page cap -
         if (max_pages !== nothing && length(pages) >= max_pages)
+            remaining_token = token;
             break;
         end
         request_url = first_url * "&page_token=" * URIs.escapeuri(token);
     end
 
     # one page is the result. Several pages are merged once, in page order, so a long download is not copied for each page -
-    if (length(pages) == 1)
-        return pages[1];
+    result = pages[1];
+    if (length(pages) > 1)
+        result = _merge_pages(pages[1], pages);
     end
-    return _merge_pages(pages[1], pages);
+
+    # a DataFrame that the page cap stopped carries the next page token. A custom handler result is returned as it is -
+    if (remaining_token !== nothing && result isa DataFrame)
+        metadata!(result, "next_page_token", remaining_token; style = :note);
+    end
+    return result;
 end
 # --- PUBLIC METHODS ABOVE HERE -------------------------------------------------------------------------------- #
 
