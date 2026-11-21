@@ -2106,7 +2106,7 @@ An HTTP GET call to this URL returns one page of corporate actions. The base URL
 The query string lists each field that is not `nothing`, in the order of the model, and leaves out the `?` when no field is set.
 
 ### Arguments
-- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1beta1"`.
+- `base::String`: the base URL of the API, e.g., `"https://data.alpaca.markets/v1"`.
 - `model::MyCorporateActionsEndpointModel`: the endpoint model that holds the fields of the request.
 
 ### Returns
@@ -2119,7 +2119,7 @@ function url(base::String, model::MyCorporateActionsEndpointModel)::String
 
     # build the query keys and values, in the order of the model; a nothing value is left out -
     query_keys = String["symbols", "cusips", "types", "start", "end", "ids", "limit", "sort", "region", "data_quality"];
-    query_values = Any[_symbols_value(model.symbols), _symbols_value(model.cusips), _symbols_value(model.types), _time_value(model.start), _time_value(model.finish), _symbols_value(model.ids), _query_value(model.limit), _query_value(model.sort), _query_value(model.region), _query_value(model.data_quality)];
+    query_values = Any[_symbols_value(model.symbols), _symbols_value(model.cusips), _symbols_value(model.types), _date_text(model.start), _date_text(model.finish), _symbols_value(model.ids), _query_value(model.limit), _query_value(model.sort), _query_value(model.region), _query_value(model.data_quality)];
     query_string = _query_string(query_keys, query_values);
 
     # build the URL string: base + path + query string -

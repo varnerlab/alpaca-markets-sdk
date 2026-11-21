@@ -64,3 +64,8 @@ end
         """{"timestamp":[1763650800],"equity":[1],"profit_loss":[2],"profit_loss_pct":[3],"base_value":100000}""")
     @test df[1, :base_value] == 100000.0
 end
+
+@testset "corporate actions: start and end are dates" begin
+    m = MyCorporateActionsEndpointModel(symbols = "AAPL", start = DateTime(2026, 1, 1, 9, 30), finish = Date(2026, 2, 1))
+    @test url("http://h", m) == "http://h/corporate-actions?symbols=AAPL&start=2026-01-01&end=2026-02-01&limit=100"
+end
