@@ -2296,6 +2296,27 @@ function _default_handler(model::Type{MyMoversEndpointModel}, body::String)::Dat
     return DataFrame(direction = directions, symbol = symbols, price = prices, change = changes, percent_change = percent_changes);
 end
 
+# _keyed_records_table: one table for all the keys. The group of records under each key becomes a _records_table, and the key
+# is the first column, named name. The tables are stacked with the columns of every table; no keys give a table with no rows and the key column -
+function _keyed_records_table(name::Symbol, keys::Vector{String}, record_lists::Vector{Vector{Any}})::DataFrame
+
+    # a table for each key, with the key as the first column -
+    tables = DataFrame[];
+    for i in eachindex(keys)
+        key_table = _records_table(record_lists[i]);
+        insertcols!(key_table, 1, name => fill(keys[i], length(record_lists[i])));
+        push!(tables, key_table);
+    end
+
+    # no keys give an empty table with the key column -
+    if (isempty(tables) == true)
+        return DataFrame(name => String[]);
+    end
+
+    # stack the tables, with the columns of every table -
+    return reduce(vcat, tables; cols = :union);
+end
+
 """
     _default_handler(model::Type{MyCorporateActionsEndpointModel}, body::String) -> DataFrame
 
@@ -2305,30 +2326,23 @@ The table has one row for each action. The first column is `type`, the group key
 """
 function _default_handler(model::Type{MyCorporateActionsEndpointModel}, body::String)::DataFrame
 
-    # the groups of actions; no object, or a null object, means no actions -
+    # collect the key and the records of each group; no object, or a null object, means no actions -
     parsed = JSON3.read(body);
-    groups = DataFrame[];
+    keys = String[];
+    record_lists = Vector{Any}[];
     if (haskey(parsed, :corporate_actions) == true && parsed[:corporate_actions] !== nothing)
         for (group_key, group_records) in pairs(parsed[:corporate_actions])
-
-            # a table for the group, with the group key as the first column -
             records = Any[];
             for record in group_records
                 push!(records, record);
             end
-            group_table = _records_table(records);
-            insertcols!(group_table, 1, :type => fill(String(group_key), length(records)));
-            push!(groups, group_table);
+            push!(keys, String(group_key));
+            push!(record_lists, records);
         end
     end
 
-    # no actions give an empty table with the type column -
-    if (isempty(groups) == true)
-        return DataFrame(type = String[]);
-    end
-
-    # stack the groups, with the columns of every group -
-    return reduce(vcat, groups; cols = :union);
+    # stack the groups, with the group key as the first column, named type -
+    return _keyed_records_table(:type, keys, record_lists);
 end
 
 """
@@ -2344,22 +2358,19 @@ end
 # _isin_records_table: a table with one row for each ISIN under the key of the response. The first column is isin, followed by the columns of _records_table -
 function _isin_records_table(body::String, key::Symbol)::DataFrame
 
-    # a table for each ISIN, with the ISIN as the first column -
+    # collect the ISIN and the one record of each ISIN -
     parsed = JSON3.read(body);
-    tables = DataFrame[];
+    keys = String[];
+    record_lists = Vector{Any}[];
     if (haskey(parsed, key) == true && parsed[key] !== nothing)
         for (isin, record) in pairs(parsed[key])
-            isin_table = _records_table(Any[record]);
-            insertcols!(isin_table, 1, :isin => String[String(isin)]);
-            push!(tables, isin_table);
+            push!(keys, String(isin));
+            push!(record_lists, Any[record]);
         end
     end
 
-    # no ISINs give an empty table with the isin column -
-    if (isempty(tables) == true)
-        return DataFrame(isin = String[]);
-    end
-    return reduce(vcat, tables; cols = :union);
+    # stack the ISINs, with the ISIN as the first column -
+    return _keyed_records_table(:isin, keys, record_lists);
 end
 
 """
