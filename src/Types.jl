@@ -2548,7 +2548,7 @@ end
     mutable struct MyNewsEndpointModel <: AbstractAlpacaMarketDataEndpointModel
 
 Endpoint model for the Alpaca `/news` endpoint.
-This endpoint returns one page of at most 50 news articles. The endpoint is not paginated by `api`, so pass the `next_page_token` of a response as `page_token` to ask for the next page.
+This endpoint returns one page of at most 50 news articles. The endpoint is not paginated by `api`, and the default handler drops the `next_page_token` of the response. To get older articles, set `sort = "desc"` and pass the `created_at` of the last row as `finish`. A custom handler can read the `next_page_token` from the response body and pass it as `page_token`.
 
 ### Fields
 - `symbols::Union{Nothing,Vector{String}}`: the symbols that the articles must mention, or `nothing` for all symbols. The keyword accepts a `String` or a vector of strings.
@@ -2558,7 +2558,7 @@ This endpoint returns one page of at most 50 news articles. The endpoint is not 
 - `limit::Int`: the largest number of articles to return, at most 50.
 - `include_content::Bool`: `true` to include the full content of each article.
 - `exclude_contentless::Bool`: `true` to leave out the articles that have no content.
-- `page_token::Union{Nothing,String}`: the token of the page to return, or `nothing` for the first page.
+- `page_token::Union{Nothing,String}`: the token of the page to return, or `nothing` for the first page. Only a custom handler can read this token from a response.
 
 ### Constructors
 - `MyNewsEndpointModel(; symbols = nothing, start = nothing, finish = nothing, sort::String = "desc", limit::Int = 50, include_content::Bool = false, exclude_contentless::Bool = false, page_token::Union{Nothing,String} = nothing)`: returns a new `MyNewsEndpointModel` instance.
