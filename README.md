@@ -97,12 +97,28 @@ The deprecated functions of earlier versions, such as `get_account` and `submit_
 | **Client** | `AlpacaClient`, `load_client` |
 | **Reading** | `url`, `api` |
 | **Trading** | `submit`, `cancel`, `close`, `roll` |
-| **Order models** | `MyEquityOrderModel`, `MyOptionLegModel`, `MyMixedOrderModel` |
+| **Order models** | `MyEquityOrderModel`, `MyCryptoOrderModel`, `MyOptionLegModel`, `MyMixedOrderModel` |
 | **Trading read models** | `MyAccountEndpointModel`, `MyClockEndpointModel`, `MyCalendarEndpointModel`, `MyAssetsEndpointModel`, `MyAssetEndpointModel`, `MyPositionsEndpointModel`, `MyPositionEndpointModel`, `MyOrdersEndpointModel`, `MyOrderEndpointModel` |
 | **Stock data read models** | `MyStockBarsEndpointModel`, `MyStockQuotesEndpointModel`, `MyStockTradesEndpointModel`, `MyStockLatestBarEndpointModel`, `MyStockLatestQuoteEndpointModel`, `MyStockLatestTradeEndpointModel`, `MyStockSnapshotsEndpointModel` |
 | **Option read models** | `MyOptionContractsEndpointModel`, `MyOptionContractEndpointModel`, `MyOptionBarsEndpointModel`, `MyOptionTradesEndpointModel`, `MyOptionLatestQuoteEndpointModel`, `MyOptionLatestTradeEndpointModel`, `MyOptionSnapshotsEndpointModel`, `MyOptionChainEndpointModel` |
 | **Streaming** | `connect_market_stream`, `subscribe!`, `unsubscribe!`, `on_trade`, `on_quote`, `on_bar`, `start!`, `stop!`, `isrunning` |
 | **Errors** | `AlpacaError`, `AlpacaSequenceError` |
+
+## What the SDK covers
+
+- Account and settings: the account, its configuration, activities, and portfolio history.
+- Orders, including bracket, OCO, and OTO orders, crypto orders, and replacing an order.
+- Positions, closing positions, and exercising options.
+- Watchlists: create, read, update, and delete.
+- The market calendar and the market clocks.
+- US stock data: bars, quotes, trades, auctions, snapshots, conditions, and exchanges.
+- Non-US stock data: bars, quotes, trades, and snapshots.
+- Option data: bars, trades, quotes, snapshots, chains, conditions, and exchanges.
+- Crypto data: bars, quotes, trades, snapshots, and order books.
+- News.
+- The screener: most active stocks and market movers.
+- Corporate actions.
+- Logos and fixed income prices and quotes, which need a paid market-data subscription.
 
 ## Requirements
 

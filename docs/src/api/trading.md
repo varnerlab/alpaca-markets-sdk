@@ -7,6 +7,7 @@ An order model says what to trade, and the verb says what to do with the order. 
 | Call | What the call sends | Returns |
 |---|---|---|
 | `submit(client, ::MyEquityOrderModel)` | one equity order | `Order` |
+| `submit(client, ::MyCryptoOrderModel)` | one crypto order | `Order` |
 | `submit(client, ::MyOptionLegModel)` | one option order that opens the leg | `Order` |
 | `submit(client, ::Vector{MyOptionLegModel})` | one option order for 1 leg, or one multi-leg order for 2 to 4 legs. More than 4 legs raise an `ArgumentError` | `Order` |
 | `submit(client, ::MyMixedOrderModel)` | the equity order, then the option order after the equity order fills | `Vector{Order}` |
@@ -20,6 +21,8 @@ An order model says what to trade, and the verb says what to do with the order. 
 | `close(client, ::Order)` | the reverse of a filled order | `Order` |
 | `close(client, ::MyMixedOrderModel)` | the reverse option order, then the reverse equity order after the option order fills | `Vector{Order}` |
 | `roll(client, from, to)` | one multi-leg order that closes the `from` legs and opens the `to` legs | `Order` |
+
+`MyCryptoOrderModel` describes a crypto order. Watchlists, account settings, replacing an order, and exercising an option are write models that go through [`api`](@ref), as the [Reading data](reading.md) page describes.
 
 ## Covered calls and other mixed orders
 
@@ -41,6 +44,7 @@ The reads return a `DataFrame`, so an `Order` comes only from `submit`, `close`,
 
 ```@docs
 submit(::AlpacaClient, ::MyEquityOrderModel)
+submit(::AlpacaClient, ::MyCryptoOrderModel)
 submit(::AlpacaClient, ::MyOptionLegModel)
 submit(::AlpacaClient, ::Vector{MyOptionLegModel})
 submit(::AlpacaClient, ::MyMixedOrderModel)

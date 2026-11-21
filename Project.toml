@@ -1,6 +1,6 @@
 name = "Alpaca"
 uuid = "c1a5797d-a1e1-4ff9-a0c8-9ae1b3a2bac1"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["Jeffrey Varner"]
 
 [deps]

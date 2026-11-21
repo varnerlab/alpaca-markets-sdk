@@ -22,6 +22,12 @@ A missing value is `missing` in a column. Timestamps are `DateTime` in UTC, and 
 
 `MyAssetsEndpointModel` has no `tradable_only` field, because `tradable_only` is not an Alpaca query parameter. To keep only the tradable assets, filter the `tradable` column of the `DataFrame`.
 
+`MyLogoEndpointModel` is the one read model whose default handler does not return a `DataFrame`. It returns the PNG image as a `Vector{UInt8}`.
+
+## Writes through `api`
+
+The write models, such as `MyCreateWatchlistEndpointModel`, `MyUpdateAccountConfigurationsEndpointModel`, and `MyReplaceOrderEndpointModel`, also go through [`api`](@ref). `api` sends the HTTP method of the model, sends each write once, and never follows `next_page_token` for a write. A write that Alpaca answers with no body, such as `MyExerciseOptionEndpointModel` or `MyDeleteWatchlistEndpointModel`, returns an empty `DataFrame`.
+
 ## Custom handlers
 
 The `handler` keyword of `api` replaces the default handler. A handler is a function of the model type and the response body as a `String`: `handler(Type, body)`. A handler sees only the response, so any step that needs a value from the request happens after `api` returns.
