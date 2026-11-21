@@ -101,6 +101,7 @@ The deprecated functions of earlier versions, such as `get_account` and `submit_
 | **Trading read models** | `MyAccountEndpointModel`, `MyClockEndpointModel`, `MyCalendarEndpointModel`, `MyAssetsEndpointModel`, `MyAssetEndpointModel`, `MyPositionsEndpointModel`, `MyPositionEndpointModel`, `MyOrdersEndpointModel`, `MyOrderEndpointModel` |
 | **Stock data read models** | `MyStockBarsEndpointModel`, `MyStockQuotesEndpointModel`, `MyStockTradesEndpointModel`, `MyStockLatestBarEndpointModel`, `MyStockLatestQuoteEndpointModel`, `MyStockLatestTradeEndpointModel`, `MyStockSnapshotsEndpointModel` |
 | **Option read models** | `MyOptionContractsEndpointModel`, `MyOptionContractEndpointModel`, `MyOptionBarsEndpointModel`, `MyOptionTradesEndpointModel`, `MyOptionLatestQuoteEndpointModel`, `MyOptionLatestTradeEndpointModel`, `MyOptionSnapshotsEndpointModel`, `MyOptionChainEndpointModel` |
+| **All other models** | The write models, and the read models for crypto, non-US stocks, news, the screener, corporate actions, logos, and fixed income, are listed on the [Models page](https://varnerlab.github.io/alpaca-markets-sdk/stable/api/models/). |
 | **Streaming** | `connect_market_stream`, `subscribe!`, `unsubscribe!`, `on_trade`, `on_quote`, `on_bar`, `start!`, `stop!`, `isrunning` |
 | **Errors** | `AlpacaError`, `AlpacaSequenceError` |
 

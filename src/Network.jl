@@ -14,7 +14,7 @@ A model whose HTTP method is not `GET` sends one request, with the JSON body of 
 - `client::AlpacaClient`: the client that holds the credentials and the base URLs.
 - `model::AbstractAlpacaEndpointModel`: the endpoint model that describes the request.
 - `handler::Function`: the function that receives the type of the model and the body of a page as a `String`.
-- `max_pages::Union{Nothing,Int}`: the number of pages after which a paginated request stops. `nothing` follows every page. A write model ignores it.
+- `max_pages::Union{Nothing,Int}`: the number of pages after which a paginated request stops. `nothing` follows every page. A write model sends one request and never follows pages, but `max_pages = 0` throws before a write too.
 
 ### Returns
 - The result of the handler. A paginated endpoint returns the merged result of all pages.
