@@ -1146,7 +1146,7 @@ function url(base::String, model::MyMarketCalendarEndpointModel)::String
 
     # build the query keys and values, in the order of the model; a nothing value is left out -
     query_keys = String["start", "end", "timezone"];
-    query_values = Any[_time_value(model.start), _time_value(model.finish), _query_value(model.timezone)];
+    query_values = Any[_date_text(model.start), _date_text(model.finish), _query_value(model.timezone)];
     query_string = _query_string(query_keys, query_values);
 
     # build the URL string: base + path + query string -

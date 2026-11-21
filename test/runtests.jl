@@ -60,4 +60,5 @@ global_logger(DropDepwarnLogger(global_logger()))
     include("test_endpoints_crypto_v05.jl")
     include("test_endpoints_market_v05.jl")
     include("test_live_v05.jl")
+    include("test_v05_fixes.jl")
 end

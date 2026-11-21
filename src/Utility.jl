@@ -211,6 +211,19 @@ function _fmt_ts(x::Date)::String
     return string(x);
 end
 
+# _date_text: a calendar date as yyyy-mm-dd. A DateTime keeps only its date, a String is sent as it is, and nothing stays nothing -
+function _date_text(x::Nothing)
+    return nothing;
+end
+
+function _date_text(x::AbstractString)::String
+    return String(x);
+end
+
+function _date_text(x::Union{Date,DateTime})::String
+    return string(Date(x));
+end
+
 # _to_symbol_vector: a symbol keyword (a string or a vector) as a Vector{String}; nothing stays nothing -
 function _to_symbol_vector(x::Nothing)
     return nothing;

@@ -69,6 +69,7 @@ if get(ENV, "ALPACA_LIVE_TESTS", "0") == "1"
             ("account activities", MyAccountActivitiesEndpointModel(page_size = 3), String[]),
             ("portfolio history", MyPortfolioHistoryEndpointModel(period = "1W", timeframe = "1D"), String[]),
             ("market calendar", MyMarketCalendarEndpointModel(market = "NYSE", start = Date(2026, 11, 16), finish = Date(2026, 11, 20)), String[]),
+            ("market calendar from DateTimes", MyMarketCalendarEndpointModel(market = "NYSE", start = DateTime(2026, 11, 16, 15, 30), finish = DateTime(2026, 11, 20, 15, 30)), String[]),
             ("market clocks", MyMarketClocksEndpointModel(markets = ["NYSE", "XLON"]), String[]),
             ("watchlists", MyWatchlistsEndpointModel(), String[]),
             ("news", MyNewsEndpointModel(symbols = ["AAPL"], limit = 3), String[]),
