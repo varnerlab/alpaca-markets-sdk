@@ -1,10 +1,8 @@
 # Streaming
 
-Real-time market data via WebSocket. The stream runs asynchronously in a
-background task — call [`start!`](@ref) and continue working in the REPL or
-your script.
+An `AlpacaStream` receives trades, quotes, and bars over a WebSocket while your code keeps running. Connect to the stream, subscribe to symbols, register a callback for each kind of message, and start the stream. The call [`start!`](@ref) returns at once, and the stream runs in a background task.
 
-## Quick example
+## Example
 
 ```julia
 using Alpaca
@@ -17,14 +15,14 @@ subscribe!(stream, trades=["AAPL", "MSFT"], bars=["SPY"])
 on_trade(stream, t -> println("Trade: $(t.symbol) @ $(t.price)"))
 on_bar(stream, b -> println("Bar: $(b.symbol) close=$(b.c)"))
 
-start!(stream)  # returns immediately — stream runs in background
+start!(stream)    # returns at once, and the stream runs in the background
 
-# ... do other work, submit orders, etc. ...
+# ... other work, such as placing orders ...
 
 stop!(stream)
 ```
 
-## Connection & lifecycle
+## Connection and lifecycle
 
 ```@docs
 AlpacaStream
@@ -59,14 +57,11 @@ Bar
 
 ## Reconnection behavior
 
-The stream automatically reconnects on network failures with exponential
-backoff (1 s, 2 s, 4 s, ... up to 30 s). Authentication failures (invalid
-API key/secret) are **hard errors** that stop the stream immediately.
+After a network failure, the stream reconnects on its own. It waits 1 s before the first try and doubles the wait after each failed try, up to 30 s. When Alpaca does not accept the keys, the stream stops at once with an error.
 
 ## Logging
 
-The stream uses Julia's standard `@info`/`@warn`/`@debug` macros. Route
-them to a file with `SimpleLogger`:
+The stream logs with Julia's `@info`, `@warn`, and `@debug` macros. To send the log to a file, use a `SimpleLogger`:
 
 ```julia
 using Logging

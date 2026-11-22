@@ -1,35 +1,20 @@
 # Alpaca.jl
 
-A Julia client for the [Alpaca Markets](https://alpaca.markets) REST API, focused on paper trading US equities, ETFs, and options, plus access to historical and latest market data.
+Alpaca.jl is a Julia package for the trading and market data APIs of [Alpaca](https://alpaca.markets). With an Alpaca paper account, it reads market data and places orders with simulated money at real market prices.
 
-## Features
+Every Alpaca endpoint has a model type in this package. A model holds the settings of one request, and the call `api(client, model)` sends the request and returns the result as a `DataFrame`. The trading verbs `submit`, `cancel`, and `close` place and manage orders.
 
-- Credentials loaded from a local TOML file (no environment variables required)
-- Reading: one model for each endpoint, `url` to build the request URL, and `api` to send the request and return a `DataFrame`
-- Trading: `submit`, `cancel`, `close`, and `roll` for equities, option legs, vertical spreads, and covered calls
-- Real-time streaming of trades, quotes, and bars through a WebSocket with automatic reconnection
-- Automatic pagination for market data queries
-- The exceptions `AlpacaError` for a non-2xx API response and `AlpacaSequenceError` for a two-order sequence that stops after the first order
-
-## Quick example
+## Install
 
 ```julia
-using Alpaca
-using Dates
-
-client = load_client()                 # reads conf/apidata.toml
-
-# read the daily bars of two stocks
-model = MyStockBarsEndpointModel(symbols = ["AAPL", "MSFT"], timeframe = "1Day",
-                                 start = today() - Day(30))
-bars = api(client, model)
-
-# buy one share of SPY at market
-order = submit(client, MyEquityOrderModel(symbol = "SPY", side = "buy", qty = 1))
+using Pkg
+Pkg.add(url = "https://github.com/varnerlab/alpaca-markets-sdk.git")
 ```
 
-See [Getting Started](getting_started.md) for installation and credential setup. The API Reference pages in the sidebar document every exported function and type. The functions of versions before 0.4.0 are deprecated and listed on the [Legacy API](api/legacy.md) page, with the replacement for each function.
+## Where to go next
 
-## Disclaimer
+- [Getting Started](getting_started.md) takes you from a new paper account to a placed and cancelled order.
+- The **Endpoints** pages cover every Alpaca endpoint: what each model reads or does, its fields, the columns of its result, and an example.
+- The **Reference** pages cover the client, `api` and its pages, the trading verbs, streaming, and errors. The [Legacy API](api/legacy.md) page lists the replacement for each function of versions before 0.4.0.
 
-This package is independent and not affiliated with Alpaca Securities LLC. It is intended for paper trading, research, and algorithm development. Review any strategy carefully before running it against a live account.
+This package is not affiliated with Alpaca Securities LLC.

@@ -1,6 +1,6 @@
 # Reading data
 
-Reading has two steps. [`url`](@ref) builds the request URL from a read model, and [`api`](@ref) sends the request, follows `next_page_token` until the last page, and returns the result of the handler.
+Every Alpaca endpoint has a model type, and a model holds the settings of one request. The call [`api`](@ref) sends the request and returns the result. The call [`url`](@ref) returns the URL of the request without sending it, so you can check a request before you send it.
 
 ```julia
 using Alpaca
@@ -9,28 +9,41 @@ using Dates
 client = load_client()
 
 model = MyStockBarsEndpointModel(symbols = ["AAPL", "MSFT"], timeframe = "1Day",
-                                 start = Date(2025, 1, 1), finish = Date(2025, 6, 30))
+    start = Date(2026, 11, 2), finish = Date(2026, 11, 20));
 url(client, model)           # the URL of the first page
-bars = api(client, model)    # a DataFrame with every page
+bars = api(client, model);   # a DataFrame with every page
 ```
 
-## The default result
+## Model fields
 
-The default handler of every read model returns a `DataFrame`. An endpoint that returns one record, such as the account, the clock, one asset, one order, one position, or one contract, returns a `DataFrame` with one row.
+Each keyword that sets a query parameter has the name of that Alpaca query parameter. The one exception is `finish`, which sets `end`, because `end` is a reserved word in Julia.
 
-A missing value is `missing` in a column. Timestamps are `DateTime` in UTC, and prices and sizes are `Float64`. The tables of account activities, account configurations, corporate actions, and fixed income keep the values as Alpaca sends them, so some prices and sizes in those tables are text. The columns of a bars table are `timestamp`, `symbol`, `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`. A snapshots table has one row for each contract, and the nested objects (the latest quote, the latest trade, and the greeks) are columns with a prefix.
+## The result
 
-`MyAssetsEndpointModel` has no `tradable_only` field, because `tradable_only` is not an Alpaca query parameter. To keep only the tradable assets, filter the `tradable` column of the `DataFrame`.
+The call `api` returns a `DataFrame`. An endpoint that returns one record, such as the account or one order, gives a `DataFrame` with one row. The docstring of each model lists the columns of its result.
 
-`MyLogoEndpointModel` is the one read model whose default handler does not return a `DataFrame`. It returns the PNG image as a `Vector{UInt8}`.
+A value that Alpaca does not send is `missing`. Timestamps are `DateTime` values in UTC, and prices and sizes are `Float64`. The tables of account activities, account settings, corporate actions, and fixed income keep the values as Alpaca sends them, so some prices and sizes in those tables are text.
 
-## Writes through `api`
+## Pages
 
-The write models, such as `MyCreateWatchlistEndpointModel`, `MyUpdateAccountConfigurationsEndpointModel`, and `MyReplaceOrderEndpointModel`, also go through [`api`](@ref). `api` sends the HTTP method of the model, sends each write once, and never follows `next_page_token` for a write. A write that Alpaca answers with no body, such as `MyExerciseOptionEndpointModel` or `MyDeleteWatchlistEndpointModel`, returns an empty `DataFrame`.
+Alpaca splits a long result into pages. For the historical bars, quotes, trades, and auctions, the option contracts and chains, and the corporate actions, the call `api` reads every page and returns one `DataFrame`. Pass `max_pages` to stop after that many pages. A `DataFrame` that `max_pages` cut short carries the token of the next page in its metadata, under `"next_page_token"`:
+
+```julia
+using DataFrames
+
+model = MyStockBarsEndpointModel(symbols = "AAPL", timeframe = "1Min",
+    start = Date(2026, 11, 20), limit = 100);
+bars = api(client, model; max_pages = 1);    # the first 100 bars
+metadata(bars, "next_page_token", nothing)   # the token of the next page, or nothing
+```
+
+## Writes
+
+The write models, such as `MyCreateWatchlistEndpointModel` and `MyReplaceOrderEndpointModel`, also go through `api`. The call sends each write once and never reads more pages. A write that Alpaca answers with no body, such as `MyDeleteWatchlistEndpointModel`, returns an empty `DataFrame`.
 
 ## Custom handlers
 
-The `handler` keyword of `api` replaces the default handler. A handler is a function of the model type and the response body as a `String`: `handler(Type, body)`. A handler sees only the response, so any step that needs a value from the request happens after `api` returns.
+The `handler` keyword of `api` replaces the default handler. A handler is a function of the model type and the response body as a `String`, `handler(Type, body)`, and `api` returns what the handler returns.
 
 ## Functions
 

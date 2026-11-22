@@ -480,11 +480,19 @@ end
 """
     mutable struct MyAccountEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/account` endpoint.
-This endpoint returns the account of the client: cash, buying power, and status.
+The balances and status of the client's account, from the Alpaca `GET /v2/account` endpoint.
+The equity of the account is its cash plus the market value of its long and short positions.
 
 ### Fields
 This model has no fields.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row. The columns are `id`, `account_number`, `status`, `currency`, the money columns `cash`, `buying_power`, `portfolio_value`, `equity`, and `last_equity` (`Float64`), and the `Bool` flags `pattern_day_trader`, `trading_blocked`, `transfers_blocked`, and `account_blocked`. The column `last_equity` is the equity at 16:00 ET on the previous trading day, and `portfolio_value` equals `equity`.
+
+### Example
+```julia
+account = api(client, MyAccountEndpointModel());
+```
 
 ### Constructors
 - `MyAccountEndpointModel()`: returns a new `MyAccountEndpointModel` instance.
@@ -498,11 +506,19 @@ end
 """
     mutable struct MyClockEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/clock` endpoint.
-This endpoint returns the market clock: whether the market is open and when it next opens or closes.
+The US market clock, from the Alpaca `GET /v2/clock` endpoint.
+The clock says whether the market is open now and when the market next opens and closes.
 
 ### Fields
 This model has no fields.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row. The columns are `timestamp`, the current time, `is_open`, which is `true` when the market is open, `next_open`, and `next_close`. The three times are `DateTime` values in UTC.
+
+### Example
+```julia
+clock = api(client, MyClockEndpointModel());
+```
 
 ### Constructors
 - `MyClockEndpointModel()`: returns a new `MyClockEndpointModel` instance.
@@ -516,11 +532,18 @@ end
 """
     mutable struct MyPositionsEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/positions` endpoint.
-This endpoint returns every open position of the account.
+The open positions of the account, from the Alpaca `GET /v2/positions` endpoint. A position is the holding of the account in one asset, long or short.
 
 ### Fields
 This model has no fields.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each open position. The columns give the `symbol`, the `qty`, the `side`, the prices per share, such as `avg_entry_price` and `current_price`, and the dollar values `market_value` and `cost_basis`. The columns `unrealized_pl`, in dollars, and `unrealized_plpc`, as a fraction, give the unrealized profit or loss.
+
+### Example
+```julia
+positions = api(client, MyPositionsEndpointModel());
+```
 
 ### Constructors
 - `MyPositionsEndpointModel()`: returns a new `MyPositionsEndpointModel` instance.
@@ -534,12 +557,21 @@ end
 """
     mutable struct MyCalendarEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/calendar` endpoint.
-This endpoint returns the market calendar: the trading days and their open and close times.
+The trading days of the US market, with their open and close times, from the Alpaca `GET /v2/calendar` endpoint.
+The open and close times account for early closures.
 
 ### Fields
-- `start::Union{Nothing,Date,String}`: the first day of the request, a `Date` or an ISO `"YYYY-MM-DD"` `String`.
-- `finish::Union{Nothing,Date,String}`: the last day of the request, or `nothing` to leave it open. The URL sends this field as `end`.
+- `start::Union{Nothing,Date,String}`: the first day of the calendar, included. A `String` is a date, `"YYYY-MM-DD"`. Default `nothing`, which starts the calendar in 1970.
+- `finish::Union{Nothing,Date,String}`: the last day of the calendar, included. The URL sends this field as `end`. Default `nothing`, which ends the calendar in 2029.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each trading day. The columns are `date`, `open` and `close`, the times of the regular session, and `session_open` and `session_close`, the times of the extended session. The times are `Time` values, and a day with no extended session has `missing` in the two session columns.
+
+### Example
+```julia
+model = MyCalendarEndpointModel(start = Date(2026, 12, 1), finish = Date(2026, 12, 31));
+days = api(client, model);
+```
 
 ### Constructors
 - `MyCalendarEndpointModel(; start::Union{Nothing,Date,String} = nothing, finish::Union{Nothing,Date,String} = nothing)`: returns a new `MyCalendarEndpointModel` instance.
@@ -558,12 +590,20 @@ end
 """
     mutable struct MyAssetsEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/assets` endpoint.
-This endpoint returns the assets that match a status and an asset class.
+The assets that Alpaca offers for trading and market data, from the Alpaca `GET /v2/assets` endpoint.
+An asset is one instrument, such as a US stock or a cryptocurrency, with its symbol and its trading flags.
 
 ### Fields
-- `status::String`: the status filter, e.g., `"active"`.
-- `asset_class::String`: the asset class filter, e.g., `"us_equity"`.
+- `status::String`: the status of the assets to list, `"active"` or `"inactive"`. Default `"active"`.
+- `asset_class::String`: the asset class to list, e.g., `"us_equity"` (US equities), `"us_option"` (US options), or `"crypto"` (cryptocurrencies). Default `"us_equity"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each asset. The columns are `id`, `class`, `exchange`, `symbol`, `name`, `status`, and the `Bool` flags `tradable` (tradable on Alpaca), `marginable`, `shortable`, `easy_to_borrow`, and `fractionable`. To keep only the tradable assets, filter the `tradable` column.
+
+### Example
+```julia
+assets = api(client, MyAssetsEndpointModel());
+```
 
 ### Constructors
 - `MyAssetsEndpointModel(; status::String = "active", asset_class::String = "us_equity")`: returns a new `MyAssetsEndpointModel` instance.
@@ -582,11 +622,19 @@ end
 """
     mutable struct MyAssetEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/assets/{symbol}` endpoint.
-This endpoint returns one asset, by symbol or asset identifier.
+One asset, by symbol or asset identifier, from the Alpaca `GET /v2/assets/{symbol_or_asset_id}` endpoint.
+An asset is one instrument that Alpaca offers, such as a US stock.
 
 ### Fields
-- `symbol::String`: the symbol or identifier that the endpoint path names.
+- `symbol::String`: the symbol, e.g., `"AAPL"`, or the asset identifier, which the URL puts, escaped, in the path. The field also accepts the CUSIP of a US equity. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row, with the same columns as `MyAssetsEndpointModel`: `id`, `class`, `exchange`, `symbol`, `name`, `status`, `tradable`, `marginable`, `shortable`, `easy_to_borrow`, and `fractionable`.
+
+### Example
+```julia
+asset = api(client, MyAssetEndpointModel(symbol = "AAPL"));
+```
 
 ### Constructors
 - `MyAssetEndpointModel(; symbol::String)`: returns a new `MyAssetEndpointModel` instance.
@@ -604,11 +652,19 @@ end
 """
     mutable struct MyPositionEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/positions/{symbol}` endpoint.
-This endpoint returns the open position of one symbol.
+The open position of the account in one asset, from the Alpaca `GET /v2/positions/{symbol_or_asset_id}` endpoint.
 
 ### Fields
-- `symbol::String`: the symbol or identifier that the endpoint path names.
+- `symbol::String`: the symbol of the asset, e.g., `"AAPL"`, `"BTC/USD"`, or the symbol of an option contract. The asset id also works. The URL sends a crypto pair without its slash, as `BTCUSD`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row, with the columns of `MyPositionsEndpointModel`.
+
+### Example
+```julia
+positions = api(client, MyPositionsEndpointModel());
+position = api(client, MyPositionEndpointModel(symbol = positions.symbol[1]));
+```
 
 ### Constructors
 - `MyPositionEndpointModel(; symbol::String)`: returns a new `MyPositionEndpointModel` instance.
@@ -626,16 +682,23 @@ end
 """
     mutable struct MyOrdersEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/orders` endpoint.
-This endpoint returns the orders of the account that match a status.
+The orders of the account, filtered by status, submission time, and symbol, from the Alpaca `GET /v2/orders` endpoint.
 
 ### Fields
-- `status::String`: the status filter, e.g., `"open"`.
-- `limit::Int`: the largest number of rows to return per page.
-- `after::Union{Nothing,String,DateTime}`: return only orders submitted after this time, or `nothing`.
-- `until::Union{Nothing,String,DateTime}`: return only orders submitted until this time, or `nothing`.
-- `direction::String`: the sort direction of the orders, `"asc"` or `"desc"`.
-- `symbols::Union{Nothing,Vector{String}}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `status::String`: the orders to read: `"open"`, `"closed"`, or `"all"`. Default `"open"`.
+- `limit::Int`: the largest number of orders that Alpaca returns, up to `500`. Default `50`.
+- `after::Union{Nothing,String,DateTime}`: the start of the range of submission times, excluded. Default `nothing`, which sets no start.
+- `until::Union{Nothing,String,DateTime}`: the end of the range of submission times, excluded. Default `nothing`, which sets no end.
+- `direction::String`: the sort direction by submission time: `"asc"`, oldest first, or `"desc"`, newest first. Default `"desc"`.
+- `symbols::Union{Nothing,Vector{String}}`: the symbols whose orders to read, e.g., `["AAPL", "MSFT"]`. The keyword also accepts one symbol as a `String`. Default `nothing`, which reads the orders of every symbol.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each order. Each multi-leg order is followed by one row for each leg, whose `parent_id` is the `id` of the order. The columns describe the order (`symbol`, `side`, `type`, `status`), its quantities and prices (`qty`, `filled_qty`, `limit_price`, `filled_avg_price`), and its UTC times (`created_at`, `submitted_at`, `filled_at`).
+
+### Example
+```julia
+orders = api(client, MyOrdersEndpointModel(status = "closed", limit = 10));
+```
 
 ### Constructors
 - `MyOrdersEndpointModel(; status::String = "open", limit::Int = 50, after::Union{Nothing,String,DateTime} = nothing, until::Union{Nothing,String,DateTime} = nothing, direction::String = "desc", symbols::Union{Nothing,AbstractString,AbstractVector} = nothing)`: returns a new `MyOrdersEndpointModel` instance.
@@ -658,12 +721,20 @@ end
 """
     mutable struct MyOrderEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/orders/{id}` or `/orders:by_client_order_id` endpoint.
-This endpoint returns one order, by order identifier or by client order identifier.
+One order of the account, found by its id or by its client order id, from the Alpaca `GET /v2/orders/{order_id}` endpoint, or the `GET /v2/orders:by_client_order_id` endpoint when the model holds a client order id.
 
 ### Fields
-- `id::Union{Nothing,String}`: the order identifier assigned by Alpaca, or `nothing`.
-- `client_order_id::Union{Nothing,String}`: the order identifier assigned by the client, or `nothing`.
+- `id::Union{Nothing,String}`: the id that Alpaca assigned to the order, e.g., from the `id` column of `MyOrdersEndpointModel`. Default `nothing`.
+- `client_order_id::Union{Nothing,String}`: the id that the client gave the order, e.g., with the `client_order_id` keyword of `submit`. Default `nothing`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for the order, followed by one row for each leg of a multi-leg order. The columns are those of `MyOrdersEndpointModel`.
+
+### Example
+```julia
+orders = api(client, MyOrdersEndpointModel(status = "closed", limit = 10));
+order = api(client, MyOrderEndpointModel(id = orders.id[1]));
+```
 
 ### Constructors
 - `MyOrderEndpointModel(; id::Union{Nothing,String} = nothing, client_order_id::Union{Nothing,String} = nothing)`: returns a new `MyOrderEndpointModel` instance.
@@ -689,20 +760,30 @@ end
 """
     mutable struct MyOptionContractsEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/options/contracts` endpoint.
-This endpoint returns the option contracts that match the filters.
+The option contracts that match the filters, from the Alpaca `GET /v2/options/contracts` endpoint.
+Each contract has an underlying symbol, a type, `"call"` or `"put"`, a strike price, and an expiration date.
 
 ### Fields
-- `underlying_symbols::Vector{String}`: the underlying symbols of the contracts to list. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `status::String`: the status filter, e.g., `"open"`.
-- `expiration_date::Union{Nothing,Date,String}`: the exact expiration date to match, or `nothing`.
-- `expiration_date_gte::Union{Nothing,Date,String}`: the earliest expiration date to match, or `nothing`.
-- `expiration_date_lte::Union{Nothing,Date,String}`: the latest expiration date to match, or `nothing`.
-- `strike_price_gte::Union{Nothing,Real}`: the lowest strike price to match, or `nothing`.
-- `strike_price_lte::Union{Nothing,Real}`: the highest strike price to match, or `nothing`.
-- `type::Union{Nothing,String}`: the contract type to match, `"call"` or `"put"`, or `nothing`.
-- `style::Union{Nothing,String}`: the exercise style to match, e.g., `"american"`, or `nothing`.
-- `limit::Int`: the largest number of rows to return per page.
+- `underlying_symbols::Vector{String}`: the underlying symbols of the contracts, e.g., `["SPY"]`, sent as one comma-separated list. The keyword also accepts one symbol as a `String`. Required.
+- `status::String`: the status of the contracts, `"active"` or `"inactive"`. Default `"active"`.
+- `expiration_date::Union{Nothing,Date,String}`: the exact expiration date. A `String` is `"YYYY-MM-DD"`. Default `nothing`.
+- `expiration_date_gte::Union{Nothing,Date,String}`: the earliest expiration date, included. Default `nothing`.
+- `expiration_date_lte::Union{Nothing,Date,String}`: the latest expiration date, included. Default `nothing`, which Alpaca sets to the next weekend.
+- `strike_price_gte::Union{Nothing,Real}`: the lowest strike price, included. Default `nothing`.
+- `strike_price_lte::Union{Nothing,Real}`: the highest strike price, included. Default `nothing`.
+- `type::Union{Nothing,String}`: the contract type, `"call"` or `"put"`. Default `nothing`, which lists both types.
+- `style::Union{Nothing,String}`: the exercise style, `"american"` or `"european"`. Default `nothing`, which lists both styles.
+- `limit::Int`: the largest number of contracts on one page, at most `10000`. The call `api` reads every page. Default `1000`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each contract. The columns describe the contract (`id`, `symbol`, `name`, `status`, `tradable`, `expiration_date`, `type`, `style`, `strike_price`), its underlying asset (`root_symbol`, `underlying_symbol`, `underlying_asset_id`), its size (`multiplier` and `size`, both `100` for a standard contract), and its `open_interest` and `close_price`, each with a date column.
+
+### Example
+```julia
+model = MyOptionContractsEndpointModel(underlying_symbols = "SPY", type = "call",
+    expiration_date = Date(2026, 12, 18));
+contracts = api(client, model);
+```
 
 ### Constructors
 - `MyOptionContractsEndpointModel(; underlying_symbols::Union{AbstractString,AbstractVector}, status::String = "active", expiration_date::Union{Nothing,Date,String} = nothing, expiration_date_gte::Union{Nothing,Date,String} = nothing, expiration_date_lte::Union{Nothing,Date,String} = nothing, strike_price_gte::Union{Nothing,Real} = nothing, strike_price_lte::Union{Nothing,Real} = nothing, type::Union{Nothing,String} = nothing, style::Union{Nothing,String} = nothing, limit::Int = 1000)`: returns a new `MyOptionContractsEndpointModel` instance.
@@ -729,11 +810,18 @@ end
 """
     mutable struct MyOptionContractEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/options/contracts/{symbol}` endpoint.
-This endpoint returns one option contract, by symbol or contract identifier.
+One option contract, by contract symbol or contract identifier, from the Alpaca `GET /v2/options/contracts/{symbol_or_id}` endpoint.
 
 ### Fields
-- `symbol::String`: the symbol or identifier that the endpoint path names.
+- `symbol::String`: the contract symbol, e.g., `"SPY261218C00690000"`, or the contract identifier, which the URL puts in the path. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row, with the same columns as `MyOptionContractsEndpointModel`.
+
+### Example
+```julia
+contract = api(client, MyOptionContractEndpointModel(symbol = "SPY261218C00690000"));
+```
 
 ### Constructors
 - `MyOptionContractEndpointModel(; symbol::String)`: returns a new `MyOptionContractEndpointModel` instance.
@@ -751,17 +839,27 @@ end
 """
     mutable struct MyStockBarsEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/bars` endpoint.
-This endpoint returns historical stock bars.
+The price bars of one or more US stocks over a range of times, from the Alpaca `GET /v2/stocks/bars` endpoint.
+A bar summarizes the trades of one time interval: the open, high, low, and close prices, the volume, and the number of trades.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `timeframe::String`: the width of each bar, e.g., `"1Day"`.
-- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `limit::Int`: the largest number of rows to return per page.
-- `adjustment::String`: the corporate action adjustment of the prices, e.g., `"raw"`.
-- `feed::String`: the market data feed, e.g., `"iex"`.
+- `symbols::Vector{String}`: the stock symbols, e.g., `["AAPL", "MSFT"]`. The keyword also accepts one symbol as a `String`. Required.
+- `timeframe::String`: the time interval of each bar: `"1Min"` to `"59Min"`, `"1Hour"` to `"23Hour"`, `"1Day"`, `"1Week"`, or `"1Month"`, `"2Month"`, `"3Month"`, `"4Month"`, `"6Month"`, or `"12Month"`. Required.
+- `start::Union{String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A `DateTime` is a UTC time. Required.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. The URL sends this field as `end`. Default `nothing`, which ends the range at the latest bar the account can read.
+- `limit::Int`: the largest number of bars on one page, counted across all symbols, from `1` to `10000`. The call `api` reads every page. Default `1000`.
+- `adjustment::String`: how the prices are adjusted for corporate actions: `"raw"` (no adjustment), `"split"`, `"dividend"`, `"spin-off"`, or `"all"`. Default `"raw"`.
+- `feed::String`: the source of the trades: `"iex"`, the Investors Exchange, or `"sip"`, all US exchanges. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"iex"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each bar, sorted by symbol and then by time. The columns are `timestamp` (UTC), `symbol`, `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`, the volume-weighted average price.
+
+### Example
+```julia
+model = MyStockBarsEndpointModel(symbols = ["AAPL", "MSFT"], timeframe = "1Day",
+    start = Date(2026, 11, 2), finish = Date(2026, 11, 20));
+bars = api(client, model);
+```
 
 ### Constructors
 - `MyStockBarsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, adjustment::String = "raw", feed::String = "iex")`: returns a new `MyStockBarsEndpointModel` instance.
@@ -785,15 +883,25 @@ end
 """
     mutable struct MyStockQuotesEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/quotes` endpoint.
-This endpoint returns historical stock quotes.
+The quotes of one or more US stocks over a range of times, from the Alpaca `GET /v2/stocks/quotes` endpoint.
+A quote is the best bid price and the best ask price for a stock, with the size at each price.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `limit::Int`: the largest number of rows to return per page.
-- `feed::String`: the market data feed, e.g., `"iex"`.
+- `symbols::Vector{String}`: the stock symbols, e.g., `["AAPL", "MSFT"]`. The keyword also accepts one symbol as a `String`. Required.
+- `start::Union{String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A `DateTime` is a UTC time. Required.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. The URL sends this field as `end`. Default `nothing`, which ends the range at the latest quote the account can read.
+- `limit::Int`: the largest number of quotes on one page, counted across all symbols, from `1` to `10000`. The call `api` reads every page. Default `1000`.
+- `feed::String`: the source of the quotes: `"iex"`, the Investors Exchange, or `"sip"`, all US exchanges. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"iex"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each quote, sorted by symbol and then by time. The columns are `timestamp` (UTC), `symbol`, `bid_price`, `bid_size`, `ask_price`, `ask_size`, `bid_exchange`, and `ask_exchange`. The sizes count shares, in round lots before November 3, 2025. The model `MyStockExchangesEndpointModel` names each exchange code.
+
+### Example
+```julia
+model = MyStockQuotesEndpointModel(symbols = "AAPL", start = DateTime(2026, 11, 20, 15, 0),
+    finish = DateTime(2026, 11, 20, 15, 1));
+quotes = api(client, model);
+```
 
 ### Constructors
 - `MyStockQuotesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "iex")`: returns a new `MyStockQuotesEndpointModel` instance.
@@ -815,15 +923,25 @@ end
 """
     mutable struct MyStockTradesEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/trades` endpoint.
-This endpoint returns historical stock trades.
+The trades of one or more US stocks over a range of times, from the Alpaca `GET /v2/stocks/trades` endpoint.
+A trade is one sale of shares at one price on one exchange.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `limit::Int`: the largest number of rows to return per page.
-- `feed::String`: the market data feed, e.g., `"iex"`.
+- `symbols::Vector{String}`: the stock symbols, e.g., `["AAPL", "MSFT"]`. The keyword also accepts one symbol as a `String`. Required.
+- `start::Union{String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A `DateTime` is a UTC time. Required.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. The URL sends this field as `end`. Default `nothing`, which ends the range at the latest trade the account can read.
+- `limit::Int`: the largest number of trades on one page, counted across all symbols, from `1` to `10000`. The call `api` reads every page. Default `1000`.
+- `feed::String`: the source of the trades: `"iex"`, the Investors Exchange, or `"sip"`, all US exchanges. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"iex"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each trade, sorted by symbol and then by time. The columns are `timestamp` (UTC), `symbol`, `price`, `size` (shares), `exchange` (an exchange code), and `id`, the trade ID that the exchange sent. The model `MyStockExchangesEndpointModel` names each exchange code.
+
+### Example
+```julia
+model = MyStockTradesEndpointModel(symbols = "AAPL", start = DateTime(2026, 11, 20, 15, 0),
+    finish = DateTime(2026, 11, 20, 15, 1));
+trades = api(client, model);
+```
 
 ### Constructors
 - `MyStockTradesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "iex")`: returns a new `MyStockTradesEndpointModel` instance.
@@ -845,12 +963,20 @@ end
 """
     mutable struct MyStockLatestBarEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/{symbol}/bars/latest` endpoint.
-This endpoint returns the latest stock bar of one symbol.
+The latest minute bar of one US stock, from the Alpaca `GET /v2/stocks/{symbol}/bars/latest` endpoint.
+A minute bar summarizes one minute of trades: the open, high, low, and close prices, the volume, and the number of trades.
 
 ### Fields
-- `symbol::String`: the symbol or identifier that the endpoint path names.
-- `feed::String`: the market data feed, e.g., `"iex"`.
+- `symbol::String`: the stock symbol, e.g., `"AAPL"`. The URL puts this field in the path. For several symbols in one call, use `MyStockLatestBarsEndpointModel`. Required.
+- `feed::String`: the source of the trades: `"iex"`, the Investors Exchange, or `"sip"`, all US exchanges. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"iex"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row, the latest bar. The columns are `timestamp` (UTC), `symbol`, `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`, the volume-weighted average price.
+
+### Example
+```julia
+bar = api(client, MyStockLatestBarEndpointModel(symbol = "AAPL"));
+```
 
 ### Constructors
 - `MyStockLatestBarEndpointModel(; symbol::String, feed::String = "iex")`: returns a new `MyStockLatestBarEndpointModel` instance.
@@ -869,12 +995,20 @@ end
 """
     mutable struct MyStockLatestQuoteEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/{symbol}/quotes/latest` endpoint.
-This endpoint returns the latest stock quote of one symbol.
+The latest quote of one US stock, from the Alpaca `GET /v2/stocks/{symbol}/quotes/latest` endpoint.
+A quote is the best bid price and the best ask price for a stock, with the size at each price.
 
 ### Fields
-- `symbol::String`: the symbol or identifier that the endpoint path names.
-- `feed::String`: the market data feed, e.g., `"iex"`.
+- `symbol::String`: the stock symbol, e.g., `"AAPL"`. The URL puts this field in the path. For several symbols in one call, use `MyStockLatestQuotesEndpointModel`. Required.
+- `feed::String`: the source of the quotes: `"iex"`, the Investors Exchange, or `"sip"`, all US exchanges. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"iex"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row, the latest quote. The columns are `timestamp` (UTC), `symbol`, `bid_price`, `bid_size`, `ask_price`, `ask_size`, `bid_exchange`, and `ask_exchange`. The sizes count shares. A price of `0` means that the stock has no active bid or ask. The model `MyStockExchangesEndpointModel` names each exchange code.
+
+### Example
+```julia
+latest_quote = api(client, MyStockLatestQuoteEndpointModel(symbol = "AAPL"));
+```
 
 ### Constructors
 - `MyStockLatestQuoteEndpointModel(; symbol::String, feed::String = "iex")`: returns a new `MyStockLatestQuoteEndpointModel` instance.
@@ -893,12 +1027,20 @@ end
 """
     mutable struct MyStockLatestTradeEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/{symbol}/trades/latest` endpoint.
-This endpoint returns the latest stock trade of one symbol.
+The latest trade of one US stock, from the Alpaca `GET /v2/stocks/{symbol}/trades/latest` endpoint.
+A trade is one sale of shares at one price on one exchange.
 
 ### Fields
-- `symbol::String`: the symbol or identifier that the endpoint path names.
-- `feed::String`: the market data feed, e.g., `"iex"`.
+- `symbol::String`: the stock symbol, e.g., `"AAPL"`. The URL puts this field in the path. For several symbols in one call, use `MyStockLatestTradesEndpointModel`. Required.
+- `feed::String`: the source of the trades: `"iex"`, the Investors Exchange, or `"sip"`, all US exchanges. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"iex"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row, the latest trade. The columns are `timestamp` (UTC), `symbol`, `price`, `size` (shares), `exchange` (an exchange code), and `id`, the trade ID that the exchange sent. Alpaca skips trades whose condition codes keep them out of bar prices.
+
+### Example
+```julia
+trade = api(client, MyStockLatestTradeEndpointModel(symbol = "AAPL"));
+```
 
 ### Constructors
 - `MyStockLatestTradeEndpointModel(; symbol::String, feed::String = "iex")`: returns a new `MyStockLatestTradeEndpointModel` instance.
@@ -917,13 +1059,21 @@ end
 """
     mutable struct MyStockLatestBarsEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/bars/latest` endpoint.
-This endpoint returns the latest stock bar of each of several symbols.
+The latest minute bar of each of several US stocks, from the Alpaca `GET /v2/stocks/bars/latest` endpoint.
+A minute bar summarizes one minute of trades: the open, high, low, and close prices, the volume, and the number of trades.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `feed::String`: the market data feed, e.g., `"iex"`.
-- `currency::Union{Nothing,String}`: the currency of the prices, or `nothing` to leave it to Alpaca.
+- `symbols::Vector{String}`: the stock symbols, e.g., `["AAPL", "MSFT"]`. The keyword also accepts one symbol as a `String`. Required.
+- `feed::String`: the source of the trades: `"iex"`, the Investors Exchange, or `"sip"`, all US exchanges. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"iex"`.
+- `currency::Union{Nothing,String}`: the currency of the prices, as an ISO 4217 code, e.g., `"USD"`. Default `nothing`, which gives the prices in US dollars.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each symbol. The columns are `timestamp` (UTC), `symbol`, `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`, the volume-weighted average price.
+
+### Example
+```julia
+bars = api(client, MyStockLatestBarsEndpointModel(symbols = ["AAPL", "MSFT"]));
+```
 
 ### Constructors
 - `MyStockLatestBarsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, feed::String = "iex", currency::Union{Nothing,String} = nothing)`: returns a new `MyStockLatestBarsEndpointModel` instance.
@@ -943,13 +1093,21 @@ end
 """
     mutable struct MyStockLatestQuotesEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/quotes/latest` endpoint.
-This endpoint returns the latest stock quote of each of several symbols.
+The latest quote of each of several US stocks, from the Alpaca `GET /v2/stocks/quotes/latest` endpoint.
+A quote is the best bid price and the best ask price for a stock, with the size at each price.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `feed::String`: the market data feed, e.g., `"iex"`.
-- `currency::Union{Nothing,String}`: the currency of the prices, or `nothing` to leave it to Alpaca.
+- `symbols::Vector{String}`: the stock symbols, e.g., `["AAPL", "MSFT"]`. The keyword also accepts one symbol as a `String`. Required.
+- `feed::String`: the source of the quotes: `"iex"`, the Investors Exchange, or `"sip"`, all US exchanges. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"iex"`.
+- `currency::Union{Nothing,String}`: the currency of the prices, as an ISO 4217 code, e.g., `"USD"`. Default `nothing`, which gives the prices in US dollars.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each symbol. The columns are `timestamp` (UTC), `symbol`, `bid_price`, `bid_size`, `ask_price`, `ask_size`, `bid_exchange`, and `ask_exchange`. The sizes count shares. A price of `0` means that the stock has no active bid or ask. The model `MyStockExchangesEndpointModel` names each exchange code.
+
+### Example
+```julia
+quotes = api(client, MyStockLatestQuotesEndpointModel(symbols = ["AAPL", "MSFT"]));
+```
 
 ### Constructors
 - `MyStockLatestQuotesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, feed::String = "iex", currency::Union{Nothing,String} = nothing)`: returns a new `MyStockLatestQuotesEndpointModel` instance.
@@ -969,13 +1127,21 @@ end
 """
     mutable struct MyStockLatestTradesEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/trades/latest` endpoint.
-This endpoint returns the latest stock trade of each of several symbols.
+The latest trade of each of several US stocks, from the Alpaca `GET /v2/stocks/trades/latest` endpoint.
+A trade is one sale of shares at one price on one exchange.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `feed::String`: the market data feed, e.g., `"iex"`.
-- `currency::Union{Nothing,String}`: the currency of the prices, or `nothing` to leave it to Alpaca.
+- `symbols::Vector{String}`: the stock symbols, e.g., `["AAPL", "MSFT"]`. The keyword also accepts one symbol as a `String`. Required.
+- `feed::String`: the source of the trades: `"iex"`, the Investors Exchange, or `"sip"`, all US exchanges. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"iex"`.
+- `currency::Union{Nothing,String}`: the currency of the prices, as an ISO 4217 code, e.g., `"USD"`. Default `nothing`, which gives the prices in US dollars.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each symbol. The columns are `timestamp` (UTC), `symbol`, `price`, `size` (shares), `exchange` (an exchange code), and `id`, the trade ID that the exchange sent. Alpaca skips trades whose condition codes keep them out of bar prices.
+
+### Example
+```julia
+trades = api(client, MyStockLatestTradesEndpointModel(symbols = ["AAPL", "MSFT"]));
+```
 
 ### Constructors
 - `MyStockLatestTradesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, feed::String = "iex", currency::Union{Nothing,String} = nothing)`: returns a new `MyStockLatestTradesEndpointModel` instance.
@@ -995,16 +1161,26 @@ end
 """
     mutable struct MyStockAuctionsEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/auctions` endpoint.
-This endpoint returns the historical opening and closing auction prints of each of several symbols.
+The opening and closing auction prints of US stocks over a range of dates, from the Alpaca `GET /v2/stocks/auctions` endpoint.
+An auction print is the price and size of a trade in the opening or closing auction of a day.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `start::Union{Nothing,String,Date,DateTime}`: the first time of the request, or `nothing` to leave it open.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `limit::Int`: the largest number of rows to return per page.
-- `feed::String`: the market data feed. Alpaca accepts only `"sip"` for auctions.
-- `sort::Union{Nothing,String}`: the sort order of the prints, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+- `symbols::Vector{String}`: the stock symbols, e.g., `["AAPL", "MSFT"]`. The keyword also accepts one symbol as a `String`. Required.
+- `start::Union{Nothing,String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A `DateTime` is a UTC time. Default `nothing`, the beginning of the current day.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. The URL sends this field as `end`. Default `nothing`, which ends the range at the latest print the account can read.
+- `limit::Int`: the largest number of data points on one page, counted across all symbols, from `1` to `10000`. The call `api` reads every page. Default `1000`.
+- `feed::String`: the source of the prints. Alpaca accepts only `"sip"`, all US exchanges, for auctions. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"sip"`.
+- `sort::Union{Nothing,String}`: the time order of the prints: `"asc"` or `"desc"`. Default `nothing`, which leaves the order to Alpaca.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each auction print. The columns are `timestamp` (UTC), `symbol`, `date` (the trading day), `auction` (`"open"` or `"close"`), `price`, `size` (shares), `exchange` (an exchange code), and `condition` (a condition code). For each symbol and day, the opening prints come before the closing prints.
+
+### Example
+```julia
+model = MyStockAuctionsEndpointModel(symbols = "AAPL", start = Date(2026, 11, 20),
+    finish = Date(2026, 11, 20));
+auctions = api(client, model);
+```
 
 ### Constructors
 - `MyStockAuctionsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, feed::String = "sip", sort::Union{Nothing,String} = nothing)`: returns a new `MyStockAuctionsEndpointModel` instance.
@@ -1027,12 +1203,20 @@ end
 """
     mutable struct MyStockConditionsEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/meta/conditions/{ticktype}` endpoint.
-This endpoint returns the map from each condition code to its name, for the trades or the quotes of one tape.
+The names of the condition codes of US stock trades or quotes, from the Alpaca `GET /v2/stocks/meta/conditions/{ticktype}` endpoint.
+A condition code is a flag on a trade or a quote, e.g., the code `I` marks an odd-lot trade.
 
 ### Fields
-- `ticktype::String`: the kind of tick whose condition codes to list, `"trade"` or `"quote"`. The URL carries it in the path.
-- `tape::String`: the tape whose condition codes to list, `"A"`, `"B"`, or `"C"`.
+- `ticktype::String`: whether to list the codes of trades, `"trade"`, or of quotes, `"quote"`. The URL puts this field in the path. Default `"trade"`.
+- `tape::String`: the one-character name of the tape whose codes to list: `"A"`, `"B"`, or `"C"`. Default `"A"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each condition code. The columns are `code` and `name`, which describes the condition.
+
+### Example
+```julia
+conditions = api(client, MyStockConditionsEndpointModel(ticktype = "trade", tape = "A"));
+```
 
 ### Constructors
 - `MyStockConditionsEndpointModel(; ticktype::String = "trade", tape::String = "A")`: returns a new `MyStockConditionsEndpointModel` instance.
@@ -1059,11 +1243,19 @@ end
 """
     mutable struct MyStockExchangesEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/meta/exchanges` endpoint.
-This endpoint returns the map from each exchange code to the name of the exchange. The model has no fields.
+The name of each exchange code in Alpaca's US stock data, from the Alpaca `GET /v2/stocks/meta/exchanges` endpoint.
+The columns `exchange`, `bid_exchange`, and `ask_exchange` of the trade, quote, and auction tables hold these codes.
 
 ### Fields
-- None: the request has no parameters.
+This model has no fields.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each exchange code. The columns are `code` and `name`, the name of the exchange.
+
+### Example
+```julia
+exchanges = api(client, MyStockExchangesEndpointModel());
+```
 
 ### Constructors
 - `MyStockExchangesEndpointModel()`: returns a new `MyStockExchangesEndpointModel` instance.
@@ -1077,12 +1269,20 @@ end
 """
     mutable struct MyStockSnapshotsEndpointModel <: AbstractAlpacaStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/snapshots` endpoint.
-This endpoint returns the snapshots of several stocks.
+The snapshot of each of several US stocks, from the Alpaca `GET /v2/stocks/snapshots` endpoint.
+A snapshot holds the latest trade, the latest quote, the minute bar, the daily bar, and the previous daily bar of one stock.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `feed::String`: the market data feed, e.g., `"iex"`.
+- `symbols::Vector{String}`: the stock symbols, e.g., `["AAPL", "MSFT"]`. The keyword also accepts one symbol as a `String`. Required.
+- `feed::String`: the source of the data: `"iex"`, the Investors Exchange, or `"sip"`, all US exchanges. Without a market data subscription, Alpaca refuses `"sip"` data from the latest 15 minutes. Default `"iex"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each symbol. The columns are `symbol`, then the columns that start with `latest_trade_`, `latest_quote_`, `minute_bar_`, `daily_bar_`, and `prev_daily_bar_`. Each group holds the trade, quote, or bar columns, e.g., `daily_bar_close`. When a snapshot lacks one of its five parts, every column of that group is `missing`.
+
+### Example
+```julia
+snapshots = api(client, MyStockSnapshotsEndpointModel(symbols = ["AAPL", "MSFT"]));
+```
 
 ### Constructors
 - `MyStockSnapshotsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, feed::String = "iex")`: returns a new `MyStockSnapshotsEndpointModel` instance.
@@ -1101,15 +1301,25 @@ end
 """
     mutable struct MyOptionBarsEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
-Endpoint model for the Alpaca `/options/bars` endpoint.
-This endpoint returns historical option bars.
+The price bars of one or more option contracts over a range of times, from the Alpaca `GET /v1beta1/options/bars` endpoint.
+A bar summarizes the trades of one time interval: the open, high, low, and close prices, the volume, and the number of trades.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `timeframe::String`: the width of each bar, e.g., `"1Day"`.
-- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `limit::Int`: the largest number of rows to return per page.
+- `symbols::Vector{String}`: the option contract symbols: the underlying symbol, the `YYMMDD` expiration date, `C` or `P`, and the strike price times 1000 in 8 digits, e.g., `"SPY261218C00690000"`. The keyword also accepts one symbol as a `String`. Required.
+- `timeframe::String`: the time interval of each bar: `"1Min"` to `"59Min"`, `"1Hour"` to `"23Hour"`, `"1Day"`, `"1Week"`, `"1Month"`, `"2Month"`, `"3Month"`, `"4Month"`, `"6Month"`, or `"12Month"`. Required.
+- `start::Union{String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A `DateTime` is a UTC time. Required.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. The URL sends this field as `end`. Default `nothing`, which ends the range at the latest bar the account can read.
+- `limit::Int`: the largest number of bars on one page, counted across all contracts. The call `api` reads every page. Default `1000`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each bar, sorted by symbol and then by time. The columns are `timestamp` (UTC), `symbol`, `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`, the volume-weighted average price.
+
+### Example
+```julia
+model = MyOptionBarsEndpointModel(symbols = "SPY261218C00690000", timeframe = "1Day",
+    start = Date(2026, 11, 2), finish = Date(2026, 11, 20));
+bars = api(client, model);
+```
 
 ### Constructors
 - `MyOptionBarsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000)`: returns a new `MyOptionBarsEndpointModel` instance.
@@ -1131,14 +1341,23 @@ end
 """
     mutable struct MyOptionTradesEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
-Endpoint model for the Alpaca `/options/trades` endpoint.
-This endpoint returns historical option trades.
+The trades of one or more option contracts over a range of times, from the Alpaca `GET /v1beta1/options/trades` endpoint.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `limit::Int`: the largest number of rows to return per page.
+- `symbols::Vector{String}`: the contracts, each named by an option contract symbol, e.g., `"SPY261218C00690000"`. The keyword also accepts one symbol as a `String`. Required.
+- `start::Union{String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A `DateTime` is a UTC time. Required.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. The URL sends this field as `end`. Default `nothing`, which ends the range at the latest trade the account can read.
+- `limit::Int`: the largest number of trades on one page, counted across all contracts. The call `api` reads every page. Default `1000`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each trade, sorted by symbol and then by time. The columns are `timestamp` (UTC), `symbol`, `price`, `size`, `exchange`, and `id`.
+
+### Example
+```julia
+model = MyOptionTradesEndpointModel(symbols = "SPY261218C00690000",
+    start = DateTime(2026, 11, 20, 15, 0), finish = DateTime(2026, 11, 20, 16, 0));
+trades = api(client, model);
+```
 
 ### Constructors
 - `MyOptionTradesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000)`: returns a new `MyOptionTradesEndpointModel` instance.
@@ -1159,11 +1378,20 @@ end
 """
     mutable struct MyOptionLatestQuoteEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
-Endpoint model for the Alpaca `/options/quotes/latest` endpoint.
-This endpoint returns the latest option quote of several option contracts.
+The latest quote of each of one or more option contracts, from the Alpaca `GET /v1beta1/options/quotes/latest` endpoint.
+A quote holds the bid price and the ask price of a contract, with their sizes and exchanges.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `symbols::Vector{String}`: the contracts, each named by an option contract symbol, e.g., `"SPY261218C00690000"`. The keyword also accepts one symbol as a `String`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each contract. The columns are `timestamp` (UTC), `symbol`, `bid_price`, `bid_size`, `ask_price`, `ask_size`, `bid_exchange`, and `ask_exchange`. Without a real-time subscription, the quotes come from Alpaca's free indicative feed, which modifies them.
+
+### Example
+```julia
+model = MyOptionLatestQuoteEndpointModel(symbols = "SPY261218C00690000");
+latest_quote = api(client, model);
+```
 
 ### Constructors
 - `MyOptionLatestQuoteEndpointModel(; symbols::Union{AbstractString,AbstractVector})`: returns a new `MyOptionLatestQuoteEndpointModel` instance.
@@ -1181,11 +1409,18 @@ end
 """
     mutable struct MyOptionLatestTradeEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
-Endpoint model for the Alpaca `/options/trades/latest` endpoint.
-This endpoint returns the latest option trade of several option contracts.
+The latest trade of each of one or more option contracts, from the Alpaca `GET /v1beta1/options/trades/latest` endpoint.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `symbols::Vector{String}`: the contracts, each named by an option contract symbol, e.g., `"SPY261218C00690000"`. The keyword also accepts one symbol as a `String`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each contract. The columns are `timestamp` (UTC), `symbol`, `price`, `size`, `exchange`, and `id`. Without a real-time subscription, the trades come from Alpaca's free indicative feed, which delays them.
+
+### Example
+```julia
+trade = api(client, MyOptionLatestTradeEndpointModel(symbols = "SPY261218C00690000"));
+```
 
 ### Constructors
 - `MyOptionLatestTradeEndpointModel(; symbols::Union{AbstractString,AbstractVector})`: returns a new `MyOptionLatestTradeEndpointModel` instance.
@@ -1203,11 +1438,21 @@ end
 """
     mutable struct MyOptionSnapshotsEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
-Endpoint model for the Alpaca `/options/snapshots` endpoint.
-This endpoint returns the snapshots of several option contracts.
+The snapshots of one or more option contracts, from the Alpaca `GET /v1beta1/options/snapshots` endpoint.
+A snapshot holds a contract's latest trade, latest quote, minute and daily bars, implied volatility, and greeks.
 
 ### Fields
-- `symbols::Vector{String}`: the symbols to request. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `symbols::Vector{String}`: the contracts, each named by an option contract symbol, e.g., `"SPY261218C00690000"`. The keyword also accepts one symbol as a `String`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each contract. After `symbol` come the columns that start with `latest_trade_`, `latest_quote_`, `minute_bar_`, `daily_bar_`, and `prev_daily_bar_`, e.g., `latest_quote_bid_price`. Then come `implied_volatility`, `delta`, `gamma`, `theta`, `vega`, and `rho`. Without a real-time subscription, the data come from Alpaca's free indicative feed, which delays trades and modifies quotes.
+
+### Example
+```julia
+model = MyOptionSnapshotsEndpointModel(
+    symbols = ["SPY261218C00690000", "SPY261218P00690000"]);
+snapshots = api(client, model);
+```
 
 ### Constructors
 - `MyOptionSnapshotsEndpointModel(; symbols::Union{AbstractString,AbstractVector})`: returns a new `MyOptionSnapshotsEndpointModel` instance.
@@ -1225,18 +1470,28 @@ end
 """
     mutable struct MyOptionChainEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
-Endpoint model for the Alpaca `/options/snapshots/{underlying}` endpoint.
-This endpoint returns the option chain snapshots of one underlying stock.
+The option chain of one underlying stock, from the Alpaca `GET /v1beta1/options/snapshots/{underlying_symbol}` endpoint.
+The chain holds a snapshot of each option contract on that stock: its latest trade, latest quote, minute and daily bars, implied volatility, and greeks.
 
 ### Fields
-- `underlying::String`: the symbol of the underlying stock, e.g., `"SPY"`.
-- `type::Union{Nothing,String}`: the contract type to match, `"call"` or `"put"`, or `nothing`.
-- `strike_price_gte::Union{Nothing,Real}`: the lowest strike price to match, or `nothing`.
-- `strike_price_lte::Union{Nothing,Real}`: the highest strike price to match, or `nothing`.
-- `expiration_date::Union{Nothing,Date,String}`: the exact expiration date to match, or `nothing`.
-- `expiration_date_gte::Union{Nothing,Date,String}`: the earliest expiration date to match, or `nothing`.
-- `expiration_date_lte::Union{Nothing,Date,String}`: the latest expiration date to match, or `nothing`.
-- `limit::Int`: the largest number of rows to return per page.
+- `underlying::String`: the symbol of the underlying stock, e.g., `"SPY"`. The URL puts this field in the path. Required.
+- `type::Union{Nothing,String}`: the contract type to keep, `"call"` or `"put"`. Default `nothing`, which keeps calls and puts.
+- `strike_price_gte::Union{Nothing,Real}`: the lowest strike price to keep, included. Default `nothing`, which sets no lower bound.
+- `strike_price_lte::Union{Nothing,Real}`: the highest strike price to keep, included. Default `nothing`, which sets no upper bound.
+- `expiration_date::Union{Nothing,Date,String}`: the one expiration date to keep. A `String` is a date, `"YYYY-MM-DD"`. Default `nothing`, which keeps every expiration date.
+- `expiration_date_gte::Union{Nothing,Date,String}`: the earliest expiration date to keep, included. A `String` is a date, `"YYYY-MM-DD"`. Default `nothing`, which sets no lower bound.
+- `expiration_date_lte::Union{Nothing,Date,String}`: the latest expiration date to keep, included. A `String` is a date, `"YYYY-MM-DD"`. Default `nothing`, which sets no upper bound.
+- `limit::Int`: the largest number of contracts on one page. The call `api` reads every page. Default `1000`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each contract. After `symbol` come the columns that start with `latest_trade_`, `latest_quote_`, `minute_bar_`, `daily_bar_`, and `prev_daily_bar_`, e.g., `latest_quote_bid_price`. Then come `implied_volatility`, `delta`, `gamma`, `theta`, `vega`, and `rho`. Without a real-time subscription, the data come from Alpaca's free indicative feed, which delays trades and modifies quotes.
+
+### Example
+```julia
+model = MyOptionChainEndpointModel(underlying = "SPY", type = "call",
+    expiration_date = Date(2026, 12, 18));
+chain = api(client, model);
+```
 
 ### Constructors
 - `MyOptionChainEndpointModel(; underlying::String, type::Union{Nothing,String} = nothing, strike_price_gte::Union{Nothing,Real} = nothing, strike_price_lte::Union{Nothing,Real} = nothing, expiration_date::Union{Nothing,Date,String} = nothing, expiration_date_gte::Union{Nothing,Date,String} = nothing, expiration_date_lte::Union{Nothing,Date,String} = nothing, limit::Int = 1000)`: returns a new `MyOptionChainEndpointModel` instance.
@@ -1261,11 +1516,19 @@ end
 """
     mutable struct MyAccountConfigurationsEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/account/configurations` endpoint.
-This endpoint returns the settings of the account, e.g., the day-trade buying power check and fractional trading.
+The trading settings of the client's account, from the Alpaca `GET /v2/account/configurations` endpoint.
+The settings control features such as fractional trading, short sales, and overnight trading.
 
 ### Fields
-- None: the endpoint takes no parameters.
+This model has no fields.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row and one column for each setting that Alpaca sends: `closing_transactions_only`, `disable_overnight_trading`, `fractional_trading`, `max_margin_multiplier`, `no_shorting`, `ptp_no_exception_entry`, `suspend_trade`, and `trade_confirm_email`. The column `max_margin_multiplier` is text, `"1"`, `"2"`, or `"4"`, and `trade_confirm_email` is `"all"` or `"none"`. The other columns are `Bool`.
+
+### Example
+```julia
+settings = api(client, MyAccountConfigurationsEndpointModel());
+```
 
 ### Constructors
 - `MyAccountConfigurationsEndpointModel()`: returns a new `MyAccountConfigurationsEndpointModel` instance.
@@ -1279,21 +1542,28 @@ end
 """
     mutable struct MyAccountActivitiesEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/account/activities` and `/account/activities/{activity_type}` endpoints.
-These endpoints return the account activities, e.g., fills and dividends, that match the filters.
-Alpaca pages the activities by `page_token`, and `api` does not follow the pages. A caller reads the last activity identifier and passes it as the next `page_token`.
+The activities of the client's account that match the filters, from the Alpaca `GET /v2/account/activities` and `GET /v2/account/activities/{activity_type}` endpoints.
+An activity is one entry in the history of the account, such as an order fill or a dividend.
 
 ### Fields
-- `activity_type::Union{Nothing,String}`: one activity type, e.g., `"FILL"`, sent in the path, or `nothing`.
-- `activity_types::Union{Nothing,Vector{String}}`: the activity types to list, sent as a comma list, or `nothing`. The keyword accepts a `String` or a vector of strings.
-- `category::Union{Nothing,String}`: `"trade_activity"` or `"non_trade_activity"`, or `nothing`. The URL carries `category` only when `activity_type` is `nothing`.
-- `date::Union{Nothing,Date,String}`: the one day to list, or `nothing`.
-- `after::Union{Nothing,Date,DateTime,String}`: return only activities after this time, or `nothing`.
-- `until::Union{Nothing,Date,DateTime,String}`: return only activities until this time, or `nothing`.
-- `direction::String`: the sort direction of the activities, `"asc"` or `"desc"`.
-- `page_size::Int`: the largest number of activities to return, at most `100`.
-- `page_token::Union{Nothing,String}`: the identifier of the last activity of the previous page, or `nothing`.
-- `order_id::Union{Nothing,String}`: return only the activities of this order, or `nothing`.
+- `activity_type::Union{Nothing,String}`: one activity type, e.g., `"FILL"` for order fills, which the URL puts in the path. Default `nothing`.
+- `activity_types::Union{Nothing,Vector{String}}`: several activity types, e.g., `["FILL"]`, sent as one comma-separated list. The keyword also accepts one type as a `String`. Default `nothing`.
+- `category::Union{Nothing,String}`: the class of activities, `"trade_activity"` or `"non_trade_activity"`. The URL sends this field only when `activity_type` is `nothing`. Default `nothing`.
+- `date::Union{Nothing,Date,String}`: the one day of activities to list, by the date Alpaca created each activity. A `String` is `"YYYY-MM-DD"` or `"YYYY-MM-DDTHH:MM:SSZ"`. Default `nothing`.
+- `after::Union{Nothing,Date,DateTime,String}`: the time after which the activities were created. A `String` is `"YYYY-MM-DD"` or `"YYYY-MM-DDTHH:MM:SSZ"`. Default `nothing`.
+- `until::Union{Nothing,Date,DateTime,String}`: the time before which the activities were created. A `String` is `"YYYY-MM-DD"` or `"YYYY-MM-DDTHH:MM:SSZ"`. Default `nothing`.
+- `direction::String`: the order of the rows by activity time, `"asc"` (oldest first) or `"desc"` (newest first). Default `"desc"`.
+- `page_size::Int`: the largest number of activities on one page, at most `100`. Default `100`.
+- `page_token::Union{Nothing,String}`: the `id` of the last activity of the previous page, which starts the next page. Default `nothing`, which reads the first page.
+- `order_id::Union{Nothing,String}`: the identifier of one order, which lists only the activities of that order, e.g., the fills that make up the order. Default `nothing`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each activity on one page. A field that an activity lacks is `missing`. A fill has `id`, `activity_type`, `transaction_time` (UTC), `price`, `qty`, `side`, `symbol`, `order_id`, and more, with the quantities and prices as text. Pass the last `id` as `page_token` to read the next page.
+
+### Example
+```julia
+fills = api(client, MyAccountActivitiesEndpointModel(activity_type = "FILL"));
+```
 
 ### Constructors
 - `MyAccountActivitiesEndpointModel(; activity_type = nothing, activity_types = nothing, category = nothing, date = nothing, after = nothing, until = nothing, direction = "desc", page_size = 100, page_token = nothing, order_id = nothing)`: returns a new `MyAccountActivitiesEndpointModel` instance.
@@ -1330,18 +1600,26 @@ end
 """
     mutable struct MyPortfolioHistoryEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/account/portfolio/history` endpoint.
-This endpoint returns the equity and the profit and loss of the account over a period.
+The equity and the profit and loss of the client's account over time, from the Alpaca `GET /v2/account/portfolio/history` endpoint.
+Each row of the history is one time window, and the profit and loss is measured from a base value.
 
 ### Fields
-- `period::Union{Nothing,String}`: the length of the history, e.g., `"1M"`, or `nothing`.
-- `timeframe::Union{Nothing,String}`: the time between rows, e.g., `"1D"`, or `nothing`.
-- `intraday_reporting::Union{Nothing,String}`: `"market_hours"`, `"extended_hours"` or `"continuous"`, or `nothing`.
-- `start::Union{Nothing,Date,DateTime,String}`: the start of the history, or `nothing`.
-- `finish::Union{Nothing,Date,DateTime,String}`: the end of the history, sent as `end`, or `nothing`.
-- `pnl_reset::Union{Nothing,String}`: `"no_reset"` or `"per_day"`, or `nothing`.
-- `extended_hours::Union{Nothing,Bool}`: whether to include extended hours, or `nothing`.
-- `cashflow_types::Union{Nothing,Vector{String}}`: the cash flow types to include, sent as a comma list, or `nothing`. The keyword accepts a `String` or a vector of strings.
+- `period::Union{Nothing,String}`: the length of the history, e.g., `"1M"`, with the unit `D` (day), `W` (week), `M` (month), or `A` (year). Set at most two of `period`, `start`, and `finish`. Default `nothing`, which Alpaca treats as `"1M"`.
+- `timeframe::Union{Nothing,String}`: the time between rows, `"1Min"`, `"5Min"`, `"15Min"`, `"1H"`, or `"1D"`. A period longer than 30 days accepts only `"1D"`. Default `nothing`, which picks the time between rows from the period.
+- `intraday_reporting::Union{Nothing,String}`: the hours that get rows when `timeframe` is shorter than `"1D"`: `"market_hours"` (core trading hours), `"extended_hours"` (the whole session), or `"continuous"` (around the clock). Default `nothing`, which Alpaca treats as `"market_hours"`.
+- `start::Union{Nothing,Date,DateTime,String}`: the first time of the history. Default `nothing`, which starts the history one `period` before `finish`.
+- `finish::Union{Nothing,Date,DateTime,String}`: the last time of the history. The URL sends this field as `end`. Default `nothing`, which ends the history one `period` after `start`, or at the latest market open when `start` is also `nothing`.
+- `pnl_reset::Union{Nothing,String}`: the base of the profit and loss for a `timeframe` shorter than `"1D"`: `"per_day"` resets the base to the previous closing equity each trading day, and `"no_reset"` does not. Default `nothing`, which means `"per_day"`.
+- `extended_hours::Union{Nothing,Bool}`: includes the extended hours when `true` and `timeframe` is shorter than `"1D"`. Alpaca marks this field as deprecated in favor of `intraday_reporting`. Default `nothing`.
+- `cashflow_types::Union{Nothing,Vector{String}}`: the cash flow activities to include, `"ALL"`, `"NONE"`, or activity types, sent as one comma-separated list. The keyword also accepts a `String`. The table has no cash flow column. Default `nothing`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each time window. The columns are `timestamp`, the start of the window in UTC, `equity`, the equity of the account at the end of the window, `profit_loss`, the dollar change from `base_value`, `profit_loss_pct`, the same change relative to `base_value`, and `base_value`, which is the same in every row.
+
+### Example
+```julia
+history = api(client, MyPortfolioHistoryEndpointModel(period = "1M", timeframe = "1D"));
+```
 
 ### Constructors
 - `MyPortfolioHistoryEndpointModel(; period = nothing, timeframe = nothing, intraday_reporting = nothing, start = nothing, finish = nothing, pnl_reset = nothing, extended_hours = nothing, cashflow_types = nothing)`: returns a new `MyPortfolioHistoryEndpointModel` instance.
@@ -1369,15 +1647,24 @@ end
 """
     mutable struct MyMarketCalendarEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/v3/calendar/{market}` endpoint.
-This endpoint returns the calendar of one market, e.g., the NYSE: the trading days and the times of the sessions.
-The model calls the `v3` base URL of the trading API.
+The calendar of one market, from the Alpaca `GET /v3/calendar/{market}` endpoint.
+Each calendar day lists the date, the settlement date, and the start and end times of the pre-market, core, and post-market sessions.
 
 ### Fields
-- `market::String`: the market acronym, e.g., `"NYSE"`.
-- `start::Union{Nothing,Date,DateTime,String}`: the first day of the calendar, or `nothing`.
-- `finish::Union{Nothing,Date,DateTime,String}`: the last day of the calendar, sent as `end`, or `nothing`.
-- `timezone::Union{Nothing,String}`: the time zone of the session times, `"UTC"`, or `nothing`.
+- `market::String`: the code of the market, e.g., `"NYSE"` (New York Stock Exchange), `"NASDAQ"`, `"OPRA"` (US options), or `"XLON"` (London Stock Exchange). The URL puts this field in the path. Default `"NYSE"`.
+- `start::Union{Nothing,Date,DateTime,String}`: the first day of the calendar, included. A `DateTime` sends only its date. Default `nothing`, which Alpaca treats as today.
+- `finish::Union{Nothing,Date,DateTime,String}`: the last day of the calendar, included. The URL sends this field as `end`. Default `nothing`, which Alpaca treats as one week after `start`.
+- `timezone::Union{Nothing,String}`: the time zone of the session times, `"UTC"`. Default `nothing`, which gives the times in the time zone of the market.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each calendar day. The columns are `market`, the acronym of the market, `core_end`, `core_start`, `date`, `post_end`, `post_start`, `pre_end`, `pre_start`, and `settlement_date`. The columns that start with `core_`, `pre_`, and `post_` hold the times of the three sessions. Every column is text.
+
+### Example
+```julia
+model = MyMarketCalendarEndpointModel(market = "NYSE", start = Date(2026, 12, 1),
+    finish = Date(2026, 12, 31));
+days = api(client, model);
+```
 
 ### Constructors
 - `MyMarketCalendarEndpointModel(; market = "NYSE", start = nothing, finish = nothing, timezone = nothing)`: returns a new `MyMarketCalendarEndpointModel` instance.
@@ -1399,13 +1686,20 @@ end
 """
     mutable struct MyMarketClocksEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/v3/clock` endpoint.
-This endpoint returns the clocks of several markets: whether each market is in a trading phase now, and when the market opens and closes next.
-The model calls the `v3` base URL of the trading API.
+The clocks of several markets around the world, from the Alpaca `GET /v3/clock` endpoint.
+A clock says whether today is a market day, which phase the market is in, and when the market next opens and closes.
 
 ### Fields
-- `markets::Union{Nothing,Vector{String}}`: the market acronyms, e.g., `"NYSE"`, sent as a comma list, or `nothing`. The keyword accepts a `String` or a vector of strings.
-- `time::Union{Nothing,Date,DateTime,String}`: the time to read the clocks at, or `nothing`.
+- `markets::Union{Nothing,Vector{String}}`: the codes of the markets, e.g., `["NYSE", "XLON"]`, sent as one comma-separated list. The keyword also accepts one code as a `String`. Default `nothing`.
+- `time::Union{Nothing,Date,DateTime,String}`: the time at which to read the clocks, in place of the current time. Default `nothing`, which reads the clocks at the current time.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each market. The columns are `is_market_day`, `market_acronym`, `market_bic`, `market_name`, `market_timezone`, `next_market_close`, `next_market_open`, `phase`, `phase_until`, `timestamp`, and `market_mic`. The column `phase` names the current phase of the market, and the four times are `DateTime` values in UTC.
+
+### Example
+```julia
+clocks = api(client, MyMarketClocksEndpointModel());
+```
 
 ### Constructors
 - `MyMarketClocksEndpointModel(; markets = nothing, time = nothing)`: returns a new `MyMarketClocksEndpointModel` instance.
@@ -1425,13 +1719,22 @@ end
 """
     mutable struct MyEquityOrderModel <: AbstractAlpacaOrderModel
 
-Order model for one equity or ETF order. The model says what to trade. The `submit` method supplies the order keywords.
+An order to buy or sell one stock or ETF, by number of shares or by dollar amount. The verbs `submit` and `close` send the order to the Alpaca `POST /v2/orders` endpoint.
 
 ### Fields
-- `symbol::String`: the ticker symbol of the equity.
-- `side::String`: `"buy"` or `"sell"`.
-- `qty::Union{Nothing,Real}`: the number of shares (can be fractional), or `nothing` when `notional` is set.
-- `notional::Union{Nothing,Real}`: the dollar amount to trade, or `nothing` when `qty` is set.
+- `symbol::String`: the symbol of the stock or ETF, e.g., `"SPY"`. Required.
+- `side::String`: the side of the trade, `"buy"` or `"sell"`. Required.
+- `qty::Union{Nothing,Real}`: the number of shares, which can be fractional. Set exactly one of `qty` and `notional`. Default `nothing`.
+- `notional::Union{Nothing,Real}`: the dollar amount to trade, in place of a number of shares. An order set by `notional` cannot be replaced. Default `nothing`.
+
+### Use
+The call `submit(client, model)` sends the order and returns an `Order`. The keyword `type` sets the order type: `"market"` (the default), `"limit"`, `"stop"`, `"stop_limit"`, or `"trailing_stop"`. The keywords `limit_price`, `stop_price`, `trail_price`, and `trail_percent` set the prices that the type needs. The call `close(client, model)` sends the same order on the opposite side. See `submit` for the other keywords.
+
+### Example
+```julia
+model = MyEquityOrderModel(symbol = "SPY", side = "buy", qty = 1);
+order = submit(client, model; type = "limit", limit_price = 500.0);
+```
 
 ### Constructors
 - `MyEquityOrderModel(; symbol::String, side::String, qty::Union{Nothing,Real} = nothing, notional::Union{Nothing,Real} = nothing)`: returns a new `MyEquityOrderModel` instance.
@@ -1464,13 +1767,23 @@ end
 """
     mutable struct MyCryptoOrderModel <: AbstractAlpacaOrderModel
 
-Order model for one crypto order. The model says what to trade. The `submit` method supplies the order keywords.
+An order to buy or sell one crypto pair, by number of coins or by dollar amount. The verb `submit` sends the order to the Alpaca `POST /v2/orders` endpoint.
 
 ### Fields
-- `symbol::String`: the crypto pair, e.g., `"BTC/USD"`.
-- `side::String`: `"buy"` or `"sell"`.
-- `qty::Union{Nothing,Real}`: the number of coins (can be fractional), or `nothing` when `notional` is set.
-- `notional::Union{Nothing,Real}`: the dollar amount to trade, or `nothing` when `qty` is set.
+- `symbol::String`: the crypto pair, e.g., `"BTC/USD"`. Required.
+- `side::String`: the side of the trade, `"buy"` or `"sell"`. Required.
+- `qty::Union{Nothing,Real}`: the number of coins, which can be fractional. Set exactly one of `qty` and `notional`. Default `nothing`.
+- `notional::Union{Nothing,Real}`: the dollar amount to trade, in place of a number of coins. Default `nothing`.
+
+### Use
+The call `submit(client, model)` sends the order and returns an `Order`. The keyword `type` sets the order type: `"market"` (the default), `"limit"`, or `"stop_limit"`. The keywords `limit_price` and `stop_price` set the prices that the type needs. The keyword `time_in_force` is `"gtc"` (the default) or `"ioc"`. The call `close(client, "BTC/USD")` closes the position at market. See `submit` for the other keywords.
+
+### Example
+```julia
+quotes = api(client, MyCryptoLatestQuotesEndpointModel(symbols = ["BTC/USD"]));
+model = MyCryptoOrderModel(symbol = "BTC/USD", side = "buy", qty = 0.001);
+order = submit(client, model; type = "limit", limit_price = round(quotes.bid_price[1] / 2));
+```
 
 ### Constructors
 - `MyCryptoOrderModel(; symbol::String, side::String, qty::Union{Nothing,Real} = nothing, notional::Union{Nothing,Real} = nothing)`: returns a new `MyCryptoOrderModel` instance.
@@ -1503,12 +1816,21 @@ end
 """
     mutable struct MyOptionLegModel <: AbstractAlpacaOrderModel
 
-Order model for one option leg. A leg has no position intent. The verb (`submit`, and later `close` and `roll`) supplies the intent.
+One leg of an option order: a contract, a side, and a ratio. The verbs `submit`, `close`, and `roll` send legs to the Alpaca `POST /v2/orders` endpoint, and each verb sets whether a leg opens or closes a position.
 
 ### Fields
-- `symbol::String`: the OCC symbol of the option contract.
-- `side::String`: `"buy"` (long the contract) or `"sell"` (short the contract).
-- `ratio::Int`: the number of contracts of this leg in one unit of the structure.
+- `symbol::String`: the symbol of the option contract in OCC format, e.g., `"SPY261218C00690000"`. Required.
+- `side::String`: the side of the leg when it opens: `"buy"` (long the contract) or `"sell"` (short the contract). The verb `close` sends the opposite side. Required.
+- `ratio::Int`: the number of contracts of this leg in one unit of a structure, a set of legs traded together. An order for `qty` units sends `qty * ratio` contracts. Default `1`.
+
+### Use
+The call `submit` opens the legs, `close` closes them, and `roll` closes old legs and opens new legs. Each call returns an `Order`. The keyword `type` sets the order type. For 2 to 4 legs, `limit_price` is the net price of one unit: positive for a debit, negative for a credit. See `submit` for the rest.
+
+### Example
+```julia
+leg = MyOptionLegModel(symbol = "SPY261218C00690000", side = "buy");
+order = submit(client, leg; type = "limit", limit_price = 1.0);
+```
 
 ### Constructors
 - `MyOptionLegModel(; symbol::String, side::String, ratio::Int = 1)`: returns a new `MyOptionLegModel` instance.
@@ -1540,12 +1862,22 @@ end
 """
     mutable struct MyMixedOrderModel <: AbstractAlpacaOrderModel
 
-Order model for shares and options together, e.g., a covered call. Alpaca cannot fill shares and options in one order,
-so `submit` and `close` send two orders in a fixed sequence.
+An order for shares and option legs, e.g., a covered call. Alpaca cannot fill shares and options in one order, so the verbs `submit` and `close` send the model to the Alpaca `POST /v2/orders` endpoint as two orders in sequence.
 
 ### Fields
-- `equity::MyEquityOrderModel`: the equity part of the structure.
-- `options::Vector{MyOptionLegModel}`: the option legs of the structure.
+- `equity::MyEquityOrderModel`: the equity order. When a leg sells a call, the equity order must buy, by `qty` and not `notional`, at least 100 shares of the underlying symbol for each call contract. Required.
+- `options::Vector{MyOptionLegModel}`: the option legs, from 1 to 4 legs. Required.
+
+### Use
+The call `submit` sends the equity order at market, waits for the fill, and then sends the option order. The call `close` reverses the option order first and the equity order second. Both calls return a `Vector{Order}`. The keywords `qty`, `type`, and `limit_price` set the option order, and `close` takes the same `qty` as `submit`. See `submit` for the rest.
+
+### Example
+```julia
+shares = MyEquityOrderModel(symbol = "SPY", side = "buy", qty = 100);
+call = MyOptionLegModel(symbol = "SPY261218C00690000", side = "sell");
+orders = submit(client, MyMixedOrderModel(equity = shares, options = [call]);
+    limit_price = 100.0);
+```
 
 ### Constructors
 - `MyMixedOrderModel(; equity::MyEquityOrderModel, options::Vector{MyOptionLegModel})`: returns a new `MyMixedOrderModel` instance.
@@ -1622,11 +1954,18 @@ end
 """
     mutable struct MyWatchlistsEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/watchlists` endpoint.
-This endpoint lists the watchlists of the account, without their assets.
+The watchlists of the account, without their assets, from the Alpaca `GET /v2/watchlists` endpoint. A watchlist is a named list of assets saved under the account.
 
 ### Fields
-- None: the endpoint takes no parameters.
+This model has no fields.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each watchlist. The columns are `id`, `account_id`, `created_at` and `updated_at` (UTC), and `name`. An account with no watchlists gets an empty `DataFrame` with no columns.
+
+### Example
+```julia
+watchlists = api(client, MyWatchlistsEndpointModel());
+```
 
 ### Constructors
 - `MyWatchlistsEndpointModel()`: returns a new `MyWatchlistsEndpointModel` instance.
@@ -1640,12 +1979,19 @@ end
 """
     mutable struct MyWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for the Alpaca `/watchlists/{watchlist_id}` or `/watchlists:by_name` endpoint.
-This endpoint returns one watchlist with its assets, by watchlist identifier or by name.
+One watchlist with its assets, found by its id or by its name, from the Alpaca `GET /v2/watchlists/{watchlist_id}` endpoint, or the `GET /v2/watchlists:by_name` endpoint when the model holds a name.
 
 ### Fields
-- `id::Union{Nothing,String}`: the watchlist identifier assigned by Alpaca, or `nothing`.
-- `name::Union{Nothing,String}`: the name of the watchlist, or `nothing`.
+- `id::Union{Nothing,String}`: the id that Alpaca assigned to the watchlist, e.g., from the `id` column of `MyWatchlistsEndpointModel`. Default `nothing`.
+- `name::Union{Nothing,String}`: the name of the watchlist, e.g., `"Tech"`. Default `nothing`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each asset of the watchlist. The columns are `watchlist_id` and `watchlist_name`, then the columns of `MyAssetsEndpointModel`, such as `symbol`, `name` (the asset name), and `tradable`. A watchlist with no assets gives zero rows. A name that matches no watchlist gets an `AlpacaError` with status 404.
+
+### Example
+```julia
+watchlist = api(client, MyWatchlistEndpointModel(name = "Tech"));
+```
 
 ### Constructors
 - `MyWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing)`: returns a new `MyWatchlistEndpointModel` instance.
@@ -1669,12 +2015,20 @@ end
 """
     mutable struct MyCreateWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for creating a watchlist with an HTTP POST to the Alpaca `/watchlists` endpoint.
-The endpoint answers with the new watchlist and its assets.
+Creates a watchlist, a named list of assets saved under the account, through the Alpaca `POST /v2/watchlists` endpoint.
 
 ### Fields
-- `name::String`: the name of the new watchlist.
-- `symbols::Vector{String}`: the symbols of the assets that the new watchlist starts with. The keyword accepts a `String` or a vector of strings.
+- `name::String`: the name of the new watchlist, at most 64 characters, e.g., `"Tech"`. Required.
+- `symbols::Vector{String}`: the symbols of the assets that the watchlist starts with, e.g., `["AAPL", "MSFT"]`. The keyword also accepts one symbol as a `String`. Default `String[]`, which creates an empty watchlist.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` of the new watchlist, with one row for each asset and the same columns as `MyWatchlistEndpointModel`.
+
+### Example
+```julia
+model = MyCreateWatchlistEndpointModel(name = "Tech", symbols = ["AAPL", "MSFT"]);
+watchlist = api(client, model);
+```
 
 ### Constructors
 - `MyCreateWatchlistEndpointModel(; name::String, symbols::Union{AbstractString,AbstractVector} = String[])`: returns a new `MyCreateWatchlistEndpointModel` instance.
@@ -1692,14 +2046,23 @@ end
 """
     mutable struct MyUpdateWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for changing a watchlist with an HTTP PUT to the Alpaca `/watchlists/{watchlist_id}` or `/watchlists:by_name` endpoint.
-The endpoint answers with the changed watchlist and its assets.
+Renames a watchlist or replaces its assets through the Alpaca `PUT /v2/watchlists/{watchlist_id}` endpoint, or the `PUT /v2/watchlists:by_name` endpoint when the model holds a name.
 
 ### Fields
-- `id::Union{Nothing,String}`: the watchlist identifier assigned by Alpaca, or `nothing`.
-- `name::Union{Nothing,String}`: the current name of the watchlist, or `nothing`.
-- `new_name::Union{Nothing,String}`: the new name of the watchlist, or `nothing` to keep the name.
-- `symbols::Union{Nothing,Vector{String}}`: the symbols that replace the assets of the watchlist, or `nothing`. Alpaca replaces the whole watchlist, so a rename without `symbols` empties the list. Pass the current symbols to keep them. The keyword accepts a `String` or a vector of strings.
+- `id::Union{Nothing,String}`: the id that Alpaca assigned to the watchlist, e.g., from the `watchlist_id` column of `MyWatchlistEndpointModel`. Default `nothing`.
+- `name::Union{Nothing,String}`: the current name of the watchlist, e.g., `"Tech"`. Default `nothing`.
+- `new_name::Union{Nothing,String}`: the new name of the watchlist, at most 64 characters. The request sends this field as `name`. Default `nothing`, which keeps the name.
+- `symbols::Union{Nothing,Vector{String}}`: the symbols that replace the assets of the watchlist. A rename without `symbols` empties the watchlist, so pass the current symbols to keep them. The keyword also accepts one symbol as a `String`. Default `nothing`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` of the watchlist after the change, with one row for each asset and the same columns as `MyWatchlistEndpointModel`.
+
+### Example
+```julia
+model = MyUpdateWatchlistEndpointModel(name = "Tech", new_name = "Favorites",
+    symbols = ["AAPL", "MSFT", "NVDA"]);
+watchlist = api(client, model);
+```
 
 ### Constructors
 - `MyUpdateWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing, new_name::Union{Nothing,String} = nothing, symbols::Union{Nothing,AbstractString,AbstractVector} = nothing)`: returns a new `MyUpdateWatchlistEndpointModel` instance.
@@ -1731,13 +2094,20 @@ end
 """
     mutable struct MyAddWatchlistAssetEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for adding one asset to a watchlist with an HTTP POST to the Alpaca `/watchlists/{watchlist_id}` or `/watchlists:by_name` endpoint.
-The endpoint answers with the changed watchlist and its assets.
+Adds one asset to the end of a watchlist through the Alpaca `POST /v2/watchlists/{watchlist_id}` endpoint, or the `POST /v2/watchlists:by_name` endpoint when the model holds a name.
 
 ### Fields
-- `id::Union{Nothing,String}`: the watchlist identifier assigned by Alpaca, or `nothing`.
-- `name::Union{Nothing,String}`: the name of the watchlist, or `nothing`.
-- `symbol::String`: the symbol of the asset to add.
+- `id::Union{Nothing,String}`: the id that Alpaca assigned to the watchlist, e.g., from the `watchlist_id` column of `MyWatchlistEndpointModel`. Default `nothing`.
+- `name::Union{Nothing,String}`: the name of the watchlist, e.g., `"Tech"`. Default `nothing`.
+- `symbol::String`: the symbol of the asset to add, e.g., `"NVDA"`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` of the watchlist after the change, with one row for each asset and the same columns as `MyWatchlistEndpointModel`.
+
+### Example
+```julia
+watchlist = api(client, MyAddWatchlistAssetEndpointModel(name = "Tech", symbol = "NVDA"));
+```
 
 ### Constructors
 - `MyAddWatchlistAssetEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing, symbol::String)`: returns a new `MyAddWatchlistAssetEndpointModel` instance.
@@ -1762,12 +2132,21 @@ end
 """
     mutable struct MyRemoveWatchlistAssetEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for removing one asset from a watchlist with an HTTP DELETE to the Alpaca `/watchlists/{watchlist_id}/{symbol}` endpoint.
-Alpaca has no by-name form of this endpoint. The endpoint answers with the changed watchlist and its assets.
+Removes one asset from a watchlist through the Alpaca `DELETE /v2/watchlists/{watchlist_id}/{symbol}` endpoint. Alpaca has no by-name form of this endpoint, so the model needs the id of the watchlist.
 
 ### Fields
-- `id::String`: the watchlist identifier assigned by Alpaca.
-- `symbol::String`: the symbol of the asset to remove.
+- `id::String`: the id that Alpaca assigned to the watchlist, e.g., from the `watchlist_id` column of `MyWatchlistEndpointModel`. Required.
+- `symbol::String`: the symbol of the asset to remove, e.g., `"MSFT"`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` of the watchlist after the change, with one row for each asset and the same columns as `MyWatchlistEndpointModel`.
+
+### Example
+```julia
+current = api(client, MyWatchlistEndpointModel(name = "Favorites"));
+model = MyRemoveWatchlistAssetEndpointModel(id = current.watchlist_id[1], symbol = "MSFT");
+watchlist = api(client, model);
+```
 
 ### Constructors
 - `MyRemoveWatchlistAssetEndpointModel(; id::String, symbol::String)`: returns a new `MyRemoveWatchlistAssetEndpointModel` instance.
@@ -1785,12 +2164,19 @@ end
 """
     mutable struct MyDeleteWatchlistEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for deleting a watchlist with an HTTP DELETE to the Alpaca `/watchlists/{watchlist_id}` or `/watchlists:by_name` endpoint.
-The endpoint answers with no body, so the default handler returns an empty table.
+Deletes a watchlist permanently through the Alpaca `DELETE /v2/watchlists/{watchlist_id}` endpoint, or the `DELETE /v2/watchlists:by_name` endpoint when the model holds a name.
 
 ### Fields
-- `id::Union{Nothing,String}`: the watchlist identifier assigned by Alpaca, or `nothing`.
-- `name::Union{Nothing,String}`: the name of the watchlist, or `nothing`.
+- `id::Union{Nothing,String}`: the id that Alpaca assigned to the watchlist, e.g., from the `watchlist_id` column of `MyWatchlistEndpointModel`. Default `nothing`.
+- `name::Union{Nothing,String}`: the name of the watchlist, e.g., `"Tech"`. Default `nothing`.
+
+### Result
+The call `api(client, model)` returns an empty `DataFrame`, because Alpaca answers with no body.
+
+### Example
+```julia
+result = api(client, MyDeleteWatchlistEndpointModel(name = "Favorites"));
+```
 
 ### Constructors
 - `MyDeleteWatchlistEndpointModel(; id::Union{Nothing,String} = nothing, name::Union{Nothing,String} = nothing)`: returns a new `MyDeleteWatchlistEndpointModel` instance.
@@ -1887,18 +2273,27 @@ end
 """
     mutable struct MyUpdateAccountConfigurationsEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for changing the account settings with an HTTP PATCH to the Alpaca `/account/configurations` endpoint.
-The request holds the settings that are set. The endpoint answers with all the settings of the account.
+A change to the trading settings of the client's account, sent to the Alpaca `PATCH /v2/account/configurations` endpoint.
+The request holds only the settings that are not `nothing`, and Alpaca keeps the other settings.
 
 ### Fields
-- `disable_overnight_trading::Union{Nothing,Bool}`: `true` turns off overnight trading, or `nothing` to keep the setting.
-- `fractional_trading::Union{Nothing,Bool}`: `true` allows fractional trading, or `nothing` to keep the setting.
-- `max_margin_multiplier::Union{Nothing,String}`: the maximum margin multiplier, sent as text, or `nothing` to keep the setting.
-- `max_options_trading_level::Union{Nothing,Int}`: the maximum options trading level, an integer in `0:3`, or `nothing` to keep the setting.
-- `no_shorting::Union{Nothing,Bool}`: `true` blocks short sales, or `nothing` to keep the setting.
-- `ptp_no_exception_entry::Union{Nothing,Bool}`: `true` blocks entry orders for publicly traded partnerships, or `nothing` to keep the setting.
-- `suspend_trade::Union{Nothing,Bool}`: `true` suspends trading, or `nothing` to keep the setting.
-- `trade_confirm_email::Union{Nothing,String}`: the trade confirmation email setting, e.g., `"all"`, or `nothing` to keep the setting.
+- `disable_overnight_trading::Union{Nothing,Bool}`: turns overnight trading off when `true` and on when `false`. Default `nothing`, which keeps the setting.
+- `fractional_trading::Union{Nothing,Bool}`: turns fractional trading on when `true` and off when `false`. Default `nothing`, which keeps the setting.
+- `max_margin_multiplier::Union{Nothing,String}`: the largest buying power multiplier of the account, `"1"`, `"2"`, or `"4"`. The keyword also accepts a `Real`, which the model stores as text. Default `nothing`, which keeps the setting.
+- `max_options_trading_level::Union{Nothing,Int}`: the highest options trading level: `0` (disabled), `1` (covered calls and cash-secured puts), `2` (long calls and puts), or `3` (spreads and straddles). Default `nothing`, which keeps the setting.
+- `no_shorting::Union{Nothing,Bool}`: blocks short sales when `true`, so the account holds only long positions. Default `nothing`, which keeps the setting.
+- `ptp_no_exception_entry::Union{Nothing,Bool}`: accepts orders for publicly traded partnerships without a qualified notice when `true`, and blocks those orders when `false`. Default `nothing`, which keeps the setting.
+- `suspend_trade::Union{Nothing,Bool}`: blocks new orders when `true`. Default `nothing`, which keeps the setting.
+- `trade_confirm_email::Union{Nothing,String}`: whether Alpaca emails a confirmation of each order fill: `"all"` sends the emails, and `"none"` does not. Default `nothing`, which keeps the setting.
+
+### Result
+The call `api(client, model)` sends one PATCH request and returns a `DataFrame` with one row: every setting of the account after the change, with the same columns as `MyAccountConfigurationsEndpointModel`.
+
+### Example
+```julia
+model = MyUpdateAccountConfigurationsEndpointModel(trade_confirm_email = "none");
+settings = api(client, model);
+```
 
 ### Constructors
 - `MyUpdateAccountConfigurationsEndpointModel(; disable_overnight_trading = nothing, fractional_trading = nothing, max_margin_multiplier = nothing, max_options_trading_level = nothing, no_shorting = nothing, ptp_no_exception_entry = nothing, suspend_trade = nothing, trade_confirm_email = nothing)`: returns a new `MyUpdateAccountConfigurationsEndpointModel` instance.
@@ -1942,18 +2337,27 @@ end
 """
     mutable struct MyReplaceOrderEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for replacing an open order with an HTTP PATCH to the Alpaca `/orders/{order_id}` endpoint.
-The request holds the order fields that change. The endpoint answers with the replacement order.
-Alpaca answers HTTP 422 "pending replacement" when an order is replaced or cancelled before Alpaca has accepted the previous change. Wait and retry.
+Replaces an open order with a new order through the Alpaca `PATCH /v2/orders/{order_id}` endpoint. Each field that is set overrides that field of the order, and the other fields stay the same.
 
 ### Fields
-- `id::String`: the identifier of the order to replace.
-- `qty::Union{Nothing,String}`: the new quantity, sent as text, or `nothing` to keep it.
-- `time_in_force::Union{Nothing,String}`: the new time in force, e.g., `"gtc"`, or `nothing` to keep it.
-- `limit_price::Union{Nothing,String}`: the new limit price, sent as text, or `nothing` to keep it.
-- `stop_price::Union{Nothing,String}`: the new stop price, sent as text, or `nothing` to keep it.
-- `trail::Union{Nothing,String}`: the new trail, sent as text, or `nothing` to keep it.
-- `client_order_id::Union{Nothing,String}`: the new order identifier assigned by the client, or `nothing` to keep it.
+- `id::String`: the id of the open order to replace, e.g., from the `id` column of `MyOrdersEndpointModel`. Required.
+- `qty::Union{Nothing,String}`: the new number of shares, a whole number, sent as text. The keyword also accepts a `Real`. The quantity of a fractional order cannot change. Default `nothing`.
+- `time_in_force::Union{Nothing,String}`: the new time in force, which sets how long the order stays live, e.g., `"day"`, one trading day, or `"gtc"`, until canceled. Default `nothing`.
+- `limit_price::Union{Nothing,String}`: the new limit price, sent as text. The keyword also accepts a `Real`. For a multi-leg order, a positive price is a debit and a negative price is a credit. Default `nothing`.
+- `stop_price::Union{Nothing,String}`: the new stop price, sent as text. The keyword also accepts a `Real`. Default `nothing`.
+- `trail::Union{Nothing,String}`: the new trail price or trail percent of a `"trailing_stop"` order, sent as text. The keyword also accepts a `Real`. Default `nothing`.
+- `client_order_id::Union{Nothing,String}`: the id that the client gives the new order, at most 128 characters. Default `nothing`, which lets Alpaca generate the id.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for the new order, which has its own `id`, and the columns of `MyOrdersEndpointModel`. Alpaca refuses to replace an order whose status is `"accepted"`, `"pending_new"`, `"pending_cancel"`, or `"pending_replace"`. A change sent before Alpaca has accepted the previous change gets an `AlpacaError` with status 422, "pending replacement". Wait and retry.
+
+### Example
+```julia
+order = submit(client, MyEquityOrderModel(symbol = "SPY", side = "buy", qty = 1);
+    type = "limit", limit_price = 500.0);
+model = MyReplaceOrderEndpointModel(id = order.id, limit_price = 495.0);
+replacement = api(client, model);
+```
 
 ### Constructors
 - `MyReplaceOrderEndpointModel(; id::String, qty = nothing, time_in_force = nothing, limit_price = nothing, stop_price = nothing, trail = nothing, client_order_id = nothing)`: returns a new `MyReplaceOrderEndpointModel` instance.
@@ -1988,11 +2392,18 @@ end
 """
     mutable struct MyExerciseOptionEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for exercising an option position with an HTTP POST to the Alpaca `/positions/{symbol_or_contract_id}/exercise` endpoint.
-The endpoint answers with no body, so the default handler returns an empty table.
+Exercises an option position through the Alpaca `POST /v2/positions/{symbol_or_contract_id}/exercise` endpoint. Exercise converts every held contract of the option into the underlying asset, on the terms of the contract.
 
 ### Fields
-- `symbol::String`: the symbol or the contract identifier of the option position.
+- `symbol::String`: the symbol of the option contract, e.g., `"SPY261218C00690000"`. The contract id also works. Required.
+
+### Result
+The call `api(client, model)` returns an empty `DataFrame`, because Alpaca answers with no body. Alpaca processes the exercise at once and rejects a request sent between the market close and midnight. An account that does not hold enough of the contract gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+result = api(client, MyExerciseOptionEndpointModel(symbol = "SPY261218C00690000"));
+```
 
 ### Constructors
 - `MyExerciseOptionEndpointModel(; symbol::String)`: returns a new `MyExerciseOptionEndpointModel` instance.
@@ -2009,11 +2420,18 @@ end
 """
     mutable struct MyDoNotExerciseOptionEndpointModel <: AbstractAlpacaTradingEndpointModel
 
-Endpoint model for instructing Alpaca not to exercise an option position with an HTTP POST to the Alpaca `/positions/{symbol_or_contract_id}/do-not-exercise` endpoint.
-The endpoint answers with no body, so the default handler returns an empty table.
+Tells Alpaca not to exercise an option position at expiration, through the Alpaca `POST /v2/positions/{symbol_or_contract_id}/do-not-exercise` endpoint. Without this instruction, Alpaca exercises an in-the-money contract at expiration.
 
 ### Fields
-- `symbol::String`: the symbol or the contract identifier of the option position.
+- `symbol::String`: the symbol of the option contract, e.g., `"SPY261218C00690000"`. The contract id also works. Required.
+
+### Result
+The call `api(client, model)` returns an empty `DataFrame`, because Alpaca answers with no body. An account that does not hold the contract gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+result = api(client, MyDoNotExerciseOptionEndpointModel(symbol = "SPY261218C00690000"));
+```
 
 ### Constructors
 - `MyDoNotExerciseOptionEndpointModel(; symbol::String)`: returns a new `MyDoNotExerciseOptionEndpointModel` instance.
@@ -2041,17 +2459,27 @@ end
 """
     mutable struct MyGlobalStockBarsEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/{feed}/bars` endpoint (Alpaca's "Stock v3" API).
-This endpoint returns historical bars of stocks on non-US exchanges.
+The historical price bars of stocks on non-US exchanges, from the Alpaca `GET /v3/stocks/{feed}/bars` endpoint.
+A bar summarizes the trades of one time interval: the open, high, low, and close prices, the volume, and the number of trades.
 
 ### Fields
-- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
-- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `timeframe::String`: the width of each bar, e.g., `"1Day"`.
-- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`. Alpaca requires this field.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `page_size::Int`: the largest number of rows to return per page.
-- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+- `feed::String`: the source of the trades: `"euroctp"` (all EU trading venues), `"xetr"` (Xetra, Frankfurt), `"xhkg"` (Hong Kong Stock Exchange), `"xlon"` (London Stock Exchange), or `"xsau"` (Saudi Exchange). The URL puts this field in the path. Required.
+- `symbols::Vector{String}`: the symbols in the form `TICKER:MIC`, where `MIC` is the code of the symbol's primary market, e.g., `["BMW:XETR", "SAP:XETR"]`. The keyword also accepts one symbol as a `String`. Required.
+- `timeframe::String`: the time interval of each bar: `"1Min"` to `"59Min"`, `"1Hour"` to `"23Hour"`, `"1Day"`, `"1Week"`, or `"1Month"`, `"2Month"`, `"3Month"`, `"4Month"`, `"6Month"`, or `"12Month"`. Required.
+- `start::Union{String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A date means midnight in the market's time zone. A `DateTime` is a UTC time. Required.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. A date means the end of that day in the market's time zone. The URL sends this field as `end`. Default `nothing`, the current time.
+- `page_size::Int`: the largest number of bars on one page, counted across all symbols, from `1` to `10000`. The call `api` reads every page. Default `1000`.
+- `sort::Union{Nothing,String}`: the time order of the bars of each symbol: `"asc"` or `"desc"`. Default `nothing`, which leaves the order to Alpaca.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each bar. The bars of each symbol are in time order. The columns are `timestamp` (UTC), `symbol`, `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`, the volume-weighted average price. A paper account without a market data subscription gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+model = MyGlobalStockBarsEndpointModel(feed = "xetr", symbols = ["BMW:XETR", "SAP:XETR"],
+    timeframe = "1Day", start = Date(2026, 11, 2), finish = Date(2026, 11, 20));
+bars = api(client, model);
+```
 
 ### Constructors
 - `MyGlobalStockBarsEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, page_size::Int = 1000, sort::Union{Nothing,String} = nothing)`: returns a new `MyGlobalStockBarsEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
@@ -2080,16 +2508,26 @@ end
 """
     mutable struct MyGlobalStockQuotesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/{feed}/quotes` endpoint (Alpaca's "Stock v3" API).
-This endpoint returns historical quotes of stocks on non-US exchanges.
+The quotes of stocks on non-US exchanges over a range of times, from the Alpaca `GET /v3/stocks/{feed}/quotes` endpoint.
+A quote is the best bid price and the best ask price for a stock, with the size at each price.
 
 ### Fields
-- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
-- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`. Alpaca requires this field.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `page_size::Int`: the largest number of rows to return per page.
-- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+- `feed::String`: the source of the quotes: `"euroctp"` (all EU trading venues), `"xetr"` (Xetra, Frankfurt), `"xhkg"` (Hong Kong Stock Exchange), `"xlon"` (London Stock Exchange), or `"xsau"` (Saudi Exchange). The URL puts this field in the path. Required.
+- `symbols::Vector{String}`: the symbols in the form `TICKER:MIC`, where `MIC` is the code of the symbol's primary market, e.g., `["BMW:XETR", "SAP:XETR"]`. The keyword also accepts one symbol as a `String`. Required.
+- `start::Union{String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A date means midnight in the market's time zone. A `DateTime` is a UTC time. Required.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. A date means the end of that day in the market's time zone. The URL sends this field as `end`. Default `nothing`, the current time.
+- `page_size::Int`: the largest number of quotes on one page, counted across all symbols, from `1` to `10000`. The call `api` reads every page. Default `1000`.
+- `sort::Union{Nothing,String}`: the time order of the quotes of each symbol: `"asc"` or `"desc"`. Default `nothing`, which leaves the order to Alpaca.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each quote. The quotes of each symbol are in time order. The columns are `timestamp` (UTC), `symbol`, `bid_price`, `bid_size`, `ask_price`, `ask_size`, `bid_exchange`, and `ask_exchange`. A paper account without a market data subscription gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+model = MyGlobalStockQuotesEndpointModel(feed = "xetr", symbols = "SAP:XETR",
+    start = DateTime(2026, 11, 20, 9, 0), finish = DateTime(2026, 11, 20, 9, 1));
+quotes = api(client, model);
+```
 
 ### Constructors
 - `MyGlobalStockQuotesEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, page_size::Int = 1000, sort::Union{Nothing,String} = nothing)`: returns a new `MyGlobalStockQuotesEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
@@ -2117,16 +2555,26 @@ end
 """
     mutable struct MyGlobalStockTradesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/{feed}/trades` endpoint (Alpaca's "Stock v3" API).
-This endpoint returns historical trades of stocks on non-US exchanges.
+The trades of stocks on non-US exchanges over a range of times, from the Alpaca `GET /v3/stocks/{feed}/trades` endpoint.
+A trade is one sale of shares at one price on one exchange.
 
 ### Fields
-- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
-- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `start::Union{String,Date,DateTime}`: the first time of the request, a `String`, `Date`, or `DateTime`. Alpaca requires this field.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `page_size::Int`: the largest number of rows to return per page.
-- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
+- `feed::String`: the source of the trades: `"euroctp"` (all EU trading venues), `"xetr"` (Xetra, Frankfurt), `"xhkg"` (Hong Kong Stock Exchange), `"xlon"` (London Stock Exchange), or `"xsau"` (Saudi Exchange). The URL puts this field in the path. Required.
+- `symbols::Vector{String}`: the symbols in the form `TICKER:MIC`, where `MIC` is the code of the symbol's primary market, e.g., `["BMW:XETR", "SAP:XETR"]`. The keyword also accepts one symbol as a `String`. Required.
+- `start::Union{String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A date means midnight in the market's time zone. A `DateTime` is a UTC time. Required.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. A date means the end of that day in the market's time zone. The URL sends this field as `end`. Default `nothing`, the current time.
+- `page_size::Int`: the largest number of trades on one page, counted across all symbols, from `1` to `10000`. The call `api` reads every page. Default `1000`.
+- `sort::Union{Nothing,String}`: the time order of the trades of each symbol: `"asc"` or `"desc"`. Default `nothing`, which leaves the order to Alpaca.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each trade. The trades of each symbol are in time order. The columns are `timestamp` (UTC), `symbol`, `price`, `size`, `exchange`, and `id`, the trade ID. A paper account without a market data subscription gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+model = MyGlobalStockTradesEndpointModel(feed = "xetr", symbols = "SAP:XETR",
+    start = DateTime(2026, 11, 20, 9, 0), finish = DateTime(2026, 11, 20, 9, 1));
+trades = api(client, model);
+```
 
 ### Constructors
 - `MyGlobalStockTradesEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector}, start::Union{String,Date,DateTime}, finish::Union{Nothing,String,Date,DateTime} = nothing, page_size::Int = 1000, sort::Union{Nothing,String} = nothing)`: returns a new `MyGlobalStockTradesEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
@@ -2154,12 +2602,22 @@ end
 """
     mutable struct MyGlobalStockLatestBarsEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/{feed}/latest/bars` endpoint (Alpaca's "Stock v3" API).
-This endpoint returns the latest bar of each of several symbols of stocks on non-US exchanges.
+The latest minute bar of each of several stocks on non-US exchanges, from the Alpaca `GET /v3/stocks/{feed}/latest/bars` endpoint.
+A minute bar summarizes one minute of trades: the open, high, low, and close prices, the volume, and the number of trades.
 
 ### Fields
-- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
-- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `feed::String`: the source of the trades: `"euroctp"` (all EU trading venues), `"xetr"` (Xetra, Frankfurt), `"xhkg"` (Hong Kong Stock Exchange), `"xlon"` (London Stock Exchange), or `"xsau"` (Saudi Exchange). The URL puts this field in the path. Required.
+- `symbols::Vector{String}`: the symbols in the form `TICKER:MIC`, where `MIC` is the code of the symbol's primary market, e.g., `["BMW:XETR", "SAP:XETR"]`. The keyword also accepts one symbol as a `String`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each symbol. The columns are `timestamp` (UTC), `symbol`, `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`, the volume-weighted average price. A paper account without a market data subscription gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+model = MyGlobalStockLatestBarsEndpointModel(feed = "xetr",
+    symbols = ["BMW:XETR", "SAP:XETR"]);
+bars = api(client, model);
+```
 
 ### Constructors
 - `MyGlobalStockLatestBarsEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector})`: returns a new `MyGlobalStockLatestBarsEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
@@ -2183,12 +2641,22 @@ end
 """
     mutable struct MyGlobalStockLatestQuotesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/{feed}/latest/quotes` endpoint (Alpaca's "Stock v3" API).
-This endpoint returns the latest quote of each of several symbols of stocks on non-US exchanges.
+The latest quote of each of several stocks on non-US exchanges, from the Alpaca `GET /v3/stocks/{feed}/latest/quotes` endpoint.
+A quote is the best bid price and the best ask price for a stock, with the size at each price.
 
 ### Fields
-- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
-- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `feed::String`: the source of the quotes: `"euroctp"` (all EU trading venues), `"xetr"` (Xetra, Frankfurt), `"xhkg"` (Hong Kong Stock Exchange), `"xlon"` (London Stock Exchange), or `"xsau"` (Saudi Exchange). The URL puts this field in the path. Required.
+- `symbols::Vector{String}`: the symbols in the form `TICKER:MIC`, where `MIC` is the code of the symbol's primary market, e.g., `["BMW:XETR", "SAP:XETR"]`. The keyword also accepts one symbol as a `String`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each symbol. The columns are `timestamp` (UTC), `symbol`, `bid_price`, `bid_size`, `ask_price`, `ask_size`, `bid_exchange`, and `ask_exchange`. A paper account without a market data subscription gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+model = MyGlobalStockLatestQuotesEndpointModel(feed = "xetr",
+    symbols = ["BMW:XETR", "SAP:XETR"]);
+quotes = api(client, model);
+```
 
 ### Constructors
 - `MyGlobalStockLatestQuotesEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector})`: returns a new `MyGlobalStockLatestQuotesEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
@@ -2212,12 +2680,22 @@ end
 """
     mutable struct MyGlobalStockLatestTradesEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/{feed}/latest/trades` endpoint (Alpaca's "Stock v3" API).
-This endpoint returns the latest trade of each of several symbols of stocks on non-US exchanges.
+The latest trade of each of several stocks on non-US exchanges, from the Alpaca `GET /v3/stocks/{feed}/latest/trades` endpoint.
+A trade is one sale of shares at one price on one exchange.
 
 ### Fields
-- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
-- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `feed::String`: the source of the trades: `"euroctp"` (all EU trading venues), `"xetr"` (Xetra, Frankfurt), `"xhkg"` (Hong Kong Stock Exchange), `"xlon"` (London Stock Exchange), or `"xsau"` (Saudi Exchange). The URL puts this field in the path. Required.
+- `symbols::Vector{String}`: the symbols in the form `TICKER:MIC`, where `MIC` is the code of the symbol's primary market, e.g., `["BMW:XETR", "SAP:XETR"]`. The keyword also accepts one symbol as a `String`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each symbol. The columns are `timestamp` (UTC), `symbol`, `price`, `size`, `exchange`, and `id`, the trade ID. A paper account without a market data subscription gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+model = MyGlobalStockLatestTradesEndpointModel(feed = "xetr",
+    symbols = ["BMW:XETR", "SAP:XETR"]);
+trades = api(client, model);
+```
 
 ### Constructors
 - `MyGlobalStockLatestTradesEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector})`: returns a new `MyGlobalStockLatestTradesEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
@@ -2241,12 +2719,22 @@ end
 """
     mutable struct MyGlobalStockSnapshotsEndpointModel <: AbstractAlpacaGlobalStockDataEndpointModel
 
-Endpoint model for the Alpaca `/stocks/{feed}/snapshots` endpoint (Alpaca's "Stock v3" API).
-This endpoint returns the snapshot of each of several symbols of stocks on non-US exchanges.
+The snapshot of each of several stocks on non-US exchanges, from the Alpaca `GET /v3/stocks/{feed}/snapshots` endpoint.
+A snapshot holds the latest trade, the latest quote, the minute bar, the daily bar, and the previous daily bar of one stock.
 
 ### Fields
-- `feed::String`: the exchange feed, one of `"euroctp"`, `"xetr"`, `"xhkg"`, `"xlon"`, or `"xsau"`. The URL puts this field in the path.
-- `symbols::Vector{String}`: the symbols to request, each in the form `SYMBOL:MIC`, e.g., `"SAP:XETR"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `feed::String`: the source of the data: `"euroctp"` (all EU trading venues), `"xetr"` (Xetra, Frankfurt), `"xhkg"` (Hong Kong Stock Exchange), `"xlon"` (London Stock Exchange), or `"xsau"` (Saudi Exchange). The URL puts this field in the path. Required.
+- `symbols::Vector{String}`: the symbols in the form `TICKER:MIC`, where `MIC` is the code of the symbol's primary market, e.g., `["BMW:XETR", "SAP:XETR"]`. The keyword also accepts one symbol as a `String`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each symbol. The columns are `symbol`, then the columns that start with `latest_trade_`, `latest_quote_`, `minute_bar_`, `daily_bar_`, and `prev_daily_bar_`. Each group holds the trade, quote, or bar columns, e.g., `daily_bar_close`. A paper account without a market data subscription gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+model = MyGlobalStockSnapshotsEndpointModel(feed = "xetr",
+    symbols = ["BMW:XETR", "SAP:XETR"]);
+snapshots = api(client, model);
+```
 
 ### Constructors
 - `MyGlobalStockSnapshotsEndpointModel(; feed::String, symbols::Union{AbstractString,AbstractVector})`: returns a new `MyGlobalStockSnapshotsEndpointModel` instance. The constructor throws an `ArgumentError` when `feed` is not one of the five feeds.
@@ -2280,11 +2768,18 @@ end
 """
     mutable struct MyOptionExchangesEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
-Endpoint model for the Alpaca `/options/meta/exchanges` endpoint.
-This endpoint returns the map from each option exchange code to the name of the exchange. The model has no fields.
+The code and the name of each option exchange, from the Alpaca `GET /v1beta1/options/meta/exchanges` endpoint.
 
 ### Fields
-- None: the request has no parameters.
+This model has no fields.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each exchange. The columns are `code` and `name`. The option trade and quote tables name each exchange by one of these codes.
+
+### Example
+```julia
+exchanges = api(client, MyOptionExchangesEndpointModel());
+```
 
 ### Constructors
 - `MyOptionExchangesEndpointModel()`: returns a new `MyOptionExchangesEndpointModel` instance.
@@ -2298,11 +2793,18 @@ end
 """
     mutable struct MyOptionConditionsEndpointModel <: AbstractAlpacaOptionDataEndpointModel
 
-Endpoint model for the Alpaca `/options/meta/conditions/{ticktype}` endpoint.
-This endpoint returns the map from each option condition code to its name, for the trades or the quotes.
+The name of each condition code of option trades or option quotes, from the Alpaca `GET /v1beta1/options/meta/conditions/{ticktype}` endpoint.
 
 ### Fields
-- `ticktype::String`: the kind of tick whose condition codes to list, `"trade"` or `"quote"`. The URL carries it in the path.
+- `ticktype::String`: whether the call lists the condition codes of trades, `"trade"`, or of quotes, `"quote"`. The URL puts this field in the path. Default `"trade"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each condition code. The columns are `code` and `name`.
+
+### Example
+```julia
+conditions = api(client, MyOptionConditionsEndpointModel(ticktype = "trade"));
+```
 
 ### Constructors
 - `MyOptionConditionsEndpointModel(; ticktype::String = "trade")`: returns a new `MyOptionConditionsEndpointModel` instance.
@@ -2336,17 +2838,27 @@ end
 """
     mutable struct MyCryptoBarsEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
 
-Endpoint model for the Alpaca `/crypto/{loc}/bars` endpoint.
-This endpoint returns historical bars of crypto pairs.
+The price bars of one or more crypto pairs over a range of times, from the Alpaca `GET /v1beta3/crypto/{loc}/bars` endpoint.
+A bar summarizes the trades of one time interval: the open, high, low, and close prices, the volume, and the number of trades.
 
 ### Fields
-- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `timeframe::String`: the width of each bar, e.g., `"1Hour"`.
-- `start::Union{Nothing,String,Date,DateTime}`: the first time of the request, or `nothing` to leave it to Alpaca.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `limit::Int`: the largest number of rows to return per page.
-- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
-- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the crypto pairs, e.g., `["BTC/USD", "ETH/USD"]`. The keyword also accepts one pair as a `String`. Required.
+- `timeframe::String`: the time interval of each bar: `"1Min"` to `"59Min"`, `"1Hour"` to `"23Hour"`, `"1Day"`, `"1Week"`, `"1Month"`, `"2Month"`, `"3Month"`, `"4Month"`, `"6Month"`, or `"12Month"`. Required.
+- `start::Union{Nothing,String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A `DateTime` is a UTC time. Default `nothing`, which starts the range at the beginning of the current day.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. The URL sends this field as `end`. Default `nothing`, which ends the range at the latest bar the account can read.
+- `limit::Int`: the largest number of bars on one page, counted across all pairs. The call `api` reads every page. Default `1000`.
+- `sort::Union{Nothing,String}`: the order of the rows, `"asc"` (ascending) or `"desc"` (descending). Default `nothing`, which leaves the order to Alpaca.
+- `loc::String`: the crypto location whose market data the call reads: `"us"` (Alpaca US), `"us-1"` (Kraken US), `"us-2"`, `"eu-1"` (Kraken EU), or `"bs-1"`. The URL puts this field in the path. Default `"us"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each bar. The columns are `timestamp` (UTC), `symbol` (the pair), `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`, the volume-weighted average price.
+
+### Example
+```julia
+model = MyCryptoBarsEndpointModel(symbols = "BTC/USD", timeframe = "1Hour",
+    start = DateTime(2026, 11, 20), finish = DateTime(2026, 11, 21));
+bars = api(client, model);
+```
 
 ### Constructors
 - `MyCryptoBarsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, timeframe::String, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, sort::Union{Nothing,String} = nothing, loc::String = "us")`: returns a new `MyCryptoBarsEndpointModel` instance.
@@ -2376,16 +2888,26 @@ end
 """
     mutable struct MyCryptoQuotesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
 
-Endpoint model for the Alpaca `/crypto/{loc}/quotes` endpoint.
-This endpoint returns historical quotes of crypto pairs.
+The quotes of one or more crypto pairs over a range of times, from the Alpaca `GET /v1beta3/crypto/{loc}/quotes` endpoint.
+A quote holds the bid price and the ask price of a pair, with their sizes.
 
 ### Fields
-- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `start::Union{Nothing,String,Date,DateTime}`: the first time of the request, or `nothing` to leave it to Alpaca.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `limit::Int`: the largest number of rows to return per page.
-- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
-- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the crypto pairs, e.g., `["BTC/USD", "ETH/USD"]`. The keyword also accepts one pair as a `String`. Required.
+- `start::Union{Nothing,String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A `DateTime` is a UTC time. Default `nothing`, which starts the range at the beginning of the current day.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. The URL sends this field as `end`. Default `nothing`, which ends the range at the latest quote the account can read.
+- `limit::Int`: the largest number of quotes on one page, counted across all pairs. The call `api` reads every page. Default `1000`.
+- `sort::Union{Nothing,String}`: the order of the rows, `"asc"` (ascending) or `"desc"` (descending). Default `nothing`, which leaves the order to Alpaca.
+- `loc::String`: the crypto location whose market data the call reads: `"us"` (Alpaca US), `"us-1"` (Kraken US), `"us-2"`, `"eu-1"` (Kraken EU), or `"bs-1"`. The URL puts this field in the path. Default `"us"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each quote. The columns are `timestamp` (UTC), `symbol` (the pair), `bid_price`, `bid_size`, `ask_price`, `ask_size`, `bid_exchange`, and `ask_exchange`. Alpaca sends no exchange for crypto, so `bid_exchange` and `ask_exchange` are `missing`.
+
+### Example
+```julia
+model = MyCryptoQuotesEndpointModel(symbols = "BTC/USD",
+    start = DateTime(2026, 11, 20, 15, 0), finish = DateTime(2026, 11, 20, 15, 1));
+quotes = api(client, model);
+```
 
 ### Constructors
 - `MyCryptoQuotesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, sort::Union{Nothing,String} = nothing, loc::String = "us")`: returns a new `MyCryptoQuotesEndpointModel` instance.
@@ -2414,16 +2936,25 @@ end
 """
     mutable struct MyCryptoTradesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
 
-Endpoint model for the Alpaca `/crypto/{loc}/trades` endpoint.
-This endpoint returns historical trades of crypto pairs.
+The trades of one or more crypto pairs over a range of times, from the Alpaca `GET /v1beta3/crypto/{loc}/trades` endpoint.
 
 ### Fields
-- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `start::Union{Nothing,String,Date,DateTime}`: the first time of the request, or `nothing` to leave it to Alpaca.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `limit::Int`: the largest number of rows to return per page.
-- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
-- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the crypto pairs, e.g., `["BTC/USD", "ETH/USD"]`. The keyword also accepts one pair as a `String`. Required.
+- `start::Union{Nothing,String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A `DateTime` is a UTC time. Default `nothing`, which starts the range at the beginning of the current day.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. The URL sends this field as `end`. Default `nothing`, which ends the range at the latest trade the account can read.
+- `limit::Int`: the largest number of trades on one page, counted across all pairs. The call `api` reads every page. Default `1000`.
+- `sort::Union{Nothing,String}`: the order of the rows, `"asc"` (ascending) or `"desc"` (descending). Default `nothing`, which leaves the order to Alpaca.
+- `loc::String`: the crypto location whose market data the call reads: `"us"` (Alpaca US), `"us-1"` (Kraken US), `"us-2"`, `"eu-1"` (Kraken EU), or `"bs-1"`. The URL puts this field in the path. Default `"us"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each trade. The columns are `timestamp` (UTC), `symbol` (the pair), `price`, `size`, `exchange`, and `id`, a whole number that identifies the trade. Alpaca sends no exchange for crypto, so `exchange` is `missing`.
+
+### Example
+```julia
+model = MyCryptoTradesEndpointModel(symbols = "BTC/USD",
+    start = DateTime(2026, 11, 20, 15, 0), finish = DateTime(2026, 11, 20, 16, 0));
+trades = api(client, model);
+```
 
 ### Constructors
 - `MyCryptoTradesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, start::Union{Nothing,String,Date,DateTime} = nothing, finish::Union{Nothing,String,Date,DateTime} = nothing, limit::Int = 1000, sort::Union{Nothing,String} = nothing, loc::String = "us")`: returns a new `MyCryptoTradesEndpointModel` instance.
@@ -2452,12 +2983,20 @@ end
 """
     mutable struct MyCryptoLatestBarsEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
 
-Endpoint model for the Alpaca `/crypto/{loc}/latest/bars` endpoint.
-This endpoint returns the latest bar of each of several crypto pairs.
+The latest minute bar of one or more crypto pairs, from the Alpaca `GET /v1beta3/crypto/{loc}/latest/bars` endpoint.
+A bar summarizes the trades of one time interval: the open, high, low, and close prices, the volume, and the number of trades.
 
 ### Fields
-- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the crypto pairs, e.g., `["BTC/USD", "ETH/USD"]`. The keyword also accepts one pair as a `String`. Required.
+- `loc::String`: the crypto location whose market data the call reads: `"us"` (Alpaca US), `"us-1"` (Kraken US), `"us-2"`, `"eu-1"` (Kraken EU), or `"bs-1"`. The URL puts this field in the path. Default `"us"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each pair. The columns are `timestamp` (UTC), `symbol` (the pair), `open`, `high`, `low`, `close`, `volume`, `trade_count`, and `vwap`, the volume-weighted average price.
+
+### Example
+```julia
+bars = api(client, MyCryptoLatestBarsEndpointModel(symbols = ["BTC/USD", "ETH/USD"]));
+```
 
 ### Constructors
 - `MyCryptoLatestBarsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, loc::String = "us")`: returns a new `MyCryptoLatestBarsEndpointModel` instance.
@@ -2482,12 +3021,20 @@ end
 """
     mutable struct MyCryptoLatestQuotesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
 
-Endpoint model for the Alpaca `/crypto/{loc}/latest/quotes` endpoint.
-This endpoint returns the latest quote of each of several crypto pairs.
+The latest quote of each of one or more crypto pairs, from the Alpaca `GET /v1beta3/crypto/{loc}/latest/quotes` endpoint.
+A quote holds the bid price and the ask price of a pair, with their sizes.
 
 ### Fields
-- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the crypto pairs, e.g., `["BTC/USD", "ETH/USD"]`. The keyword also accepts one pair as a `String`. Required.
+- `loc::String`: the crypto location whose market data the call reads: `"us"` (Alpaca US), `"us-1"` (Kraken US), `"us-2"`, `"eu-1"` (Kraken EU), or `"bs-1"`. The URL puts this field in the path. Default `"us"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each pair. The columns are `timestamp` (UTC), `symbol` (the pair), `bid_price`, `bid_size`, `ask_price`, `ask_size`, `bid_exchange`, and `ask_exchange`. Alpaca sends no exchange for crypto, so `bid_exchange` and `ask_exchange` are `missing`.
+
+### Example
+```julia
+quotes = api(client, MyCryptoLatestQuotesEndpointModel(symbols = ["BTC/USD", "ETH/USD"]));
+```
 
 ### Constructors
 - `MyCryptoLatestQuotesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, loc::String = "us")`: returns a new `MyCryptoLatestQuotesEndpointModel` instance.
@@ -2512,12 +3059,19 @@ end
 """
     mutable struct MyCryptoLatestTradesEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
 
-Endpoint model for the Alpaca `/crypto/{loc}/latest/trades` endpoint.
-This endpoint returns the latest trade of each of several crypto pairs.
+The latest trade of each of one or more crypto pairs, from the Alpaca `GET /v1beta3/crypto/{loc}/latest/trades` endpoint.
 
 ### Fields
-- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the crypto pairs, e.g., `["BTC/USD", "ETH/USD"]`. The keyword also accepts one pair as a `String`. Required.
+- `loc::String`: the crypto location whose market data the call reads: `"us"` (Alpaca US), `"us-1"` (Kraken US), `"us-2"`, `"eu-1"` (Kraken EU), or `"bs-1"`. The URL puts this field in the path. Default `"us"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each pair. The columns are `timestamp` (UTC), `symbol` (the pair), `price`, `size`, `exchange`, and `id`, a whole number that identifies the trade. Alpaca sends no exchange for crypto, so `exchange` is `missing`.
+
+### Example
+```julia
+trades = api(client, MyCryptoLatestTradesEndpointModel(symbols = ["BTC/USD", "ETH/USD"]));
+```
 
 ### Constructors
 - `MyCryptoLatestTradesEndpointModel(; symbols::Union{AbstractString,AbstractVector}, loc::String = "us")`: returns a new `MyCryptoLatestTradesEndpointModel` instance.
@@ -2542,12 +3096,20 @@ end
 """
     mutable struct MyCryptoLatestOrderbooksEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
 
-Endpoint model for the Alpaca `/crypto/{loc}/latest/orderbooks` endpoint.
-This endpoint returns the latest order book of each of several crypto pairs.
+The latest order book of each of one or more crypto pairs, from the Alpaca `GET /v1beta3/crypto/{loc}/latest/orderbooks` endpoint.
+An order book lists the price levels of the bids and of the asks, with the size at each price level.
 
 ### Fields
-- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the crypto pairs, e.g., `["BTC/USD", "ETH/USD"]`. The keyword also accepts one pair as a `String`. Required.
+- `loc::String`: the crypto location whose market data the call reads: `"us"` (Alpaca US), `"us-1"` (Kraken US), `"us-2"`, `"eu-1"` (Kraken EU), or `"bs-1"`. The URL puts this field in the path. Default `"us"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each price level. The columns are `timestamp` (UTC), `symbol` (the pair), `side`, `price`, and `size`. The column `side` is `"bid"` or `"ask"`. For each pair, the rows list all the bids first and then all the asks, in the order that Alpaca sends them.
+
+### Example
+```julia
+books = api(client, MyCryptoLatestOrderbooksEndpointModel(symbols = "BTC/USD"));
+```
 
 ### Constructors
 - `MyCryptoLatestOrderbooksEndpointModel(; symbols::Union{AbstractString,AbstractVector}, loc::String = "us")`: returns a new `MyCryptoLatestOrderbooksEndpointModel` instance.
@@ -2572,12 +3134,20 @@ end
 """
     mutable struct MyCryptoSnapshotsEndpointModel <: AbstractAlpacaCryptoDataEndpointModel
 
-Endpoint model for the Alpaca `/crypto/{loc}/snapshots` endpoint.
-This endpoint returns the snapshot of each of several crypto pairs.
+The snapshot of each of one or more crypto pairs, from the Alpaca `GET /v1beta3/crypto/{loc}/snapshots` endpoint.
+A snapshot holds a pair's latest trade, latest quote, latest minute bar, latest daily bar, and previous daily bar.
 
 ### Fields
-- `symbols::Vector{String}`: the crypto pairs to request, e.g., `"BTC/USD"`. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `loc::String`: the crypto location, one of `"us"`, `"us-1"`, `"us-2"`, `"eu-1"`, or `"bs-1"`. The URL puts this field in the path.
+- `symbols::Vector{String}`: the crypto pairs, e.g., `["BTC/USD", "ETH/USD"]`. The keyword also accepts one pair as a `String`. Required.
+- `loc::String`: the crypto location whose market data the call reads: `"us"` (Alpaca US), `"us-1"` (Kraken US), `"us-2"`, `"eu-1"` (Kraken EU), or `"bs-1"`. The URL puts this field in the path. Default `"us"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each pair. After `symbol` come the columns that start with `latest_trade_`, `latest_quote_`, `minute_bar_`, `daily_bar_`, and `prev_daily_bar_`, e.g., `daily_bar_close`. The columns of a trade, quote, or bar that Alpaca does not send are `missing`. The timestamps are in UTC.
+
+### Example
+```julia
+snapshots = api(client, MyCryptoSnapshotsEndpointModel(symbols = ["BTC/USD", "ETH/USD"]));
+```
 
 ### Constructors
 - `MyCryptoSnapshotsEndpointModel(; symbols::Union{AbstractString,AbstractVector}, loc::String = "us")`: returns a new `MyCryptoSnapshotsEndpointModel` instance.
@@ -2602,18 +3172,26 @@ end
 """
     mutable struct MyNewsEndpointModel <: AbstractAlpacaMarketDataEndpointModel
 
-Endpoint model for the Alpaca `/news` endpoint.
-This endpoint returns one page of at most 50 news articles. The endpoint is not paginated by `api`, and the default handler drops the `next_page_token` of the response. To get older articles, set `sort = "desc"` and pass the `created_at` of the last row as `finish`. A custom handler can read the `next_page_token` from the response body and pass it as `page_token`.
+News articles about stocks and crypto, from the Alpaca `GET /v1beta1/news` endpoint.
+Each article has a headline, a source, a summary, and the symbols that the article mentions.
 
 ### Fields
-- `symbols::Union{Nothing,Vector{String}}`: the symbols that the articles must mention, or `nothing` for all symbols. The keyword accepts a `String` or a vector of strings.
-- `start::Union{Nothing,String,Date,DateTime}`: the first time of the request, or `nothing` to leave it open.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `sort::String`: the sort order of the articles by creation time, `"asc"` or `"desc"`.
-- `limit::Int`: the largest number of articles to return, at most 50.
-- `include_content::Bool`: `true` to include the full content of each article.
-- `exclude_contentless::Bool`: `true` to leave out the articles that have no content.
-- `page_token::Union{Nothing,String}`: the token of the page to return, or `nothing` for the first page. Only a custom handler can read this token from a response.
+- `symbols::Union{Nothing,Vector{String}}`: the symbols that the articles must mention, e.g., `["AAPL"]`, sent as one comma-separated list. The keyword also accepts one symbol as a `String`. Default `nothing`, which lists articles on all symbols.
+- `start::Union{Nothing,String,Date,DateTime}`: the first time of the range, included. A `String` is a date, `"YYYY-MM-DD"`, or an RFC-3339 time. A `DateTime` is a UTC time. Default `nothing`, which starts the range at the beginning of the current day.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last time of the range, included. The URL sends this field as `end`. Default `nothing`, which ends the range at the current time, or 15 minutes earlier without real-time access.
+- `sort::String`: the order of the articles by update time, `"asc"` (oldest first) or `"desc"` (newest first). Default `"desc"`.
+- `limit::Int`: the largest number of articles in the response, at most `50`. Default `50`.
+- `include_content::Bool`: puts the full text of each article in the `content` column when `true`. An article without content has `missing` in that column. Default `false`.
+- `exclude_contentless::Bool`: leaves out the articles that have no content when `true`. Default `false`.
+- `page_token::Union{Nothing,String}`: the token of the page to read, from the `next_page_token` of a response. Only a custom handler can read that token. Default `nothing`, which reads the first page.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each article. The columns are `id`, `created_at` and `updated_at` (UTC), `headline`, `author`, `source`, `summary`, `url`, `symbols` (joined with commas), and `content`. The call reads one page of at most `limit` articles. To read older articles, set `finish` to an earlier time.
+
+### Example
+```julia
+news = api(client, MyNewsEndpointModel(symbols = "AAPL", limit = 10));
+```
 
 ### Constructors
 - `MyNewsEndpointModel(; symbols = nothing, start = nothing, finish = nothing, sort::String = "desc", limit::Int = 50, include_content::Bool = false, exclude_contentless::Bool = false, page_token::Union{Nothing,String} = nothing)`: returns a new `MyNewsEndpointModel` instance.
@@ -2638,12 +3216,20 @@ end
 """
     mutable struct MyMostActivesEndpointModel <: AbstractAlpacaMarketDataEndpointModel
 
-Endpoint model for the Alpaca `/screener/stocks/most-actives` endpoint.
-This endpoint returns the most active stocks of the day.
+The most active stocks of the day, ranked by volume or by number of trades, from the Alpaca `GET /v1beta1/screener/stocks/most-actives` endpoint.
+Alpaca ranks the stocks with real-time SIP data, which covers all US exchanges.
 
 ### Fields
-- `by::String`: the ranking, `"volume"` or `"trades"`.
-- `top::Int`: the number of stocks to return, at most 100.
+- `by::String`: the measure that ranks the stocks, `"volume"` or `"trades"`, the number of trades. Default `"volume"`.
+- `top::Int`: the number of stocks to return, at most `100`. Default `10`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each stock. The columns are `symbol`, `volume`, and `trade_count`, the number of trades. Both numbers are `Float64`.
+
+### Example
+```julia
+actives = api(client, MyMostActivesEndpointModel(by = "volume", top = 10));
+```
 
 ### Constructors
 - `MyMostActivesEndpointModel(; by::String = "volume", top::Int = 10)`: returns a new `MyMostActivesEndpointModel` instance.
@@ -2669,12 +3255,20 @@ end
 """
     mutable struct MyMoversEndpointModel <: AbstractAlpacaMarketDataEndpointModel
 
-Endpoint model for the Alpaca `/screener/{market_type}/movers` endpoint.
-This endpoint returns the top gainers and the top losers of the day.
+The stocks or crypto with the largest price gains and losses, from the Alpaca `GET /v1beta1/screener/{market_type}/movers` endpoint.
+The change of each symbol runs from the previous closing price to the latest closing price.
 
 ### Fields
-- `market_type::String`: the market to screen, `"stocks"` or `"crypto"`. The URL puts this field in the path.
-- `top::Int`: the number of gainers and the number of losers to return, at most 50.
+- `market_type::String`: the market to screen, `"stocks"` or `"crypto"`, which the URL puts in the path. Default `"stocks"`.
+- `top::Int`: the number of gainers and the number of losers to return, at most `50`. Default `10`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each mover, the gainers first and then the losers. The columns are `direction` (`"gainer"` or `"loser"`), `symbol`, `price`, `change`, and `percent_change`. Until the stock market opens, the stock movers are those of the previous market day. The crypto movers reset at midnight.
+
+### Example
+```julia
+movers = api(client, MyMoversEndpointModel(market_type = "stocks", top = 10));
+```
 
 ### Constructors
 - `MyMoversEndpointModel(; market_type::String = "stocks", top::Int = 10)`: returns a new `MyMoversEndpointModel` instance.
@@ -2700,20 +3294,29 @@ end
 """
     mutable struct MyCorporateActionsEndpointModel <: AbstractAlpacaMarketDataEndpointModel
 
-Endpoint model for the Alpaca `/v1/corporate-actions` endpoint.
-This endpoint returns corporate actions such as cash dividends and splits. Its base URL uses `v1`, not `v1beta1`.
+The corporate actions of companies, such as cash dividends, splits, mergers, and name changes, from the Alpaca `GET /v1/corporate-actions` endpoint.
 
 ### Fields
-- `symbols::Union{Nothing,Vector{String}}`: the symbols to request, or `nothing`. The keyword accepts a `String` or a vector of strings.
-- `cusips::Union{Nothing,Vector{String}}`: the CUSIPs to request, or `nothing`. The keyword accepts a `String` or a vector of strings.
-- `types::Union{Nothing,Vector{String}}`: the corporate action types to request, e.g., `"cash_dividend"`, or `nothing` for all types. The keyword accepts a `String` or a vector of strings.
-- `start::Union{Nothing,String,Date,DateTime}`: the first date of the request, or `nothing` to leave it open.
-- `finish::Union{Nothing,String,Date,DateTime}`: the last date of the request, or `nothing` to leave it open. The URL sends this field as `end`.
-- `ids::Union{Nothing,Vector{String}}`: the corporate action identifiers to request, or `nothing`. The keyword accepts a `String` or a vector of strings.
-- `limit::Int`: the largest number of actions to return per page.
-- `sort::Union{Nothing,String}`: the sort order, `"asc"` or `"desc"`, or `nothing` to leave it to Alpaca.
-- `region::Union{Nothing,String}`: the region, `"us"`, `"non_us"`, or `"all"`, or `nothing` to leave it to Alpaca.
-- `data_quality::Union{Nothing,String}`: `"complete"` or `"all"`, or `nothing` to leave it to Alpaca.
+- `symbols::Union{Nothing,Vector{String}}`: the symbols, e.g., `["AAPL"]`, sent as one comma-separated list. The keyword also accepts one symbol as a `String`. Default `nothing`.
+- `cusips::Union{Nothing,Vector{String}}`: the CUSIPs of the securities, sent as one comma-separated list. The keyword also accepts one CUSIP as a `String`. Default `nothing`.
+- `types::Union{Nothing,Vector{String}}`: the action types, e.g., `"cash_dividend"`, `"forward_split"`, `"reverse_split"`, or `"spin_off"`, sent as one comma-separated list. The keyword also accepts one type as a `String`. Default `nothing`, which lists all types.
+- `start::Union{Nothing,String,Date,DateTime}`: the first date of the range, included. A `String` is `"YYYY-MM-DD"`, and a `DateTime` sends only its date. Default `nothing`, which Alpaca treats as the current day.
+- `finish::Union{Nothing,String,Date,DateTime}`: the last date of the range, included. The URL sends this field as `end`. Default `nothing`, which Alpaca treats as the current day.
+- `ids::Union{Nothing,Vector{String}}`: the identifiers of the actions, sent as one comma-separated list. Do not combine `ids` with the other filters. The keyword also accepts one identifier as a `String`. Default `nothing`.
+- `limit::Int`: the largest number of actions on one page, counted across all symbols. The call `api` reads every page. Default `100`.
+- `sort::Union{Nothing,String}`: the order of the actions by process date, `"asc"` or `"desc"`. Default `nothing`, which leaves the order to Alpaca.
+- `region::Union{Nothing,String}`: the region of the actions, `"us"`, `"non_us"`, or `"all"`. Default `nothing`, which Alpaca treats as `"us"`.
+- `data_quality::Union{Nothing,String}`: the actions to include: `"complete"` leaves out the incomplete actions that Alpaca has not processed yet, and `"all"` keeps those actions. Default `nothing`, which Alpaca treats as `"complete"`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each action. The first column, `type`, is the group of the action, e.g., `"cash_dividends"`. A cash dividend adds `cusip`, `ex_date`, `foreign`, `id`, `payable_date`, `process_date`, `rate`, `record_date`, `special`, and `symbol`, with the dates as text. Other types add their own columns, and a field that an action lacks is `missing`.
+
+### Example
+```julia
+model = MyCorporateActionsEndpointModel(symbols = "AAPL", start = Date(2026, 1, 1),
+    finish = Date(2026, 11, 20));
+actions = api(client, model);
+```
 
 ### Constructors
 - `MyCorporateActionsEndpointModel(; symbols = nothing, cusips = nothing, types = nothing, start = nothing, finish = nothing, ids = nothing, limit::Int = 100, sort = nothing, region = nothing, data_quality = nothing)`: returns a new `MyCorporateActionsEndpointModel` instance.
@@ -2740,12 +3343,19 @@ end
 """
     mutable struct MyLogoEndpointModel <: AbstractAlpacaMarketDataEndpointModel
 
-Endpoint model for the Alpaca `/logos/{symbol}` endpoint.
-This endpoint returns the logo of a company as a PNG image. It is the one read model whose default handler returns a `Vector{UInt8}` (the bytes of the PNG), not a `DataFrame`.
+The logo of a company as a PNG image, from the Alpaca `GET /v1beta1/logos/{symbol}` endpoint.
 
 ### Fields
-- `symbol::String`: the symbol of the company. The URL puts this field, escaped, in the path.
-- `placeholder::Bool`: `true` to get a placeholder image when the company has no logo.
+- `symbol::String`: the symbol of the company, e.g., `"AAPL"`, which the URL puts, escaped, in the path. Required.
+- `placeholder::Bool`: returns a placeholder image when `true` and the company has no logo. Default `true`.
+
+### Result
+The call `api(client, model)` returns the PNG image as a `Vector{UInt8}`, the bytes of the response, not a `DataFrame`. A paper account without a market data subscription gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+logo = api(client, MyLogoEndpointModel(symbol = "AAPL"));
+```
 
 ### Constructors
 - `MyLogoEndpointModel(; symbol::String, placeholder::Bool = true)`: returns a new `MyLogoEndpointModel` instance.
@@ -2763,11 +3373,19 @@ end
 """
     mutable struct MyFixedIncomeLatestPricesEndpointModel <: AbstractAlpacaMarketDataEndpointModel
 
-Endpoint model for the Alpaca `/fixed_income/latest/prices` endpoint.
-This endpoint returns the latest price and yields of each of several bonds.
+The latest price and yields of one or more bonds, from the Alpaca `GET /v1beta1/fixed_income/latest/prices` endpoint.
+Each bond is named by its ISIN, a security identifier such as `"US912797KJ59"`.
 
 ### Fields
-- `isins::Vector{String}`: the ISINs of the bonds. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
+- `isins::Vector{String}`: the ISINs of the bonds, e.g., `["US912797KJ59"]`, at most `1000`, sent as one comma-separated list. The keyword also accepts one ISIN as a `String`. Required.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each ISIN. The columns are `isin`, `t`, the time of the price in UTC, `p`, the price, `ytm`, the yield to maturity, and `ytw`, the yield to worst. A paper account without a market data subscription gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+prices = api(client, MyFixedIncomeLatestPricesEndpointModel(isins = "US912797KJ59"));
+```
 
 ### Constructors
 - `MyFixedIncomeLatestPricesEndpointModel(; isins::Union{AbstractString,AbstractVector})`: returns a new `MyFixedIncomeLatestPricesEndpointModel` instance.
@@ -2793,12 +3411,20 @@ end
 """
     mutable struct MyFixedIncomeLatestQuotesEndpointModel <: AbstractAlpacaMarketDataEndpointModel
 
-Endpoint model for the Alpaca `/fixed_income/latest/quotes` endpoint.
-This endpoint returns the latest bid and ask quotes of each of several bonds.
+The latest quotes of one or more bonds, from the Alpaca `GET /v1beta1/fixed_income/latest/quotes` endpoint.
+A quote gives the best bid price and the best ask price, with their sizes and yields.
 
 ### Fields
-- `isins::Vector{String}`: the ISINs of the bonds. The keyword accepts a `String` or a vector of strings, and the model stores a `Vector{String}`.
-- `trade_size::Union{Nothing,Int}`: the trade size that the quotes are for, or `nothing` to leave it to Alpaca.
+- `isins::Vector{String}`: the ISINs of the bonds, e.g., `["US912797KJ59"]`, at most `100`, sent as one comma-separated list. The keyword also accepts one ISIN as a `String`. Required.
+- `trade_size::Union{Nothing,Int}`: the cap on the minimum trade size, in par value, of the best bid and ask. A negative value gives the best bid and ask for the smallest trade size. Default `nothing`.
+
+### Result
+The call `api(client, model)` returns a `DataFrame` with one row for each ISIN. The columns are `isin`, `t`, the time of the quote in UTC, `bp` and `bs`, the bid price and size, `ap` and `as`, the ask price and size, and the yield columns. A paper account without a market data subscription gets an `AlpacaError` with status 403.
+
+### Example
+```julia
+quotes = api(client, MyFixedIncomeLatestQuotesEndpointModel(isins = "US912797KJ59"));
+```
 
 ### Constructors
 - `MyFixedIncomeLatestQuotesEndpointModel(; isins::Union{AbstractString,AbstractVector}, trade_size::Union{Nothing,Int} = nothing)`: returns a new `MyFixedIncomeLatestQuotesEndpointModel` instance.

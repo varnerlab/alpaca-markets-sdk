@@ -1,72 +1,84 @@
 # Getting Started
 
-## Installation
+This page takes you from a new paper account to a placed and cancelled order. You need Julia 1.10 or later and an Alpaca paper account.
 
-While this package is pre-release, clone it and use the local project:
-
-```julia
-julia> ] activate .
-(Alpaca) pkg> instantiate
-```
-
-Once it's published to a registry (or served from GitHub) you'll be able to do:
+## 1. Install the package
 
 ```julia
-julia> ] add https://github.com/jeffreyvarner/Alpaca.jl
+using Pkg
+Pkg.add(url = "https://github.com/varnerlab/alpaca-markets-sdk.git")
 ```
 
-## Credentials
+## 2. Make a credentials file
 
-Create `conf/apidata.toml` (this path is git-ignored by default) from the
-template:
+Alpaca identifies a program by two keys, an API key ID and a secret key. Generate a pair of paper keys in the API Keys panel of the [Alpaca dashboard](https://app.alpaca.markets). Alpaca shows the secret key only once.
+
+Save the keys in a file named `conf/apidata.toml` in your project folder:
 
 ```toml
 [Credentials]
-# Paper trading:  https://paper-api.alpaca.markets/v2
-# Live trading:   https://api.alpaca.markets/v2
 endpoint = "https://paper-api.alpaca.markets/v2"
-key      = "YOUR_ALPACA_KEY_ID"
-secret   = "YOUR_ALPACA_SECRET_KEY"
+key      = "YOUR_PAPER_KEY_ID"
+secret   = "YOUR_PAPER_SECRET_KEY"
 ```
 
-Get a free paper-trading key pair from the
-[Alpaca dashboard](https://app.alpaca.markets/paper/dashboard/overview).
-Never commit this file — a template lives at `conf/apidata.example.toml`.
+Anyone with your keys can trade in your account. Keep the keys out of notebooks, and add `conf/apidata.toml` to your `.gitignore` file so that git never commits it.
 
-## First call
+## 3. Read your account
 
 ```julia
 using Alpaca
+using Dates
 
-client = load_client()                 # default path: conf/apidata.toml
-# or: load_client("conf/my_other_creds.toml")
-
-account = api(client, MyAccountEndpointModel())
-println("cash: ", account.cash[1], " ", account.currency[1])
+client = load_client();
+account = api(client, MyAccountEndpointModel());
 ```
 
-`api` returns a `DataFrame`. An endpoint that returns one record, such as the account, gives a `DataFrame` with one row.
+The call `load_client()` reads `conf/apidata.toml`, and `load_client(path)` reads the file at `path`. The `account` table has one row, with the cash, the buying power, and the equity of the account.
 
-## Market data feeds
-
-The stock data models have the field `feed`, which defaults to `"iex"`. The `"iex"` feed is free on every Alpaca account. If you have a paid data subscription, set `feed = "sip"` in the model for consolidated tape data:
+## 4. Read prices
 
 ```julia
-model = MyStockQuotesEndpointModel(symbols = "AAPL", start = "2025-01-02", feed = "sip")
+model = MyStockBarsEndpointModel(symbols = ["AAPL", "MSFT"], timeframe = "1Day",
+    start = Date(2026, 11, 2), finish = Date(2026, 11, 20));
+bars = api(client, model);
+quotes = api(client, MyStockLatestQuotesEndpointModel(symbols = ["AAPL", "MSFT"]));
 ```
 
-## Error handling
+The `bars` table has one row for each daily bar of each stock, and the `quotes` table has the latest bid price and ask price of each stock. The [Stock data](endpoints/stocks.md) page lists the columns.
 
-A non-2xx REST response raises an [`AlpacaError`](@ref):
+## 5. Place and cancel a paper order
+
+An order model says what to trade, and `submit` sends the order. This buy limit order has a limit price far below the price of SPY, so the order stays open until you cancel it or the trading day ends:
+
+```julia
+order = submit(client, MyEquityOrderModel(symbol = "SPY", side = "buy", qty = 1);
+    type = "limit", limit_price = 500.0);
+open_orders = api(client, MyOrdersEndpointModel(status = "open"));
+cancel(client, order);
+```
+
+The [Trading](api/trading.md) page lists every verb, and the [Orders and positions](endpoints/orders.md) page covers the order models.
+
+## 6. Handle errors
+
+When Alpaca refuses a request, the call throws an [`AlpacaError`](@ref) with the HTTP status and Alpaca's message:
 
 ```julia
 try
-    submit(client, MyEquityOrderModel(symbol = "NOPE", side = "buy", qty = 1))
+    api(client, MyAssetEndpointModel(symbol = "NOTASYMBOL"));
 catch e
     if e isa AlpacaError
-        @warn "order rejected" status=e.status code=e.code message=e.message
+        println(e.status, ": ", e.message);
     else
-        rethrow()
+        rethrow();
     end
 end
 ```
+
+The common statuses are:
+
+- `401`: Alpaca does not accept the keys.
+- `403`: the market data plan of the account does not include the data.
+- `404`: the symbol, order, or position does not exist.
+- `422`: Alpaca rejected the settings of an order.

@@ -1,6 +1,4 @@
 [Credentials]
-# Paper trading endpoint: https://paper-api.alpaca.markets/v2
-# Live trading endpoint:  https://api.alpaca.markets/v2
 endpoint = "https://paper-api.alpaca.markets/v2"
-key = "YOUR_ALPACA_KEY_ID"
-secret = "YOUR_ALPACA_SECRET_KEY"
+key      = "YOUR_PAPER_KEY_ID"
+secret   = "YOUR_PAPER_SECRET_KEY"
