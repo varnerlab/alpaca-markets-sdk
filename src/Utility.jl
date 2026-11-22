@@ -224,6 +224,13 @@ function _date_text(x::Union{Date,DateTime})::String
     return string(Date(x));
 end
 
+# _position_symbol: the symbol of a position as it goes in a /positions/{symbol} path. Alpaca names a crypto position
+# without the slash of its pair (BTC/USD is the position BTCUSD), and it does not route an escaped slash in this path.
+# A stock symbol, an option symbol, and an asset id have no slash and stay as they are -
+function _position_symbol(symbol::AbstractString)::String
+    return replace(String(symbol), "/" => "");
+end
+
 # _to_symbol_vector: a symbol keyword (a string or a vector) as a Vector{String}; nothing stays nothing -
 function _to_symbol_vector(x::Nothing)
     return nothing;

@@ -293,7 +293,7 @@ Close the position in one symbol at market, using an HTTP DELETE call to the Alp
 
 ### Arguments
 - `client::AlpacaClient`: the client that holds the credentials and the base URLs.
-- `symbol::String`: the symbol of the position, e.g., `"AAPL"` or an OCC contract symbol.
+- `symbol::String`: the symbol of the position, e.g., `"AAPL"`, `"BTC/USD"`, or an OCC contract symbol. A crypto pair goes in the path without its slash (`BTCUSD`).
 - `qty`: the number of shares or contracts to close, or `nothing` to close the whole position.
 - `percentage`: the percentage of the position to close, or `nothing`.
 
@@ -1139,7 +1139,8 @@ function _close_position(client::AlpacaClient, symbol::AbstractString; qty::Unio
     if (percentage !== nothing)
         query["percentage"] = _decimal_text(percentage);
     end
-    request_url = _build_url(client.trading_url, "/positions/$(URIs.escapeuri(symbol))", query);
+    path = "/positions/" * URIs.escapeuri(_position_symbol(symbol)); # a crypto pair loses its slash, as in the position's symbol
+    request_url = _build_url(client.trading_url, path, query);
     return _http_call(client, "DELETE", request_url);
 end
 

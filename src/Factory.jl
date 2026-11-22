@@ -184,6 +184,7 @@ end
 
 Build the URL string for the Alpaca `/positions/{symbol}` endpoint.
 An HTTP GET call to this URL returns the open position of one symbol.
+A crypto pair goes in the path without its slash, e.g., `BTC/USD` becomes `BTCUSD`, the symbol of its position.
 
 ### Arguments
 - `base::String`: the base URL of the API, e.g., `"https://paper-api.alpaca.markets/v2"`.
@@ -197,8 +198,8 @@ An HTTP GET call to this URL returns the open position of one symbol.
 """
 function url(base::String, model::MyPositionEndpointModel)::String
 
-    # get data from the model -
-    symbol = model.symbol;
+    # get data from the model. A crypto pair loses its slash, because Alpaca names its position without one -
+    symbol = _position_symbol(model.symbol);
 
     # build the URL string: base + path -
     url_string = "$(base)/positions/$(URIs.escapeuri(symbol))";

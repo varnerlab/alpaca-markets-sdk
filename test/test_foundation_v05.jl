@@ -7,7 +7,11 @@ end
 
 @testset "v0.5 foundation: symbols in paths are escaped" begin
     @test url("http://h", MyAssetEndpointModel(symbol = "BTC/USD")) == "http://h/assets/BTC%2FUSD"
-    @test url("http://h", MyPositionEndpointModel(symbol = "BTC/USD")) == "http://h/positions/BTC%2FUSD"
+    @test url("http://h", MyPositionEndpointModel(symbol = "BTC/USD")) == "http://h/positions/BTCUSD"
+    @test url("http://h", MyPositionEndpointModel(symbol = "AAPL")) == "http://h/positions/AAPL"
+    @test Alpaca._position_symbol("BTC/USD") == "BTCUSD"
+    @test Alpaca._position_symbol("AAPL251219C00200000") == "AAPL251219C00200000"
+    @test Alpaca._position_symbol("276e2673-764b-4ab6-a611-caf665ca6340") == "276e2673-764b-4ab6-a611-caf665ca6340"
     @test url("http://h", MyAssetEndpointModel(symbol = "AAPL")) == "http://h/assets/AAPL"
     @test url("http://h", MyOptionContractEndpointModel(symbol = "AAPL251219C00200000")) == "http://h/options/contracts/AAPL251219C00200000"
     @test url("http://h", MyOptionContractEndpointModel(symbol = "A/B")) == "http://h/options/contracts/A%2FB"
